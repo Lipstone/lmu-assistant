@@ -50,7 +50,9 @@ function loadConfig() {
 }
 
 function connect() {
-  const ws = new WebSocket(`ws://${location.host}/ws`);
+  // location.host = adresse utilisée par le navigateur (localhost ou IP du PC depuis une tablette).
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${scheme}://${location.host}/ws`);
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
     if (msg.type === "snapshot") render(msg.data);

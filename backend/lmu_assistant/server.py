@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import ConfigStore
 from .config_api import make_config_router
+from .network import router as network_router
 from .sources import DataSource
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
@@ -47,6 +48,8 @@ def create_app(source: DataSource, hz: float = 10.0, config_path: str | Path | N
         source.close()
 
     app = FastAPI(title="LMU Assistant", lifespan=lifespan)
+    app.state.source = source
+    app.include_router(network_router)  # /api/info, /api/qr.svg
 
     @app.get("/api/snapshot")
     async def snapshot() -> dict:

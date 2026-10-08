@@ -37,12 +37,43 @@ python overlay/overlay.py
 - **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc la fenêtre ne se déplace plus à la souris ; la placer depuis la page de réglages, ou lancer `python overlay/overlay.py --no-click-through` pour la déplacer à la main.
 - Les réglages sont dans `data/config.json` (autre fichier : `python -m lmu_assistant --config chemin.json`). API : `GET`/`PUT /api/config`.
 
+## Enregistrer et rejouer une session
+
+Pour développer et tester sans lancer le jeu, une session peut être enregistrée puis rejouée comme source de données.
+
+```bash
+# Enregistre chaque Snapshot diffusé (au rythme --hz) dans data/recordings/<date>_<source>.jsonl.gz
+python -m lmu_assistant --source lmu --record
+python -m lmu_assistant --source mock --record ma_session.jsonl.gz   # chemin explicite
+
+# Rejoue un enregistrement (vitesse x2, en boucle)
+python -m lmu_assistant --source replay --file samples/mock_60s.jsonl.gz --speed 2 --loop
+```
+
+Format : JSON Lines compressé en gzip. La 1re ligne est un en-tête (`format`, `version`, source, date), puis une ligne par image : `{"t": <secondes depuis le début>, "data": <Snapshot>}`. La relecture ignore les champs inconnus et met les valeurs par défaut pour les champs absents, donc les anciens enregistrements restent lisibles quand le modèle évolue. Sans `--loop`, la dernière image reste affichée en fin de fichier. Un fichier coupé par un arrêt brutal reste lisible jusqu'à la dernière image complète.
+
+`samples/mock_60s.jsonl.gz` est un court exemple (60 s de la source simulée), utilisé aussi par les tests.
+
+## Accès depuis une tablette / un téléphone
+
+Le serveur écoute par défaut sur tout le réseau local. Au démarrage, il affiche les adresses à ouvrir depuis un autre appareil, par exemple :
+
+```
+LMU Assistant : http://localhost:8765  (source : mock)
+  Réseau local : http://192.168.1.20:8765  (QR code : http://localhost:8765/connect.html)
+```
+
+- Sur le PC, le lien **Connexion** de la barre du haut (`/connect.html`) affiche ces adresses et un **QR code** à scanner avec la tablette ou le téléphone (connecté au même Wi-Fi).
+- **Pare-feu Windows** : au premier lancement, Windows demande d'autoriser Python. Cocher **Réseaux privés** (pas « publics ») puis *Autoriser l'accès*. Si la fenêtre a été refusée : *Pare-feu Windows Defender > Autoriser une application* et cocher « Privé » pour Python. Le réseau Wi-Fi du PC doit aussi être en profil **privé**.
+- Pour **désactiver** l'accès depuis le réseau (page visible uniquement sur le PC) : `python -m lmu_assistant --host 127.0.0.1`.
+
 ## Organisation
 
 | Dossier | Rôle |
 |---|---|
 | `backend/lmu_assistant/` | Lecture des données du jeu, calculs, serveur HTTP + WebSocket |
-| `backend/lmu_assistant/sources/` | Sources de données : `mock` (simulée), `lmu` (mémoire partagée du jeu) |
+| `backend/lmu_assistant/sources/` | Sources de données : `mock` (simulée), `lmu` (mémoire partagée du jeu), `replay` (relecture d'un enregistrement) |
+| `samples/` | Petits enregistrements d'exemple pour les tests et démos |
 | `web/` | Page web et widgets (HTML/CSS/JS sans build) |
 | `overlay/` | Fenêtre overlay transparente qui affiche les widgets web |
 | `docs/` | Notes techniques |
