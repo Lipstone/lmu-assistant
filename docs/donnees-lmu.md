@@ -63,6 +63,7 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 | `max_laps` | `ScoringInfoV01.mMaxLaps` | `None` si ≤ 0 ou ≥ 10 000 (course chronométrée) |
 | `lap_fraction` | `VehicleScoringInfoV01.mLapDist / ScoringInfoV01.mLapDist` | 0-1, borné |
 | `in_pits` | `mInPits` | |
+| `lap_invalid` | `TelemInfoV01.mLapInvalidated` | tour en cours invalidé (limites de piste), exclu de la moyenne des temps (F04) |
 | `wheels[i]` | `mWheels[i]`, ordre 0 = AVG, 1 = AVD, 2 = ARG, 3 = ARD (même ordre que Snapshot) | |
 | `temp_c` | `mTemperature[3]` | Kelvin − 273,15 → °C |
 | `pressure_kpa` | `mPressure` | kPa |

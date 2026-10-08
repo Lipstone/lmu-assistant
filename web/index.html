@@ -17,13 +17,16 @@
 
   <main class="widgets">
     <section class="widget" data-widget="lap">
-      <h2>Tour</h2>
+      <h2>Temps au tour</h2>
       <div class="big" id="lap">–</div>
       <dl>
         <dt>En cours</dt><dd id="current">–</dd>
         <dt>Dernier</dt><dd id="last">–</dd>
         <dt>Meilleur</dt><dd id="best">–</dd>
+        <dt id="lap-avg-label">Moyenne</dt><dd id="lap-avg">–</dd>
+        <dt>Régularité</dt><dd id="lap-stdev">–</dd>
       </dl>
+      <table class="laps" id="laps"></table>
     </section>
 
     <section class="widget" data-widget="delta">

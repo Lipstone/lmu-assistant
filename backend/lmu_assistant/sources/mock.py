@@ -28,6 +28,7 @@ class MockSource(DataSource):
         self._lap_target = LAP_S
         self._pit = False
         self._wobble = 0.0
+        self._invalid_at: float | None = None  # instant du tour où il sera invalidé (limites de piste)
 
     def _fraction(self, current: float) -> float:
         x = current / self._lap_target
@@ -46,6 +47,7 @@ class MockSource(DataSource):
             self._lap_target = LAP_S + random.uniform(-1.5, 1.5)
             self._wobble = random.uniform(-0.01, 0.01)  # temps gagné ou perdu en cours de tour (delta F03)
             current = 0.0
+            self._invalid_at = random.uniform(30, 200) if random.random() < 0.15 else None
             self._pit = self._fuel < PIT_BELOW_L or self._energy < 2 * ENERGY_PER_LAP_PCT
             if self._pit:
                 self._fuel = 90.0
@@ -81,6 +83,7 @@ class MockSource(DataSource):
             current_lap_s=round(current, 3),
             lap_fraction=round(min(self._fraction(current), 1.0), 4),
             in_pits=self._pit and current < PIT_S,
+            lap_invalid=self._invalid_at is not None and current >= self._invalid_at,
             session_time_left_s=max(0.0, 6 * 3600 - (now - self._start)),
             wheels=wheels,
         )

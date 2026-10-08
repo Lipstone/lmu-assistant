@@ -489,6 +489,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
             snap.lap = telem.mLapNumber
         # Le temps télémétrie est plus fin (mise à jour à chaque frame physique)
         snap.current_lap_s = round(max(0.0, telem.mElapsedTime - telem.mLapStartET), 3)
+        snap.lap_invalid = bool(telem.mLapInvalidated)
         snap.wheels = [_wheel(w, left_side=(i % 2 == 0)) for i, w in enumerate(telem.mWheels)]
         if scoring is not None and info.mLapDist > 0:
             # mLapDist n'est mis à jour qu'au rythme du scoring (~5 Hz) : on l'avance à l'instant de la

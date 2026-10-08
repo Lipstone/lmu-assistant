@@ -66,6 +66,12 @@ Le widget **Delta** affiche en gros l'écart en direct avec le tour de référen
 
 La référence affichée en gros se choisit dans Réglages overlay (« Widget Delta »). Calculs côté serveur (`backend/lmu_assistant/delta.py`) : pendant chaque tour on relève le temps écoulé selon l'avancement dans le tour ; un tour sert de référence s'il a été suivi depuis la ligne, sans passage aux stands ni trou dans les relevés. Meilleur et dernier tour repartent de zéro quand la session, la piste ou la voiture change. Le delta est masqué quand il n'a pas de sens (écart de plus de 25 % du tour, par exemple aux stands).
 
+## Temps au tour (F04)
+
+Le widget **Temps au tour** affiche le tour en cours (rouge s'il est invalidé par le jeu), le dernier tour (vert s'il est le meilleur), le meilleur tour, la **moyenne des N derniers tours valides** (N entre parenthèses, 5 par défaut, réglable de 2 à 20 dans Réglages overlay) et la **régularité** : écart-type de ces mêmes tours (vert sous ±0,3 s, orange au-delà de ±1 s). En dessous, les 5 derniers tours avec l'écart au meilleur tour valide de la session ; les tours exclus de la moyenne sont barrés avec la raison : **stand** (tour de sortie ou de rentrée), **invalide** (limites de piste) ou **partiel** (appli lancée en cours de tour).
+
+Calculs côté serveur (`backend/lmu_assistant/laptimes.py`), avec le temps du tour publié par le jeu ; tout repart de zéro quand la session, la piste ou la voiture change.
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

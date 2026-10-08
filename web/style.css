@@ -40,6 +40,13 @@ dd.good { color: var(--ok); }
 .delta-bar > div { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; }
 .delta-bar > div.faster { background: var(--ok); }
 .delta-bar > div.slower { background: var(--bad); }
+.laps { width: 100%; border-collapse: collapse; margin-top: 8px; font-variant-numeric: tabular-nums; font-size: 13px; }
+.laps td { padding: 1px 0; border-top: 1px solid #2a2e36; white-space: nowrap; }
+.laps td:nth-child(1) { color: var(--muted); }
+.laps td:nth-child(2) { text-align: center; }
+.laps td:nth-child(3) { text-align: right; color: var(--muted); }
+.laps td.faster { color: var(--ok); }
+.laps tr.excluded td:nth-child(2) { color: var(--muted); text-decoration: line-through; }
 .tyres { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 20px; text-align: center; }
 .tyres div { background: #22262e; border-radius: 4px; padding: 6px; }
 
@@ -51,6 +58,7 @@ body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transf
 body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"] { width: 200px; }
+body.overlay .widget[data-widget="lap"] { width: 220px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */
@@ -66,6 +74,7 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings td { padding: 4px; }
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
+.settings input#laptime-avg-laps { width: 60px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .settings .actions { display: flex; gap: 12px; align-items: center; }
