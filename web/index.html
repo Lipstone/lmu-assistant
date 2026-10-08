@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LMU Assistant</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <strong>LMU Assistant</strong>
+    <span id="status" class="status off">déconnecté</span>
+    <span id="session"></span>
+  </header>
+
+  <main class="widgets">
+    <section class="widget" data-widget="lap">
+      <h2>Tour</h2>
+      <div class="big" id="lap">–</div>
+      <dl>
+        <dt>En cours</dt><dd id="current">–</dd>
+        <dt>Dernier</dt><dd id="last">–</dd>
+        <dt>Meilleur</dt><dd id="best">–</dd>
+      </dl>
+    </section>
+
+    <section class="widget" data-widget="fuel">
+      <h2>Carburant</h2>
+      <div class="big" id="fuel">–</div>
+      <div class="bar"><div id="fuel-bar"></div></div>
+    </section>
+
+    <section class="widget" data-widget="car">
+      <h2>Voiture</h2>
+      <div class="big" id="speed">–</div>
+      <dl>
+        <dt>Rapport</dt><dd id="gear">–</dd>
+        <dt>Régime</dt><dd id="rpm">–</dd>
+      </dl>
+    </section>
+
+    <section class="widget" data-widget="tyres">
+      <h2>Pneus (°C milieu)</h2>
+      <div class="tyres" id="tyres"></div>
+    </section>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

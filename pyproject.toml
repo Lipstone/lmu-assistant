@@ -1,0 +1,9 @@
+[project]
+name = "lmu-assistant"
+version = "0.1.0"
+description = "Assistant ingénieur augmenté pour Le Mans Ultimate : overlay et page web locale"
+requires-python = ">=3.11"
+dependencies = ["fastapi>=0.110", "uvicorn[standard]>=0.29"]
+
+[tool.setuptools.packages.find]
+where = ["backend"]
