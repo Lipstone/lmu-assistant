@@ -212,6 +212,22 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .sub { margin: 14px 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
 .data td.slower { color: var(--bad); }
 
+/* Page Stratégie (F24) */
+.strategy-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
+.strategy-form fieldset { border: 1px solid #2a2e36; border-radius: 6px; margin: 0; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
+.strategy-form legend { color: var(--muted); font-size: 12px; text-transform: uppercase; padding: 0 4px; }
+.strategy-form label { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.strategy-form input[type="number"] { width: 80px; }
+.strategy-form .actions { grid-column: 1 / -1; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.analyse .error { color: var(--warn); }
+.scenarios { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.scenario { text-align: left; background: #22262e !important; color: var(--text) !important; border: 2px solid transparent !important;
+  border-radius: 8px !important; padding: 10px 12px !important; font-weight: 400 !important; cursor: pointer; }
+.scenario.selected { border-color: var(--accent) !important; }
+.scenario h3 { margin: 0; font-size: 15px; }
+.scenario .hint { margin: 2px 0 6px; }
+.badge { font-size: 11px; padding: 1px 6px; border-radius: 3px; background: var(--ok); color: #000; vertical-align: middle; }
+
 /* Page Connexion (tablette / téléphone) */
 .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 16px; max-width: 760px; margin: 0 auto; }
 .qr { display: block; width: 100%; max-width: 280px; height: auto; aspect-ratio: 1; margin: 8px auto; background: #fff; border-radius: 6px; }
