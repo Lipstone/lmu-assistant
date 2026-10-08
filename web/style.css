@@ -73,6 +73,21 @@ dd.good { color: var(--ok); }
   font-size: 13px; text-align: center; animation: blink 1s steps(2, start) infinite; }
 @keyframes blink { to { visibility: hidden; } }
 
+.relative { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
+.relative td { padding: 2px 3px; white-space: nowrap; border-top: 1px solid #2a2e36; }
+.relative tr:first-child td { border-top: 0; }
+.relative .class-pos { display: inline-block; min-width: 30px; padding: 0 3px; border-radius: 3px; color: #fff;
+  font-size: 12px; font-weight: 600; text-align: center; }
+.relative .num { color: var(--muted); font-size: 12px; }
+.relative .driver { max-width: 130px; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.relative .gap, .relative .laps-diff { text-align: right; }
+.relative .laps-diff { font-size: 12px; font-weight: 600; }
+.relative tr.me td { background: #2c3340; font-weight: 600; }
+.relative tr.lap-up .driver, .relative tr.lap-up .laps-diff { color: var(--warn); }
+.relative tr.lap-down .driver, .relative tr.lap-down .laps-diff { color: var(--accent); }
+.relative tr.other-class .driver { opacity: 0.75; }
+.relative .pit { font-size: 10px; padding: 0 3px; border-radius: 3px; background: var(--muted); color: #000; font-weight: 600; }
+
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
 body.overlay { background: transparent; overflow: hidden; }
 body.overlay .topbar { display: none; }
@@ -82,6 +97,7 @@ body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
+body.overlay .widget[data-widget="relative"] { width: 300px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */

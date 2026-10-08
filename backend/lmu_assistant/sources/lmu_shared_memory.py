@@ -15,11 +15,12 @@ from __future__ import annotations
 
 import ctypes
 import math
+import re
 import sys
 import time
 from typing import Any
 
-from ..model import Snapshot, Wheel
+from ..model import Snapshot, Vehicle, Wheel
 from .base import DataSource
 
 MAP_NAME = "LMU_Data"
@@ -435,6 +436,38 @@ def _wheel(w: TelemWheel, left_side: bool) -> Wheel:
     )
 
 
+_NUMBER = re.compile(r"#\s*(\d+)")
+
+
+def car_number(name: str) -> str:
+    """Numéro de course tiré du nom de la voiture (« Toyota GR010 #7 » → « 7 »), vide sinon."""
+    m = _NUMBER.search(name)
+    return m.group(1) if m else ""
+
+
+def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
+    """Classement de toutes les voitures (F07, F08), trié par position."""
+    info = data.scoring.scoringInfo
+    n = max(0, min(info.mNumVehicles, MAX_VEHICLES))
+    result = []
+    for v in data.scoring.vehScoringInfo[:n]:
+        name = _text(v.mVehicleName)
+        frac = None
+        if info.mLapDist > 0:
+            frac = round(min(max(v.mLapDist / info.mLapDist, 0.0), 0.9999), 4)
+        result.append(Vehicle(
+            id=v.mID, driver=_text(v.mDriverName), car=name, number=car_number(name),
+            car_class=_text(v.mVehicleClass), position=v.mPlace, laps=max(0, v.mTotalLaps), lap_fraction=frac,
+            last_lap_s=_lap_time(v.mLastLapTime), best_lap_s=_lap_time(v.mBestLapTime),
+            estimated_lap_s=_lap_time(v.mEstimatedLapTime),
+            time_behind_leader_s=round(v.mTimeBehindLeader, 3) if math.isfinite(v.mTimeBehindLeader) else None,
+            laps_behind_leader=max(0, v.mLapsBehindLeader), in_pits=bool(v.mInPits), pitstops=max(0, v.mNumPitstops),
+            is_player=v.mID == player_id,
+        ))
+    result.sort(key=lambda v: v.position or 10_000)
+    return result
+
+
 def find_player(data: ObjectOut) -> tuple[VehicleScoring | None, TelemInfo | None]:
     """Véhicule du joueur : scoring (mIsPlayer, sinon mControl == 0) et télémétrie (même mID)."""
     n = max(0, min(data.scoring.scoringInfo.mNumVehicles, MAX_VEHICLES))
@@ -464,6 +497,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.max_laps = info.mMaxLaps
 
     scoring, telem = find_player(data)
+    snap.vehicles = vehicles(data, scoring.mID if scoring is not None else None)
     if scoring is not None:
         snap.car = _text(scoring.mVehicleName)
         snap.lap = scoring.mTotalLaps + 1  # tour en cours

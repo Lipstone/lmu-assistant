@@ -4,7 +4,7 @@ import math
 import random
 import time
 
-from ..model import Snapshot, Wheel
+from ..model import Snapshot, Vehicle, Wheel
 from .base import DataSource
 
 LAP_S = 225.0  # ~3 min 45 s
@@ -12,6 +12,24 @@ FUEL_PER_LAP_L = 3.4
 ENERGY_PER_LAP_PCT = 4.1  # énergie virtuelle (Hypercar)
 PIT_BELOW_L = 8.0  # passage au stand (plein) quand il reste moins que ça au passage de ligne
 PIT_S = 25.0  # durée passée « dans les stands » au début du tour suivant
+
+# Plateau simulé (F07, F08) : numéro, pilote, classe, temps au tour moyen (s), avance au départ (tour).
+PLAYER = ("00", "Vous", "Hypercar")
+FIELD = [
+    ("7", "K. Kobayashi", "Hypercar", 223.4, 0.012),
+    ("50", "A. Fuoco", "Hypercar", 224.1, 0.008),
+    ("6", "K. Estre", "Hypercar", 225.6, 0.004),
+    ("8", "S. Buemi", "Hypercar", 226.3, -0.004),
+    ("38", "J. Button", "Hypercar", 228.0, -0.008),
+    ("22", "F. Albuquerque", "LMP2", 236.2, 0.016),
+    ("28", "R. Kubica", "LMP2", 237.0, 0.010),
+    ("37", "M. Jakobsen", "LMP2", 238.4, -0.012),
+    ("92", "M. Bortolotti", "LMGT3", 249.5, 0.020),
+    ("31", "A. Farfus", "LMGT3", 250.3, 0.006),
+    ("91", "R. Lietz", "LMGT3", 251.2, -0.016),
+    ("54", "D. Rigon", "LMGT3", 252.6, -0.020),
+]
+FIELD_PIT_EVERY = 12  # tours entre deux arrêts des autres voitures
 
 
 class MockSource(DataSource):
@@ -30,6 +48,7 @@ class MockSource(DataSource):
         self._wobble = 0.0
         self._stint_start = 1  # tour où des pneus neufs ont été montés
         self._invalid_at: float | None = None  # instant du tour où il sera invalidé (limites de piste)
+        self._stops = 0
 
     def _fraction(self, current: float) -> float:
         x = current / self._lap_target
@@ -51,6 +70,7 @@ class MockSource(DataSource):
             self._invalid_at = random.uniform(30, 200) if random.random() < 0.15 else None
             self._pit = self._fuel < PIT_BELOW_L or self._energy < 2 * ENERGY_PER_LAP_PCT
             if self._pit:
+                self._stops += 1
                 if self._lap - self._stint_start >= 20:  # pneus changés un arrêt sur deux environ
                     self._stint_start = self._lap
                 self._fuel = 90.0
@@ -76,6 +96,16 @@ class MockSource(DataSource):
             )
             for i in range(4)
         ]
+        fraction = round(min(self._fraction(current), 1.0), 4)
+        in_pits = self._pit and current < PIT_S
+        vehicles = self._field(now - self._start)
+        vehicles.append(Vehicle(
+            id=0, driver=PLAYER[1], car="Hypercar #00", number=PLAYER[0], car_class=PLAYER[2],
+            laps=self._lap - 1, lap_fraction=fraction, last_lap_s=self._last, best_lap_s=self._best,
+            estimated_lap_s=LAP_S, in_pits=in_pits, pitstops=self._stops, is_player=True,
+        ))
+        _classify(vehicles)
+        player = vehicles[-1]
         return Snapshot(
             connected=True,
             source=self.name,
@@ -83,7 +113,7 @@ class MockSource(DataSource):
             track="Circuit de la Sarthe",
             car="Hypercar #00",
             lap=self._lap,
-            position=3,
+            position=player.position,
             speed_kmh=round(speed, 1),
             rpm=round(4000 + speed * 25),
             gear=max(1, min(7, int(speed / 45))),
@@ -93,9 +123,42 @@ class MockSource(DataSource):
             last_lap_s=self._last,
             best_lap_s=self._best,
             current_lap_s=round(current, 3),
-            lap_fraction=round(min(self._fraction(current), 1.0), 4),
-            in_pits=self._pit and current < PIT_S,
+            lap_fraction=fraction,
+            in_pits=in_pits,
             lap_invalid=self._invalid_at is not None and current >= self._invalid_at,
             session_time_left_s=max(0.0, 6 * 3600 - (now - self._start)),
             wheels=wheels,
+            vehicles=sorted(vehicles, key=lambda v: v.position),
         )
+
+    @staticmethod
+    def _field(t: float) -> list[Vehicle]:
+        """Autres voitures : chacune tourne à son rythme, avec un arrêt tous les FIELD_PIT_EVERY tours."""
+        cars = []
+        for i, (number, driver, car_class, lap_s, start) in enumerate(FIELD, start=1):
+            progress = start + t / lap_s + 0.002 * math.sin(t / 40 + i)
+            laps = math.floor(progress)
+            first_pit = i % FIELD_PIT_EVERY + 1
+            stops = 0 if laps < first_pit else (laps - first_pit) // FIELD_PIT_EVERY + 1
+            cars.append(Vehicle(
+                id=i, driver=driver, car=f"{car_class} #{number}", number=number, car_class=car_class,
+                laps=laps, lap_fraction=round(progress - laps, 4),
+                last_lap_s=round(lap_s + 0.8 * math.sin(laps * 1.7 + i), 3) if laps >= 1 else None,
+                best_lap_s=round(lap_s - 0.6, 3) if laps >= 2 else None,
+                estimated_lap_s=lap_s,
+                in_pits=laps >= first_pit and (laps - first_pit) % FIELD_PIT_EVERY == 0 and progress - laps < 0.02,
+                pitstops=stops,
+            ))
+        return cars
+
+
+def _classify(vehicles: list[Vehicle]) -> None:
+    """Positions au général et écarts au leader, d'après la distance parcourue."""
+    total = {v.id: v.laps + (v.lap_fraction or 0.0) for v in vehicles}
+    ranked = sorted(vehicles, key=lambda v: -total[v.id])
+    leader = total[ranked[0].id]
+    for pos, v in enumerate(ranked, start=1):
+        v.position = pos
+        behind = leader - total[v.id]
+        v.laps_behind_leader = int(behind)
+        v.time_behind_leader_s = round(behind * (v.estimated_lap_s or LAP_S), 3)

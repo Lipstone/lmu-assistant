@@ -14,6 +14,7 @@ from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
 from .laptimes import AVG_LAPS, LapTimesCalculator
 from .network import router as network_router
+from .relative import compute_relative
 from .paths import resource_dir
 from .sources import DataSource
 
@@ -41,7 +42,8 @@ class Broadcaster:
     def compute(self, snap):
         cfg = self.config_store.config if self.config_store else None
         snap = self.laps.update(self.delta.update(self.fuel.update(snap)), cfg.laptime_avg_laps if cfg else AVG_LAPS)
-        return self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
+        snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
+        return compute_relative(snap)
 
     async def run(self) -> None:
         while True:

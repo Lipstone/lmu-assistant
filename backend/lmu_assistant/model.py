@@ -73,6 +73,46 @@ class BrakeInfo:
 
 
 @dataclass
+class Vehicle:
+    """Une voiture de la session (classement du jeu), fournie par la source."""
+
+    id: int = 0
+    driver: str = ""
+    car: str = ""
+    number: str = ""  # numéro de course (« 7 »), vide si inconnu
+    car_class: str = ""  # Hypercar, LMP2, LMGT3…
+    position: int = 0  # position au général, à partir de 1
+    laps: int = 0  # tours terminés
+    lap_fraction: float | None = None  # avancement dans le tour en cours, 0..1
+    last_lap_s: float | None = None
+    best_lap_s: float | None = None
+    estimated_lap_s: float | None = None  # temps au tour estimé par le jeu
+    time_behind_leader_s: float | None = None
+    laps_behind_leader: int = 0
+    in_pits: bool = False
+    pitstops: int = 0
+    is_player: bool = False
+
+
+@dataclass
+class RelativeEntry:
+    """Une voiture proche sur la piste (F07)."""
+
+    id: int = 0
+    driver: str = ""
+    number: str = ""
+    car_class: str = ""
+    position: int = 0  # au général
+    class_position: int = 0  # dans sa classe
+    gap_s: float | None = None  # écart sur la piste, positif = devant, négatif = derrière
+    laps_diff: int = 0  # tours d'avance (+) ou de retard (−) sur le joueur au classement
+    same_class: bool = True
+    in_pits: bool = False
+    last_lap_s: float | None = None
+    is_player: bool = False
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -101,6 +141,8 @@ class Snapshot:
     delta: DeltaInfo = field(default_factory=DeltaInfo)
     laps: LapTimesInfo = field(default_factory=LapTimesInfo)
     brakes: BrakeInfo = field(default_factory=BrakeInfo)
+    vehicles: list[Vehicle] = field(default_factory=list)  # toutes les voitures de la session
+    relative: list[RelativeEntry] = field(default_factory=list)  # F07 : voitures proches, la plus en avant d'abord
 
     def to_dict(self) -> dict:
         return asdict(self)
