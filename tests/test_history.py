@@ -21,6 +21,7 @@ def run_mock(monkeypatch):
     """Fait tourner la source mock et tous les calculs du serveur avec une horloge simulée."""
     clock = Clock()
     monkeypatch.setattr(mock, "time", types.SimpleNamespace(monotonic=clock.monotonic))
+    mock.random.seed(7)  # tours invalidés et consommation de la source mock : tirages reproductibles
 
     def run(seconds, recorder, step=0.5):
         b = Broadcaster(mock.MockSource(), hz=10, records_path=None, history=recorder)
