@@ -29,6 +29,10 @@ Les fonctionnalités sont listées dans [FEATURES.md](FEATURES.md) et ajoutées 
 
 Un seul code d'affichage : les widgets sont des composants web. L'overlay n'est qu'une fenêtre transparente, sans bordure et toujours au premier plan qui charge la page en `mode=overlay` (fond transparent, widgets compacts, positions configurables).
 
+## Exigences obligatoires
+
+- **Lancement par un exécutable** : l'application se lance en double-cliquant sur `LMU-Assistant.exe` (Windows), sans installer Python. L'exécutable démarre le serveur et l'overlay ensemble ; il est construit avec PyInstaller par la CI à chaque modification (artefact téléchargeable dans GitHub Actions). Toute nouvelle fonctionnalité doit rester compatible avec ce mode (fichiers web embarqués, données dans `data/` à côté de l'exe).
+
 ## Choix techniques (par défaut, modifiables)
 
 | Sujet | Choix | Pourquoi |
@@ -36,6 +40,7 @@ Un seul code d'affichage : les widgets sont des composants web. L'overlay n'est 
 | Backend | Python 3.11+, FastAPI, uvicorn | Lecture mémoire partagée simple avec `mmap` + `ctypes`, serveur WebSocket léger |
 | Front | HTML/CSS/JS sans framework ni build | Démarrage immédiat ; on passera à un framework si les widgets se multiplient |
 | Overlay | pywebview (WebView2 sous Windows) | Réutilise les widgets web ; alternative : source navigateur OBS pour le streaming |
+| Exécutable | PyInstaller (un seul fichier, console affichant les adresses) | Lancement en double-clic, sans Python installé |
 | Stockage | SQLite | Historique des tours et relais pour l'analyse hors course, zéro installation |
 
 ## Données du jeu
@@ -57,6 +62,7 @@ Chaque source produit le même `Snapshot` (voir `backend/lmu_assistant/model.py`
 | 3 | Overlay configurable | Choix des widgets, positions, taille, opacité, raccourci afficher/masquer | à faire |
 | 4 | Historique | Enregistrement SQLite des tours et relais | à faire |
 | 5 | Hors course | Analyse des relais, stratégie, rapport de session | à faire |
+| 6 | Exécutable | `LMU-Assistant.exe` (serveur + overlay), construit par la CI | ✅ fait |
 
 Après l'étape 1, chaque fonctionnalité de FEATURES.md est ajoutée à la demande, avec son widget web et sa variante overlay.
 
