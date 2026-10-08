@@ -146,6 +146,7 @@ body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delt
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
 body.overlay .widget[data-widget="pit"] { width: 250px; }
 body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
+body.overlay .widget[data-widget="stint"] { width: 240px; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"], body.overlay .widget[data-widget="inputs"] { width: 300px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
@@ -192,6 +193,18 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .data .tags { text-align: left; }
 .data .tags span { display: inline-block; margin-right: 3px; padding: 0 4px; border-radius: 3px; background: #333; color: var(--text); font-size: 11px; }
 .topbar .brand { font-weight: 700; }
+.data i.dot, .legend i, .tip i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
+.charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
+.charts figure { margin: 0; min-width: 0; }
+.charts figcaption { color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+.chart svg { display: block; width: 100%; height: auto; }
+.chart .grid { stroke: #2a2e36; stroke-width: 1; }
+.chart .tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.chart .cross { stroke: var(--muted); stroke-width: 1; }
+.chart .tip { position: absolute; pointer-events: none; background: #0f1115; border: 1px solid #333; border-radius: 4px; padding: 5px 8px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chart .tip span { float: right; margin-left: 12px; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 4px; }
+.chart-pick { margin-bottom: 8px; }
 
 /* Page Connexion (tablette / téléphone) */
 .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 16px; max-width: 760px; margin: 0 auto; }

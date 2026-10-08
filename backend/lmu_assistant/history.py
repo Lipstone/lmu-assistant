@@ -10,6 +10,9 @@ centième du tour) ; quand le temps du tour est publié (F04), il écrit une lig
 - arrêt au stand (voiture à l'arrêt dans les stands, ou ravitaillement) ;
 - conditions : températures air / piste, pluie, piste mouillée, grip ; position, pilote, chocs.
 
+Le recorder garde aussi les tours de la session en mémoire (même sans écrire dans la base) pour le widget
+**Relais** (F21, F22) : `snapshot.stint` = résumé du relais en cours (`analysis.py`).
+
 Une **session** (table `sessions`) regroupe les tours d'une même session de jeu, piste et voiture ; elle est
 créée au premier tour enregistré. Par défaut seule la lecture du jeu (`lmu`) est enregistrée : les données
 simulées ou rejouées ne remplissent pas l'historique (`--history on` pour tout enregistrer, `off` pour rien).
@@ -27,7 +30,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .model import Snapshot
+from . import analysis
+from .model import Snapshot, StintInfo
 from .paths import data_dir
 
 DEFAULT_HISTORY_PATH = data_dir() / "history.sqlite"
@@ -205,6 +209,8 @@ class HistoryRecorder:
         self._laps: dict[int, _LapStats] = {}
         self._written: set[int] = set()
         self._prev: Snapshot | None = None
+        self.session_laps: list[dict] = []  # tours de la session (aussi sans base), pour le relais en cours
+        self._stint: StintInfo = StintInfo()
 
     def enabled(self, snap: Snapshot) -> bool:
         if self.store is None or self.mode == "off":
@@ -260,7 +266,7 @@ class HistoryRecorder:
     def _write(self, snap: Snapshot, entry) -> None:
         st = self._laps.get(entry.lap)
         me = next((v for v in snap.vehicles if v.is_player), None)
-        if self.session_id is None:
+        if self.enabled(snap) and self.session_id is None:
             self.session_id = self.store.new_session(
                 source=snap.source, session=snap.session, track=snap.track, car=snap.car,
                 car_class=me.car_class if me else "", driver=me.driver if me else "",
@@ -287,10 +293,48 @@ class HistoryRecorder:
                 values["energy_used"] = round(st.energy_start - st.energy_end, 3)
             if sum(t is not None for t in st.times) >= TRACE_POINTS // 2:
                 values["trace"] = {"t": st.times, "v": st.speeds}
-        self.store.add_lap(self.session_id, **values)
+        if self.enabled(snap):
+            self.store.add_lap(self.session_id, **values)
+        self.session_laps.append(values)
+        self._stint = self._summary()
+
+    def _summary(self) -> StintInfo:
+        stints = analysis.stints(self.session_laps)
+        if not stints:
+            return StintInfo()
+        s = stints[-1]
+        info = StintInfo(
+            number=s["number"], start_lap=s["start_lap"], laps=s["laps"], time_s=s["duration_s"],
+            avg_s=s["avg_s"], best_s=s["best_s"], stdev_s=s["stdev_s"], deg_s_per_lap=s["deg_s_per_lap"],
+            fuel_per_lap=s["fuel_per_lap"], energy_per_lap=s["energy_per_lap"],
+            tyre_age_laps=None if s["tyre_age_start"] is None else s["tyre_age_start"] + s["laps"],
+            laps_to_wear_limit=s["laps_to_wear_limit"],
+        )
+        wear = s["wear_end"]
+        if wear and len(wear) == 4:
+            i = min(range(4), key=lambda k: wear[k])
+            info.worst_wheel = analysis.WHEELS[i]
+            info.wear_left_pct = round(100 * wear[i], 1)
+        if s["wear_per_lap"] and any(w is not None for w in s["wear_per_lap"]):
+            info.wear_per_lap_pct = round(100 * max(w for w in s["wear_per_lap"] if w is not None), 2)
+        return info
+
+    def _live_stint(self, snap: Snapshot) -> StintInfo:
+        """Relais en cours : résumé des tours terminés + tour en cours ; un arrêt pendant le tour en cours
+        ouvre déjà le relais suivant."""
+        st = self._laps.get(snap.lap)
+        base = self._stint
+        if st is not None and (st.stop or st.refuel) and base.start_lap != snap.lap:
+            age = 0 if st.tyres_changed else (None if base.tyre_age_laps is None else base.tyre_age_laps)
+            return StintInfo(number=base.number + 1, start_lap=snap.lap, laps=0,
+                             time_s=round(snap.current_lap_s, 1), tyre_age_laps=age)
+        info = StintInfo(**{k: getattr(base, k) for k in base.__dataclass_fields__})
+        if info.number:
+            info.time_s = round((base.time_s or 0.0) + snap.current_lap_s, 1)
+        return info
 
     def update(self, snap: Snapshot) -> Snapshot:
-        if not snap.connected or not self.enabled(snap):
+        if not snap.connected:
             return snap
         key = (snap.source, snap.session, snap.track, snap.car)
         if key != self._key:
@@ -299,6 +343,8 @@ class HistoryRecorder:
             self._laps.clear()
             self._written.clear()
             self._prev = None
+            self.session_laps = []
+            self._stint = StintInfo()
         # Tours terminés publiés par F04 : le temps est connu, on écrit avec les relevés du tour.
         for entry in sorted(snap.laps.recent, key=lambda e: e.lap):
             if entry.lap not in self._written and entry.time_s is not None:
@@ -306,4 +352,5 @@ class HistoryRecorder:
                 self._write(snap, entry)
         self._sample(snap)
         self._prev = snap
+        snap.stint = self._live_stint(snap)
         return snap

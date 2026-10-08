@@ -1,0 +1,131 @@
+"""Analyse des tours enregistrés (hors course) : relais (F21) et dégradation des pneus (F22).
+
+Les fonctions prennent la liste des tours d'une session, dans l'ordre, telle que l'historique les enregistre
+(`history.py` : dicts avec `lap`, `time_s`, `valid`, `pit`, `stop`, `tyres_changed`, `fuel_used`, `wear`…).
+
+**Relais** : un nouveau relais commence au tour où la voiture s'est arrêtée au stand (immobile ou ravitaillée,
+ce tour est le tour de sortie du nouveau relais) ou quand le pilote change. Pour chaque relais : tours, durée,
+pilote, rythme (moyenne, meilleur, régularité des tours propres : valides et hors stand), consommation par tour,
+pneus neufs ou non et leur âge.
+
+**Dégradation** : pente des temps au tour propres en fonction du tour dans le relais (s perdues par tour,
+régression linéaire, au moins `MIN_DEG_LAPS` tours), usure par tour de chaque pneu (pente de la gomme restante),
+et tours restants avant que le pneu le plus usé n'atteigne `WEAR_LIMIT`.
+"""
+
+from __future__ import annotations
+
+import math
+
+WEAR_LIMIT = 0.3  # gomme restante à ne pas dépasser (même seuil que l'alerte du widget Pneus)
+MIN_DEG_LAPS = 3
+WHEELS = ("AVG", "AVD", "ARG", "ARD")
+
+
+def linear_fit(xs: list[float], ys: list[float]) -> tuple[float, float] | None:
+    """(pente, ordonnée à l'origine) des moindres carrés, None avec moins de 2 points distincts."""
+    n = len(xs)
+    if n < 2:
+        return None
+    mx, my = sum(xs) / n, sum(ys) / n
+    sxx = sum((x - mx) ** 2 for x in xs)
+    if sxx == 0:
+        return None
+    slope = sum((x - mx) * (y - my) for x, y in zip(xs, ys)) / sxx
+    return slope, my - slope * mx
+
+
+def is_clean(lap: dict) -> bool:
+    return bool(lap.get("valid")) and not lap.get("pit") and lap.get("time_s") is not None
+
+
+def split_stints(laps: list[dict]) -> list[list[dict]]:
+    stints: list[list[dict]] = []
+    for lap in laps:
+        new = not stints or lap.get("stop") or lap.get("refuel")
+        if stints and not new and lap.get("driver") and stints[-1][-1].get("driver") \
+                and lap["driver"] != stints[-1][-1]["driver"]:
+            new = True
+        if new:
+            stints.append([lap])
+        else:
+            stints[-1].append(lap)
+    return stints
+
+
+def _mean(xs: list[float]) -> float | None:
+    return sum(xs) / len(xs) if xs else None
+
+
+def _r(v: float | None, d: int = 3) -> float | None:
+    return None if v is None else round(v, d)
+
+
+def summarize_stint(number: int, laps: list[dict], tyre_age_start: int | None) -> dict:
+    """Résumé d'un relais (F21) et dégradation (F22). `tyre_age_start` : tours déjà faits par ces pneus
+    au début du relais (None si inconnu : pneus montés avant le début de l'enregistrement)."""
+    clean = [lap for lap in laps if is_clean(lap)]
+    times = [lap["time_s"] for lap in clean]
+    avg = _mean(times)
+    stdev = math.sqrt(sum((t - avg) ** 2 for t in times) / (len(times) - 1)) if len(times) >= 2 else None
+    fuel = [lap["fuel_used"] for lap in laps if lap.get("fuel_used") is not None]
+    energy = [lap["energy_used"] for lap in laps if lap.get("energy_used") is not None]
+    first = laps[0]
+    tyres_new = bool(first.get("tyres_changed")) if number > 1 else None
+    s = {
+        "number": number,
+        "start_lap": first["lap"],
+        "end_lap": laps[-1]["lap"],
+        "laps": len(laps),
+        "clean_laps": len(clean),
+        "driver": first.get("driver") or "",
+        "duration_s": _r(sum(lap["time_s"] for lap in laps if lap.get("time_s") is not None), 1),
+        "avg_s": _r(avg),
+        "best_s": _r(min(times)) if times else None,
+        "stdev_s": _r(stdev),
+        "fuel_per_lap": _r(_mean(fuel)),
+        "fuel_used": _r(sum(fuel), 2) if fuel else None,
+        "energy_per_lap": _r(_mean(energy)),
+        "tyres_new": tyres_new,
+        "tyre_age_start": 0 if tyres_new else tyre_age_start,
+        "first_3_avg_s": _r(_mean(times[:3])) if len(times) >= 3 else None,
+        "last_3_avg_s": _r(_mean(times[-3:])) if len(times) >= 3 else None,
+        "deg_s_per_lap": None,
+        "wear_start": first.get("wear"),
+        "wear_end": laps[-1].get("wear"),
+        "wear_per_lap": None,
+        "laps_to_wear_limit": None,
+        "track_temp_avg": _r(_mean([lap["track_temp"] for lap in laps if lap.get("track_temp") is not None]), 1),
+    }
+    # Dégradation : temps propres en fonction du tour dans le relais
+    if len(clean) >= MIN_DEG_LAPS:
+        fit = linear_fit([lap["lap"] - first["lap"] for lap in clean], times)
+        if fit:
+            s["deg_s_per_lap"] = round(fit[0], 3)
+    # Usure par tour de chaque pneu (gomme restante en fin de tour)
+    wear_laps = [lap for lap in laps if lap.get("wear") and len(lap["wear"]) == 4]
+    if len(wear_laps) >= 2:
+        per_lap = []
+        for i in range(4):
+            fit = linear_fit([lap["lap"] for lap in wear_laps], [lap["wear"][i] for lap in wear_laps])
+            per_lap.append(round(-fit[0], 5) if fit else None)
+        s["wear_per_lap"] = per_lap
+        end = wear_laps[-1]["wear"]
+        left = [(end[i] - WEAR_LIMIT) / per_lap[i] for i in range(4) if per_lap[i] and per_lap[i] > 0]
+        if left:
+            s["laps_to_wear_limit"] = round(max(0.0, min(left)), 1)
+    return s
+
+
+def stints(laps: list[dict]) -> list[dict]:
+    """Relais d'une session, résumés, avec l'âge des pneus suivi d'un relais à l'autre."""
+    result = []
+    age: int | None = None
+    for n, group in enumerate(split_stints(laps), start=1):
+        if (n > 1 and group[0].get("tyres_changed")) or (n == 1 and group[0]["lap"] <= 1):
+            age = 0  # pneus changés, ou session suivie depuis le premier tour
+        summary = summarize_stint(n, group, age)
+        result.append(summary)
+        age = None if summary["tyre_age_start"] is None else summary["tyre_age_start"] + len(group)
+    return result
+

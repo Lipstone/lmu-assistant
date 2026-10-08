@@ -1,6 +1,6 @@
 // Page de réglages de l'overlay (T06) : lit GET /api/config, enregistre via PUT.
 const $ = (id) => document.getElementById(id);
-const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs" };
+const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs", stint: "Relais" };
 let config = null;
 
 function num(input, fallback) {

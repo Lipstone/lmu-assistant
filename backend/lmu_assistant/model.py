@@ -202,6 +202,27 @@ class DamageInfo:
 
 
 @dataclass
+class StintInfo:
+    """Relais en cours (F21, F22), rempli par `history.HistoryRecorder` à partir des tours de la session."""
+
+    number: int = 0  # 0 = aucun tour terminé
+    start_lap: int | None = None
+    laps: int = 0  # tours terminés dans le relais
+    time_s: float | None = None  # durée du relais, tour en cours compris
+    avg_s: float | None = None
+    best_s: float | None = None
+    stdev_s: float | None = None
+    deg_s_per_lap: float | None = None  # temps perdu par tour (pente des tours propres)
+    fuel_per_lap: float | None = None
+    energy_per_lap: float | None = None
+    tyre_age_laps: int | None = None  # tours faits par les pneus montés (None si inconnu)
+    wear_per_lap_pct: float | None = None  # usure par tour du pneu qui s'use le plus vite (%)
+    worst_wheel: str = ""  # pneu le plus usé
+    wear_left_pct: float | None = None  # gomme restante de ce pneu (%)
+    laps_to_wear_limit: float | None = None  # tours avant qu'un pneu ne descende sous 30 %
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -272,6 +293,7 @@ class Snapshot:
     pit: PitInfo = field(default_factory=PitInfo)  # F09 : fenêtre de stand
     session_info: SessionInfo = field(default_factory=SessionInfo)  # F10 : session et piste
     damage: DamageInfo = field(default_factory=DamageInfo)  # F11 : dégâts
+    stint: StintInfo = field(default_factory=StintInfo)  # F21, F22 : relais en cours
 
     def to_dict(self) -> dict:
         return asdict(self)
