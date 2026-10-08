@@ -23,6 +23,17 @@
         <button id="delete" class="secondary" title="Supprimer cette session de l'historique">Supprimer</button>
       </div>
       <p class="hint" id="session-info"></p>
+      <div class="exports" id="exports">Exporter :
+        <a id="exp-json" download>JSON complet</a>
+        <a id="exp-laps" download>tours (CSV)</a>
+        <a id="exp-stints" download>relais (CSV)</a>
+        <label><input type="checkbox" id="exp-intl"> CSV international (virgule et point décimal)</label>
+      </div>
+    </section>
+
+    <section class="widget" id="report-section">
+      <h2>Rapport de session</h2>
+      <div class="report" id="report"></div>
     </section>
 
     <section class="widget" id="laps-section">
@@ -62,6 +73,31 @@
         <figure><figcaption>Écart cumulé de B sur A le long du tour (s, au-dessus de 0 : B plus lent)</figcaption><div class="chart" id="cmp-delta"></div></figure>
         <figure><figcaption>Vitesse le long du tour (km/h)</figcaption><div class="chart" id="cmp-speed"></div></figure>
       </div>
+    </section>
+
+    <section class="widget" id="conditions-section">
+      <h2>Évolution des conditions</h2>
+      <div class="charts">
+        <figure><figcaption>Températures air et piste (°C)</figcaption><div class="chart" id="cond-temps"></div></figure>
+        <figure><figcaption>Pluie et piste mouillée (%)</figcaption><div class="chart" id="cond-wet"></div></figure>
+      </div>
+      <p class="hint" id="cond-summary"></p>
+    </section>
+
+    <section class="widget" id="notes-section">
+      <h2>Notes de setup</h2>
+      <p class="hint" id="notes-scope"></p>
+      <form id="note-form" class="note-form">
+        <input type="hidden" id="note-id">
+        <input type="text" id="note-title" placeholder="Titre (ex. : aileron arrière −1, pressions avant −2 kPa)" maxlength="200">
+        <textarea id="note-text" rows="4" placeholder="Réglages, ressenti, ce qu'il faut essayer…" maxlength="20000"></textarea>
+        <div class="actions">
+          <label><input type="checkbox" id="note-session" checked> liée à cette session</label>
+          <button type="submit" id="note-save">Ajouter la note</button>
+          <button type="button" id="note-cancel" class="secondary" hidden>Annuler</button>
+        </div>
+      </form>
+      <div id="notes"></div>
     </section>
   </main>
 

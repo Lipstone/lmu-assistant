@@ -30,10 +30,10 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F22 | Dégradation pneus | Évolution des temps (tendance en s/tour) et de l'usure par pneu sur un relais | ✅ |
 | F23 | Comparaison de tours | Secteurs, meilleur tour théorique, écart par secteur, écart cumulé et vitesse le long du tour | ✅ |
 | F24 | Planificateur de stratégie | Durée de course, nombre d'arrêts, carburant et énergie par relais, pneus, scénarios comparés | ✅ |
-| F25 | Rapport de session | Résumé post-session : rythme, régularité, incidents, conso | ⬜ |
-| F26 | Notes de setup | Notes liées à une voiture/piste/session | ⬜ |
-| F27 | Export | CSV/JSON des tours et relais | ⬜ |
-| F28 | Évolution conditions | Courbes température piste, météo, grip au fil de la session | ⬜ |
+| F25 | Rapport de session | Résumé post-session : rythme, régularité, incidents, conso | ✅ |
+| F26 | Notes de setup | Notes liées à une voiture/piste/session | ✅ |
+| F27 | Export | CSV/JSON des tours et relais (Excel français ou international), JSON complet avec traces et notes | ✅ |
+| F28 | Évolution conditions | Courbes température piste, météo, grip au fil de la session | ✅ |
 
 Les fonctionnalités hors course sont surtout pour la page web ; une version compacte en overlay sera proposée quand c'est utile (par exemple l'état du relais en cours).
 

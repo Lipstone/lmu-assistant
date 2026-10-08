@@ -168,6 +168,22 @@ Section **Comparaison de tours** de la page Analyse : on choisit deux tours de l
 
 API : `GET /api/history/compare?a=<id du tour A>&b=<id du tour B>` ; calculs dans `backend/lmu_assistant/analysis.py`.
 
+### Rapport de session (F25)
+
+Section **Rapport de session** en haut de la page Analyse, pour la session choisie : **rythme** (meilleur tour, moyenne et médiane des tours propres, meilleur tour théorique, écart moyenne − meilleur, nombre de tours, temps roulé), **régularité** (écart type, part des tours propres à 0,5 s et à 1 s de la médiane), **incidents** (tours invalidés, chocs avec les tours concernés, arrêts au stand, trains de pneus), **consommation** (carburant et énergie par tour, carburant total), **conditions** (température de piste mini / maxi, tours sous la pluie ou sur piste mouillée) et **course** (position au départ, à l'arrivée, meilleure position, relais, pilotes). Calcul : `analysis.session_report`.
+
+### Notes de setup (F26)
+
+Section **Notes de setup** de la page Analyse : des notes libres (titre + texte) rangées par **voiture et piste** ; la section montre toutes les notes de la voiture et de la piste de la session affichée, celles liées à cette session sont marquées. Ajouter, modifier, supprimer. Les notes sont dans la même base SQLite que l'historique ; supprimer une session garde ses notes (elles ne sont plus liées à une session). API : `GET /api/notes?car=&track=&session_id=`, `POST /api/notes`, `PUT`/`DELETE /api/notes/{id}`.
+
+### Export CSV / JSON (F27)
+
+Liens **Exporter** sous le choix de la session : **JSON complet** (session, tours avec leurs traces, relais, rapport, conditions, notes), **tours (CSV)** et **relais (CSV)**. Les CSV s'ouvrent directement dans Excel en français (séparateur `;`, virgule décimale, UTF-8 avec BOM) ; la case « CSV international » donne des CSV séparés par des virgules avec point décimal. API : `GET /api/history/sessions/{id}/export.json`, `/laps.csv`, `/stints.csv` (`?excel=false` pour le format international).
+
+### Évolution des conditions (F28)
+
+Pendant que l'on roule, les conditions sont enregistrées toutes les 30 s (temps de session, heure dans le jeu, air, piste, pluie, piste mouillée, nuages, grip). Section **Évolution des conditions** de la page Analyse : deux graphiques au fil de la session, **températures air et piste** (°C) puis **pluie et piste mouillée** (%), avec survol pour lire les valeurs, et un résumé : écart de température de piste et changements de **grip** (vert, faible, moyen, élevé, saturé).
+
 ## Planificateur de stratégie (F24)
 
 Page **Stratégie** (lien dans la barre du haut, `/strategie.html`) : on règle la course (durée ou nombre de tours, temps au tour, dégradation des pneus en s par tour d'âge), le carburant et l'énergie (conso par tour, réservoir, carburant au départ, énergie par tour, marge de sécurité en tours) et les arrêts (traversée des stands, débit du ravitaillement, recharge d'énergie, changement de pneus, vie des pneus). Le bouton « Reprendre les mesures de la session » remplit le temps au tour, les consommations, le réservoir, la durée de la session et la dégradation mesurés pendant la session en cours.

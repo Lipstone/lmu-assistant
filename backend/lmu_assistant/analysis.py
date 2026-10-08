@@ -184,3 +184,72 @@ def compare_laps(a: dict, b: dict) -> dict:
             v = _fill(v)
             out[key] = [[round(100 * i / len(v), 1), x] for i, x in enumerate(v) if x is not None]
     return out
+
+
+# --- Rapport de session (F25) -------------------------------------------------------------------------
+
+
+def session_report(laps: list[dict], stint_list: list[dict] | None = None, conditions: list[dict] | None = None) -> dict:
+    """Résumé d'une session : rythme, régularité, incidents, consommation, conditions."""
+    stint_list = stints(laps) if stint_list is None else stint_list
+    conditions = conditions or []
+    clean = [lap for lap in laps if is_clean(lap)]
+    times = sorted(lap["time_s"] for lap in clean)
+    median = None
+    if times:
+        n = len(times)
+        median = times[n // 2] if n % 2 else (times[n // 2 - 1] + times[n // 2]) / 2
+    avg = _mean(times)
+    stdev = math.sqrt(sum((t - avg) ** 2 for t in times) / (len(times) - 1)) if len(times) >= 2 else None
+    best = times[0] if times else None
+    fuel = [lap["fuel_used"] for lap in laps if lap.get("fuel_used") is not None]
+    energy = [lap["energy_used"] for lap in laps if lap.get("energy_used") is not None]
+    total_time = sum(lap["time_s"] for lap in laps if lap.get("time_s") is not None)
+    th = theoretical_best(laps)
+    track = [c["track_temp"] for c in conditions if c.get("track_temp") is not None] or \
+            [lap["track_temp"] for lap in laps if lap.get("track_temp") is not None]
+    wet_laps = sum(1 for lap in laps if (lap.get("rain") or 0) > 0.05 or (lap.get("wetness") or 0) > 0.1)
+    positions = [lap["position"] for lap in laps if lap.get("position")]
+    drivers: dict[str, int] = {}
+    for lap in laps:
+        if lap.get("driver"):
+            drivers[lap["driver"]] = drivers.get(lap["driver"], 0) + 1
+    return {
+        "pace": {
+            "laps": len(laps),
+            "clean_laps": len(clean),
+            "best_s": _r(best),
+            "avg_s": _r(avg),
+            "median_s": _r(median),
+            "theoretical_s": th["time_s"],
+            "gap_avg_best_s": _r(avg - best) if avg is not None and best is not None else None,
+            "total_time_s": _r(total_time, 1),
+        },
+        "consistency": {
+            "stdev_s": _r(stdev),
+            # part des tours propres à moins de 0,5 s / 1 s de la médiane
+            "within_05_pct": round(100 * sum(abs(t - median) <= 0.5 for t in times) / len(times)) if times else None,
+            "within_1_pct": round(100 * sum(abs(t - median) <= 1.0 for t in times) / len(times)) if times else None,
+        },
+        "incidents": {
+            "invalid_laps": sum(1 for lap in laps if lap.get("invalid")),
+            "impacts": sum(lap.get("impacts") or 0 for lap in laps),
+            "impact_laps": [lap["lap"] for lap in laps if lap.get("impacts")],
+            "pit_stops": max(0, len(stint_list) - 1),
+            "tyre_changes": sum(1 for s in stint_list[1:] if s.get("tyres_new")),
+        },
+        "consumption": {
+            "fuel_per_lap": _r(_mean(fuel)),
+            "fuel_used": _r(sum(fuel), 1) if fuel else None,
+            "energy_per_lap": _r(_mean(energy)),
+        },
+        "conditions": {
+            "track_temp_min": _r(min(track), 1) if track else None,
+            "track_temp_max": _r(max(track), 1) if track else None,
+            "wet_laps": wet_laps,
+        },
+        "positions": {"start": positions[0] if positions else None, "end": positions[-1] if positions else None,
+                      "best": min(positions) if positions else None},
+        "drivers": drivers,
+        "stints": len(stint_list),
+    }

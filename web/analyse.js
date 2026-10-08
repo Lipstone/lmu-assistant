@@ -53,6 +53,44 @@ function renderAll() {
   for (const render of sections) render(current);
 }
 
+// F27 : liens d'export de la session affichée.
+function renderExports(cur) {
+  const id = cur?.session?.id;
+  $("exports").hidden = !id;
+  if (!id) return;
+  const q = $("exp-intl").checked ? "?excel=false" : "";
+  $("exp-json").href = `/api/history/sessions/${id}/export.json`;
+  $("exp-laps").href = `/api/history/sessions/${id}/laps.csv${q}`;
+  $("exp-stints").href = `/api/history/sessions/${id}/stints.csv${q}`;
+}
+sections.push(renderExports);
+$("exp-intl").addEventListener("change", () => renderExports(current));
+
+// F25 : rapport de session (calculé par le serveur, analysis.session_report).
+function renderReport(cur) {
+  const r = cur?.report;
+  if (!r || !cur.laps.length) { $("report").innerHTML = '<p class="hint">Pas encore de tour dans cette session.</p>'; return; }
+  const p = r.pace, c = r.consistency, i = r.incidents, k = r.consumption, w = r.conditions, pos = r.positions;
+  const card = (title, big, rows) => `<div class="report-card"><h3>${title}</h3><div class="big">${big}</div><dl>` +
+    rows.filter(Boolean).map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join("") + "</dl></div>";
+  const drivers = Object.entries(r.drivers).map(([d, n]) => `${esc(d)} (${n})`).join(", ");
+  $("report").innerHTML =
+    card("Rythme", fmtLap(p.best_s), [["Moyenne", fmtLap(p.avg_s)], ["Médiane", fmtLap(p.median_s)],
+      ["Théorique", fmtLap(p.theoretical_s)], ["Moyenne − meilleur", p.gap_avg_best_s == null ? "–" : "+" + p.gap_avg_best_s.toFixed(3)],
+      ["Tours", `${p.laps} (${p.clean_laps} propres)`], ["Temps roulé", fmtDur(p.total_time_s)]]) +
+    card("Régularité", c.stdev_s == null ? "–" : `±${c.stdev_s.toFixed(2)} s`, [["À 0,5 s de la médiane", c.within_05_pct == null ? "–" : c.within_05_pct + " %"],
+      ["À 1 s de la médiane", c.within_1_pct == null ? "–" : c.within_1_pct + " %"]]) +
+    card("Incidents", `${i.invalid_laps + i.impacts}`, [["Tours invalidés", i.invalid_laps], ["Chocs", i.impacts + (i.impact_laps.length ? ` (T${i.impact_laps.join(", T")})` : "")],
+      ["Arrêts au stand", i.pit_stops], ["Trains de pneus", i.tyre_changes]]) +
+    card("Consommation", k.energy_per_lap != null ? `${k.energy_per_lap.toFixed(2)} %/t` : fmt(k.fuel_per_lap, 2, " L/t"),
+      [["Carburant / tour", fmt(k.fuel_per_lap, 2, " L")], ["Carburant total", fmt(k.fuel_used, 1, " L")], k.energy_per_lap != null && ["Énergie / tour", fmt(k.energy_per_lap, 2, " %")]]) +
+    card("Conditions", w.track_temp_min == null ? "–" : `${w.track_temp_min.toFixed(0)}–${w.track_temp_max.toFixed(0)} °C`,
+      [["Piste", w.track_temp_min == null ? "–" : `${w.track_temp_min.toFixed(1)} → ${w.track_temp_max.toFixed(1)} °C`], ["Tours sous la pluie / mouillés", w.wet_laps]]) +
+    card("Course", pos.end ? `P${pos.end}` : "–", [["Départ", pos.start ? "P" + pos.start : "–"], ["Meilleure position", pos.best ? "P" + pos.best : "–"],
+      ["Relais", r.stints], ["Pilotes", drivers || "–"]]);
+}
+sections.push(renderReport);
+
 // F20 : tableau des tours.
 function renderLaps(cur) {
   const laps = cur?.laps || [];
@@ -104,7 +142,7 @@ function niceTicks(lo, hi, n = 4) {
 }
 
 // series : [{ name, color, points: [[x, y], …], dashed, noHover }]
-function lineChart(el, series, { xFmt = (x) => x, yFmt = (y) => y, xLabel = "", height = 220 } = {}) {
+function lineChart(el, series, { xFmt = (x) => x, yFmt = (y) => y, xLabel = "", height = 220, intX = true, xTicks = null } = {}) {
   el.innerHTML = "";
   const pts = series.flatMap((s) => s.points);
   if (!pts.length) { el.innerHTML = '<p class="hint">Pas assez de tours.</p>'; return; }
@@ -131,7 +169,7 @@ function lineChart(el, series, { xFmt = (x) => x, yFmt = (y) => y, xLabel = "", 
     add("line", { x1: m.l, x2: W - m.r, y1: Y(v), y2: Y(v), class: "grid" });
     add("text", { x: m.l - 6, y: Y(v) + 4, class: "tick", "text-anchor": "end" }).textContent = yFmt(v);
   }
-  for (const v of niceTicks(x0, x1, 6).filter((v) => Number.isInteger(v))) {
+  for (const v of (xTicks ? xTicks(x0, x1) : niceTicks(x0, x1, 6)).filter((v) => !intX || Number.isInteger(v))) {
     add("text", { x: X(v), y: H - m.b + 16, class: "tick", "text-anchor": "middle" }).textContent = xFmt(v);
   }
   if (xLabel) add("text", { x: W - m.r, y: H - 2, class: "tick", "text-anchor": "end" }).textContent = xLabel;
@@ -289,6 +327,87 @@ async function loadCompare() {
 }
 $("cmp-a").addEventListener("change", loadCompare);
 $("cmp-b").addEventListener("change", loadCompare);
+
+// --- F28 : évolution des conditions (un relevé toutes les 30 s de session) --------------------------------
+const GRIP = ["vert", "faible", "moyen", "élevé", "saturé"];
+const fmtSessionTime = (s) => { s = Math.round(s); return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`; };
+
+function renderConditions(cur) {
+  const c = cur?.conditions || [];
+  const pts = (key, k = 1) => c.filter((r) => r[key] != null).map((r) => [r.session_time_s, r[key] * k]);
+  // graduations du temps de session à 5, 10, 15, 30 min, 1 h ou 2 h
+  const timeTicks = (a, b) => {
+    const step = [300, 600, 900, 1800, 3600, 7200, 14400].find((st) => (b - a) / st <= 7) || 14400;
+    const out = [];
+    for (let v = Math.ceil(a / step) * step; v <= b; v += step) out.push(v);
+    return out;
+  };
+  const opts = { xFmt: fmtSessionTime, xLabel: "temps de session", intX: false, xTicks: timeTicks };
+  lineChart($("cond-temps"), [
+    { name: "Piste", color: SERIES[1], points: pts("track_temp") },
+    { name: "Air", color: SERIES[0], points: pts("air_temp") },
+  ], { ...opts, yFmt: (y) => `${y.toFixed(0)} °C` });
+  lineChart($("cond-wet"), [
+    { name: "Pluie", color: SERIES[0], points: pts("rain", 100) },
+    { name: "Piste mouillée", color: SERIES[2], points: pts("wetness", 100) },
+  ], { ...opts, yFmt: (y) => `${Math.round(y)} %` });
+  // Changements de grip (gomme sur la piste) : texte, ce n'est pas une grandeur continue
+  const changes = [];
+  c.forEach((r, i) => { if (r.grip != null && (i === 0 || r.grip !== c[i - 1].grip)) changes.push(`${fmtSessionTime(r.session_time_s)} ${GRIP[r.grip] ?? r.grip}`); });
+  const tt = c.filter((r) => r.track_temp != null);
+  $("cond-summary").textContent = !c.length ? "Aucun relevé (enregistré pendant que l'on roule)." :
+    (tt.length ? `Piste de ${Math.min(...tt.map((r) => r.track_temp)).toFixed(1)} à ${Math.max(...tt.map((r) => r.track_temp)).toFixed(1)} °C. ` : "") +
+    (changes.length ? `Grip : ${changes.join(" → ")}.` : "");
+}
+sections.push(renderConditions);
+
+// --- F26 : notes de setup (voiture + piste de la session affichée) ---------------------------------------
+let notesKey = "";
+
+async function renderNotes(cur) {
+  const s = cur?.session;
+  $("notes-section").hidden = !s;
+  if (!s) return;
+  $("notes-scope").textContent = `Notes pour ${s.car || "?"} sur ${s.track || "?"} (toutes les sessions). Les notes liées à cette session sont marquées.`;
+  const notes = await getJSON(`/api/notes?car=${encodeURIComponent(s.car || "")}&track=${encodeURIComponent(s.track || "")}`);
+  $("notes").innerHTML = notes.length ? notes.map((n) => `<article class="note ${n.session_id === s.id ? "this" : ""}" data-id="${n.id}">` +
+    `<header><strong>${esc(n.title || "(sans titre)")}</strong> <span class="hint">${esc(fmtDate(n.updated_at))}${n.session_id === s.id ? " · cette session" : n.session_id ? " · autre session" : ""}</span>` +
+    `<span class="note-actions"><button type="button" class="secondary" data-edit="${n.id}">Modifier</button> <button type="button" class="secondary" data-del="${n.id}">Supprimer</button></span></header>` +
+    `<p>${esc(n.text).replace(/\n/g, "<br>")}</p></article>`).join("") : '<p class="hint">Aucune note pour cette voiture sur cette piste.</p>';
+  $("notes").querySelectorAll("[data-edit]").forEach((b) => b.addEventListener("click", () => {
+    const n = notes.find((x) => String(x.id) === b.dataset.edit);
+    $("note-id").value = n.id; $("note-title").value = n.title; $("note-text").value = n.text;
+    $("note-session").checked = n.session_id === s.id;
+    $("note-save").textContent = "Enregistrer"; $("note-cancel").hidden = false;
+    $("note-title").focus();
+  }));
+  $("notes").querySelectorAll("[data-del]").forEach((b) => b.addEventListener("click", async () => {
+    if (!confirm("Supprimer cette note ?")) return;
+    await fetch(`/api/notes/${b.dataset.del}`, { method: "DELETE" });
+    renderNotes(current);
+  }));
+  const key = `${s.id}`;
+  if (key !== notesKey) { notesKey = key; resetNoteForm(); }
+}
+sections.push(renderNotes);
+
+function resetNoteForm() {
+  $("note-id").value = ""; $("note-title").value = ""; $("note-text").value = "";
+  $("note-save").textContent = "Ajouter la note"; $("note-cancel").hidden = true;
+}
+
+$("note-form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const s = current?.session;
+  if (!s || (!$("note-title").value.trim() && !$("note-text").value.trim())) return;
+  const body = { car: s.car || "", track: s.track || "", session_id: $("note-session").checked ? s.id : null,
+    title: $("note-title").value.trim(), text: $("note-text").value };
+  const id = $("note-id").value;
+  await fetch(id ? `/api/notes/${id}` : "/api/notes", { method: id ? "PUT" : "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  resetNoteForm();
+  renderNotes(current);
+});
+$("note-cancel").addEventListener("click", resetNoteForm);
 
 $("sessions").addEventListener("change", loadSession);
 $("delete").addEventListener("click", async () => {

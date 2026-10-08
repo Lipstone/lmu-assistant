@@ -212,6 +212,25 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .sub { margin: 14px 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
 .data td.slower { color: var(--bad); }
 
+.exports { font-size: 13px; color: var(--muted); display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+.exports a { color: var(--accent); }
+.report { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; }
+.report-card { background: #22262e; border-radius: 6px; padding: 8px 12px; }
+.report-card h3 { margin: 0; font-size: 12px; color: var(--muted); text-transform: uppercase; font-weight: 600; }
+.report-card { min-width: 0; }
+.report-card .big { font-size: 26px; }
+.report-card dl { font-size: 13px; gap: 2px 8px; }
+.report-card dt, .report-card dd { white-space: normal; }
+.note-form { display: grid; gap: 8px; max-width: 900px; margin-bottom: 12px; }
+.note-form .actions { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.analyse textarea { background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 6px 8px; font: inherit; resize: vertical; }
+.note { border-top: 1px solid #2a2e36; padding: 8px 0; max-width: 900px; }
+.note.this { border-left: 3px solid var(--accent); padding-left: 10px; }
+.note header { display: flex; gap: 8px; align-items: baseline; flex-wrap: wrap; }
+.note .note-actions { margin-left: auto; display: flex; gap: 6px; }
+.note .note-actions button { padding: 2px 8px; font-size: 12px; }
+.note p { margin: 4px 0 0; white-space: normal; }
+
 /* Page Stratégie (F24) */
 .strategy-form { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; }
 .strategy-form fieldset { border: 1px solid #2a2e36; border-radius: 6px; margin: 0; padding: 8px 12px; display: flex; flex-direction: column; gap: 6px; }
