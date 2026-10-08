@@ -159,6 +159,27 @@ class PitInfo:
 
 
 @dataclass
+class SessionInfo:
+    """Session et piste (F10), remplie par `session.SessionCalculator`."""
+
+    time_left_s: float | None = None  # temps restant (course chronométrée ou essais)
+    progress: float | None = None  # avancement de la session, 0..1
+    laps_left: int | None = None  # course au nombre de tours : tours restants, tour en cours compris
+    phase: str = ""  # avant, formation, départ, course, fcy, arrêtée, terminée
+    flag: str = ""  # green, yellow, fcy, blue, red, checkered ou vide (inconnu, avant le départ)
+    flag_label: str = ""  # texte prêt à afficher (« Jaune S2 », « FCY · stands fermés »…)
+    yellow_sectors: list[int] = field(default_factory=list)  # secteurs sous drapeau jaune local (1 à 3)
+    air_temp_c: float | None = None
+    track_temp_c: float | None = None
+    track_temp_trend_c: float | None = None  # évolution de la température piste sur 10 min
+    rain_pct: float | None = None  # intensité de la pluie, 0..100
+    wetness_pct: float | None = None  # piste mouillée (trajectoire), 0..100
+    grip: str = ""  # niveau de gomme sur la piste : vert, faible, moyen, élevé, saturé
+    sky: str = ""  # ciel : dégagé, nuageux, couvert, bruine, pluie…
+    time_of_day_s: float | None = None  # heure dans le jeu, secondes depuis minuit
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -182,6 +203,21 @@ class Snapshot:
     in_pits: bool = False
     lap_invalid: bool = False  # tour en cours invalidé par le jeu (limites de piste)
     wheels: list[Wheel] = field(default_factory=lambda: [Wheel() for _ in range(4)])  # AVG, AVD, ARG, ARD
+    # Session et piste (F10), valeurs brutes de la source
+    session_elapsed_s: float | None = None
+    session_length_s: float | None = None
+    game_phase: int | None = None  # 0 avant, 1-4 procédure de départ, 5 vert, 6 FCY, 7 arrêtée, 8 terminée, 9 pause
+    yellow_flag_state: int | None = None  # FCY : 1 en attente, 2 stands fermés, 3 leaders, 4 stands ouverts, 5 dernier tour, 6 reprise
+    sector_flags: list[int] = field(default_factory=lambda: [0, 0, 0])  # jaune local par secteur (S1, S2, S3), 1 = jaune
+    player_flag: int = 0  # drapeau montré au joueur : 0 vert, 6 bleu
+    sector: int = 0  # secteur en cours (1 à 3), 0 inconnu
+    air_temp_c: float | None = None
+    track_temp_c: float | None = None
+    raining: float | None = None  # 0..1
+    wetness: float | None = None  # 0..1, moyenne sur la trajectoire
+    cloud_coverage: int | None = None  # 0 dégagé … 7 couvert et pluie fine
+    track_grip: int | None = None  # 0 vert, 1 faible, 2 moyen, 3 élevé, 4 saturé
+    time_of_day_s: float | None = None
     fuel: FuelInfo = field(default_factory=FuelInfo)
     energy: FuelInfo = field(default_factory=lambda: FuelInfo(unit="%"))
     delta: DeltaInfo = field(default_factory=DeltaInfo)
@@ -191,6 +227,7 @@ class Snapshot:
     relative: list[RelativeEntry] = field(default_factory=list)  # F07 : voitures proches, la plus en avant d'abord
     standings: list[ClassStandings] = field(default_factory=list)  # F08 : classement simplifié par classe
     pit: PitInfo = field(default_factory=PitInfo)  # F09 : fenêtre de stand
+    session_info: SessionInfo = field(default_factory=SessionInfo)  # F10 : session et piste
 
     def to_dict(self) -> dict:
         return asdict(self)

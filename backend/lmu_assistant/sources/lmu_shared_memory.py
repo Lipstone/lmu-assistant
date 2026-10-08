@@ -486,6 +486,34 @@ def find_player(data: ObjectOut) -> tuple[VehicleScoring | None, TelemInfo | Non
     return scoring, telem
 
 
+# mSector et mSectorFlag : 0 = secteur 3, 1 = secteur 1, 2 = secteur 2
+SECTORS = {0: 3, 1: 1, 2: 2}
+
+
+def _finite(value: float, lo: float = -1e6, hi: float = 1e6) -> float | None:
+    return float(value) if math.isfinite(value) and lo <= value <= hi else None
+
+
+def _session_and_track(snap: Snapshot, info: ScoringInfo) -> None:
+    """Session et piste (F10) : phase, drapeaux, météo."""
+    snap.session_elapsed_s = _finite(info.mCurrentET, 0)
+    if info.mEndET > 0:
+        snap.session_length_s = _finite(info.mEndET, 0)
+    snap.game_phase = info.mGamePhase
+    state = info.mYellowFlagState  # c_char : un octet
+    state = state[0] if state else 0
+    snap.yellow_flag_state = state - 256 if state > 127 else state  # char signé : -1 = invalide
+    raw = list(info.mSectorFlag)
+    snap.sector_flags = [raw[1], raw[2], raw[0]]
+    snap.air_temp_c = _finite(info.mAmbientTemp, -60, 80)
+    snap.track_temp_c = _finite(info.mTrackTemp, -60, 100)
+    snap.raining = _finite(info.mRaining, 0, 1)
+    snap.wetness = _finite(info.mAvgPathWetness, 0, 1)
+    snap.cloud_coverage = info.mCloudCoverage if info.mCloudCoverage <= 7 else None
+    snap.track_grip = info.mTrackGripLevel if info.mTrackGripLevel <= 4 else None
+    snap.time_of_day_s = _finite(info.mTimeOfDay, 0, 86400)
+
+
 def to_snapshot(data: ObjectOut) -> Snapshot:
     info = data.scoring.scoringInfo
     snap = Snapshot(connected=True, source="lmu")
@@ -495,6 +523,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.session_time_left_s = round(max(0.0, info.mEndET - info.mCurrentET), 3)
     if 0 < info.mMaxLaps < MAX_RACE_LAPS:  # course chronométrée : mMaxLaps vaut un très grand nombre
         snap.max_laps = info.mMaxLaps
+    _session_and_track(snap, info)
 
     scoring, telem = find_player(data)
     snap.vehicles = vehicles(data, scoring.mID if scoring is not None else None)
@@ -506,6 +535,8 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.best_lap_s = _lap_time(scoring.mBestLapTime)
         snap.current_lap_s = round(max(0.0, info.mCurrentET - scoring.mLapStartET), 3)
         snap.in_pits = bool(scoring.mInPits)
+        snap.player_flag = scoring.mFlag
+        snap.sector = SECTORS.get(scoring.mSector, 0)
         if info.mLapDist > 0:
             snap.lap_fraction = round(min(max(scoring.mLapDist / info.mLapDist, 0.0), 1.0), 4)
     if telem is not None:

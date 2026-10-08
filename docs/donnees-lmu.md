@@ -76,7 +76,9 @@ Delta (F03) : calculé par l'appli à partir de `mLapDist` (scoring, avancé à 
 
 **Toutes les voitures** (`vehicles`, F07 et suivantes) : une entrée par `VehicleScoringInfoV01` parmi `mNumVehicles`, triée par `mPlace`. `driver` = `mDriverName`, `car_class` = `mVehicleClass`, `laps` = `mTotalLaps`, `lap_fraction` = `mLapDist / ScoringInfoV01.mLapDist`, `last_lap_s` / `best_lap_s` / `estimated_lap_s` = `mLastLapTime` / `mBestLapTime` / `mEstimatedLapTime`, `time_behind_leader_s` / `laps_behind_leader` = `mTimeBehindLeader` / `mLapsBehindLeader`, `in_pits` = `mInPits`, `pitstops` = `mNumPitstops`, `is_player` = même `mID` que le joueur. `number` = le nombre après `#` dans `mVehicleName` (vide s'il n'y en a pas).
 
-Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, météo (`mRaining`, `mAmbientTemp`, `mTrackTemp`, `mTrackGripLevel`), dégâts `mDentSeverity`, pédales, réglages TC/ABS, composés de pneus, secteurs, état des stands.
+**Session et piste** (F10) : `session_elapsed_s` / `session_length_s` = `mCurrentET` / `mEndET` ; `game_phase` = `mGamePhase` (0 avant la session, 1 à 4 procédure de départ, 5 vert, 6 FCY / voiture de sécurité, 7 arrêtée, 8 terminée, 9 pause) ; `yellow_flag_state` = `mYellowFlagState` (FCY seulement : 1 en attente, 2 stands fermés, 3 leaders aux stands, 4 stands ouverts, 5 dernier tour, 6 reprise ; `char` signé) ; `sector_flags` = `mSectorFlag` remis dans l'ordre S1, S2, S3 (même convention que `mSector` : index 0 = secteur 3), 1 = jaune local ; `player_flag` = `mFlag` du joueur (0 vert, 6 bleu) ; `sector` = `mSector` du joueur (0 = S3, 1 = S1, 2 = S2) ; `air_temp_c`, `track_temp_c` = `mAmbientTemp`, `mTrackTemp` (°C) ; `raining` = `mRaining` (0-1) ; `wetness` = `mAvgPathWetness` (0-1) ; `track_grip` = `mTrackGripLevel` (0 vert, 1 faible, 2 moyen, 3 élevé, 4 saturé) ; `cloud_coverage` = `mCloudCoverage` (0 dégagé … 7 couvert et pluie fine) ; `time_of_day_s` = `mTimeOfDay` (0 à 86 400).
+
+Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, dégâts `mDentSeverity`, pédales, réglages TC/ABS, composés de pneus, secteurs, état des stands.
 
 ## Sources
 
@@ -96,3 +98,4 @@ Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDelt
 - `mMaxLaps` en course chronométrée (très grand nombre attendu) et `mInPits` pendant l'arrêt et la sortie des stands (F01).
 - Libellés de `mVehicleClass` (Hypercar, LMP2, LMGT3 attendus) et présence du numéro `#7` dans `mVehicleName` (F07).
 - Fréquence des lectures incohérentes (sans prise du verrou du jeu).
+- Ordre de `mSectorFlag` (index 0 = secteur 3 supposé, comme `mSector`) et valeur d'un jaune local (1 supposé) (F10).

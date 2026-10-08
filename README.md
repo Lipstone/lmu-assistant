@@ -109,6 +109,16 @@ Le widget **Fenêtre de stand** dit quand s'arrêter et ce que ça coûte :
 
 Calculs côté serveur (`backend/lmu_assistant/pitstop.py`) à partir des moyennes de consommation (F01, F02), des temps au tour (F04) et du classement (F07). Les estimations ne valent qu'après un tour complet suivi (moyennes de consommation) et ne comptent pas de marge de sécurité.
 
+## Session et piste (F10)
+
+Le widget **Session et piste** affiche le **temps restant** (en tours pour une course au nombre de tours) avec une barre d'avancement de la session, le **drapeau** du moment et la météo :
+
+- **drapeau**, du plus important au moins important : rouge (session arrêtée), damier (arrivée), **FCY / voiture de sécurité** (clignotant, avec l'état des stands : fermés, ouverts, dernier tour…), **jaune local** dans notre secteur ou le suivant (« Jaune S2 »), bleu, vert ; un jaune plus loin sur la piste est seulement mentionné (« Vert · jaune S3 ») ;
+- températures **air / piste** et **évolution de la piste sur 10 minutes** (piste qui chauffe ou refroidit) ;
+- **pluie** et **piste mouillée** en % (orange dès qu'il pleut ou que la piste est mouillée à 10 %), **ciel**, niveau de **grip** (gomme sur la piste : vert, faible, moyen, élevé, saturé) et heure dans le jeu.
+
+Calculs côté serveur (`backend/lmu_assistant/session.py`) à partir de la phase de jeu, des drapeaux et de la météo de la mémoire partagée (`mGamePhase`, `mYellowFlagState`, `mSectorFlag`, `mFlag`, `mAmbientTemp`, `mTrackTemp`, `mRaining`, `mAvgPathWetness`, `mTrackGripLevel`, `mCloudCoverage`, `mTimeOfDay`).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.
