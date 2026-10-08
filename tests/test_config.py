@@ -14,7 +14,6 @@ def test_defaults():
     assert [w.id for w in cfg.widgets] == list(WIDGET_IDS)
     assert all(w.visible and w.scale == 1.0 for w in cfg.widgets)
     assert (cfg.background_opacity, cfg.text_opacity) == (0.75, 1.0)
-    assert cfg.window.transparency == "alpha"
     assert cfg.hotkey == "ctrl+shift+o"
     assert cfg.window.click_through
     assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
@@ -24,6 +23,7 @@ def test_defaults():
     assert (cfg.tyre_temp_min_c, cfg.tyre_temp_max_c, cfg.pressure_unit) == (75.0, 100.0, "kpa")
     assert cfg.brake_overheat_c == 800.0
     assert cfg.pit_loss_s == 60.0
+    assert cfg.refresh_hz == 30
 
 
 def test_tyre_settings_validated():
@@ -82,6 +82,11 @@ def test_widget_transparency_optional():
     assert cfg.background_opacity == 0.0
 
 
+def test_old_window_fields_ignored():
+    cfg = AppConfig.model_validate({"window": {"transparency": "colorkey", "click_through": False}})
+    assert cfg.window.click_through is False
+
+
 def test_old_opacity_migrated():
     """Ancien `opacity` (tout le widget) : devient l'opacité du texte, le fond garde le même rendu."""
     cfg = AppConfig.model_validate(
@@ -122,7 +127,8 @@ def test_partial_widgets_completed():
         {"widgets": [{"id": "fuel", "opacity": 0.05}]},
         {"widgets": [{"id": "fuel", "text_opacity": 0.05}]},
         {"text_opacity": 1.5},
-        {"window": {"transparency": "flou"}},
+        {"refresh_hz": 2},
+        {"refresh_hz": 120},
         {"widgets": [{"id": "fuel", "background_opacity": 1.5}]},
         {"background_opacity": -0.1},
         {"window": {"click_through": "peut-être"}},

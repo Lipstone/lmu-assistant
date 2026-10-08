@@ -10,7 +10,7 @@ lmu-assistant = "lmu_assistant.launcher:main"
 
 [project.optional-dependencies]
 dev = ["pytest>=8", "httpx>=0.27"]
-overlay = ["pywebview>=5.0", "keyboard>=0.13; sys_platform == 'win32'"]
+overlay = ["PySide6>=6.6", "keyboard>=0.13; sys_platform == 'win32'"]
 build = ["pyinstaller>=6.0"]
 
 [tool.pytest.ini_options]

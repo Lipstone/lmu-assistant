@@ -29,20 +29,21 @@ from .sources import DataSource
 
 WEB_DIR = resource_dir() / "web"
 log = logging.getLogger(__name__)
+DEFAULT_HZ = 30.0
 
 
 class Broadcaster:
     def __init__(
         self,
         source: DataSource,
-        hz: float,
+        hz: float | None,
         records_path: str | Path | None = DEFAULT_RECORDS_PATH,
         config_store: ConfigStore | None = None,
         history: HistoryRecorder | None = None,
     ) -> None:
         self.source = source
         self.config_store = config_store
-        self.period = 1.0 / hz
+        self.hz = hz  # None : fréquence des réglages (refresh_hz), modifiable en direct
         self.clients: set[WebSocket] = set()
         self.latest: dict = {}
         self.fuel = FuelCalculator()
@@ -68,11 +69,20 @@ class Broadcaster:
                 log.exception("historique : enregistrement impossible")
         return snap
 
+    @property
+    def period(self) -> float:
+        cfg = self.config_store.config if self.config_store else None
+        return 1.0 / (self.hz or (cfg.refresh_hz if cfg else DEFAULT_HZ))
+
     async def run(self) -> None:
+        loop = asyncio.get_running_loop()
+        next_t = loop.time()
         while True:
             self.latest = self.compute(self.source.read()).to_dict()
             await self.send_all({"type": "snapshot", "data": self.latest})
-            await asyncio.sleep(self.period)
+            # Cadence régulière : le temps de calcul et d'envoi est déduit de l'attente.
+            next_t = max(next_t + self.period, loop.time())
+            await asyncio.sleep(next_t - loop.time())
 
     async def send_all(self, message: dict) -> None:
         for ws in list(self.clients):
@@ -84,7 +94,7 @@ class Broadcaster:
 
 def create_app(
     source: DataSource,
-    hz: float = 10.0,
+    hz: float | None = None,
     config_path: str | Path | None = None,
     records_path: str | Path | None = DEFAULT_RECORDS_PATH,
     history_path: str | Path | None = DEFAULT_HISTORY_PATH,

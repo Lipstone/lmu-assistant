@@ -387,16 +387,31 @@ function renderStint(d) {
   $("stint-wear").classList.toggle("alert", s.laps_to_wear_limit != null && s.laps_to_wear_limit < 3);
 }
 
+// Fenêtre d'un seul widget : seul son rendu est utile (les autres sont masqués).
+const RENDERERS = {
+  lap: renderLaps, delta: renderDelta, fuel: renderFuel, car: renderCar, tyres: renderTyres, brakes: renderBrakes,
+  relative: renderRelative, standings: renderStandings, pit: renderPit, session: renderSession, damage: renderDamage,
+  inputs: renderInputs, stint: renderStint,
+};
+
+function renderCar(d) {
+  $("speed").textContent = `${Math.round(d.speed_kmh)} km/h`;
+  $("gear").textContent = d.gear === 0 ? "N" : d.gear < 0 ? "R" : d.gear;
+  $("rpm").textContent = Math.round(d.rpm);
+}
+
 function render(d) {
+  if (ONLY && RENDERERS[ONLY]) {
+    RENDERERS[ONLY](d);
+    return;
+  }
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
   $("session").textContent = [d.session, d.track, d.car].filter(Boolean).join(" · ");
   renderLaps(d);
   renderDelta(d);
   renderFuel(d);
-  $("speed").textContent = `${Math.round(d.speed_kmh)} km/h`;
-  $("gear").textContent = d.gear === 0 ? "N" : d.gear < 0 ? "R" : d.gear;
-  $("rpm").textContent = Math.round(d.rpm);
+  renderCar(d);
   renderTyres(d);
   renderBrakes(d);
   renderRelative(d);
@@ -434,16 +449,28 @@ function applyConfig(cfg) {
   }
 }
 
+// Pont vers la fenêtre de l'overlay (Qt, objet window.lmuOverlay injecté par l'overlay) ; absent dans un navigateur.
+const overlayApi = () => window.lmuOverlay;
+
 // Mode placement (fenêtre d'un seul widget dans l'overlay) : la fenêtre se déplace en faisant glisser
-// le widget (classe reconnue par pywebview) et s'agrandit par la poignée en bas à droite.
+// le widget et s'agrandit par la poignée en bas à droite.
 let scale = 1;
 let resizing = false;
+let placing = false;
 
 function setPlacement(on) {
   if (!ONLY) return;
-  const el = document.querySelector(`[data-widget="${ONLY}"]`);
+  placing = on;
   document.body.classList.toggle("placing", on);
-  el.classList.toggle("pywebview-drag-region", on);
+}
+
+if (ONLY) {
+  document.addEventListener("mousedown", (e) => {
+    if (placing && e.button === 0 && !e.target.closest(".grip")) {
+      e.preventDefault();
+      overlayApi()?.start_move(); // déplacement natif de la fenêtre
+    }
+  });
 }
 
 function setupGrip() {
@@ -455,10 +482,10 @@ function setupGrip() {
   el.appendChild(grip);
   let start = null;
   let pending = null;
-  const send = (s, final) => window.pywebview?.api?.set_scale(s, final);
+  const send = (s, final) => overlayApi()?.set_scale(s, final);
   grip.addEventListener("pointerdown", (e) => {
     e.preventDefault();
-    e.stopPropagation(); // sinon pywebview déplacerait la fenêtre
+    e.stopPropagation(); // sinon la fenêtre se déplacerait
     grip.setPointerCapture(e.pointerId);
     start = { x: e.screenX, y: e.screenY, scale, w: el.offsetWidth * scale, h: el.offsetHeight * scale };
     resizing = true;
@@ -484,6 +511,23 @@ function setupGrip() {
   grip.addEventListener("pointercancel", end);
 }
 setupGrip();
+
+// Fenêtre d'un seul widget : elle prend exactement la taille du widget (aucune zone vide sous le widget).
+// Taille à l'échelle 1 (offsetWidth/Height ignorent le zoom) ; l'overlay multiplie par l'échelle.
+function setupFit() {
+  if (!ONLY) return;
+  const el = document.querySelector(`[data-widget="${ONLY}"]`);
+  let last = "";
+  const send = () => {
+    const size = [el.offsetWidth, el.offsetHeight];
+    if (!size[1] || size.join() === last || !overlayApi()) return;
+    last = size.join();
+    overlayApi().fit(...size);
+  };
+  new ResizeObserver(send).observe(el);
+  window.addEventListener("lmuoverlayready", () => ((last = ""), send()));
+}
+setupFit();
 
 function loadConfig() {
   fetch("/api/config")

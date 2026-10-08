@@ -32,13 +32,6 @@
         <label>Fond (tous les widgets) <input type="range" id="background-opacity" min="0" max="1" step="0.05"> <span id="background-opacity-val" class="pct"></span></label>
         <label>Texte (tous les widgets) <input type="range" id="text-opacity" min="0.1" max="1" step="0.05"> <span id="text-opacity-val" class="pct"></span></label>
       </div>
-      <label>Transparence des fenêtres (Windows)
-        <select id="transparency">
-          <option value="alpha">Normale : fond réellement semi-transparent</option>
-          <option value="colorkey">Secours : zones vides transparentes, fond opaque</option>
-        </select>
-      </label>
-      <p class="hint">Si des zones blanches ou noires restent visibles autour des widgets en jeu, choisir « Secours » (appliqué sous ~2 s).</p>
       <label>Widget Carburant
         <select id="fuel-mode">
           <option value="auto">Auto (% EV si la voiture en a)</option>
@@ -64,6 +57,7 @@
       </label>
       <label>Widget Freins : surchauffe au-delà de <input type="number" id="brake-overheat" min="100" max="2000" step="10"> °C</label>
       <label>Widget Stand : temps perdu au stand <input type="number" id="pit-loss" min="0" max="600" step="1"> s (tant qu'aucun arrêt n'est mesuré)</label>
+      <label>Rafraîchissement des données <input type="number" id="refresh-hz" min="5" max="60" step="1"> fois par seconde</label>
       <label>Widget Inputs : trace sur <input type="number" id="inputs-trace" min="2" max="30" step="1"> s</label>
       <label>Raccourci afficher/masquer <input type="text" id="hotkey" placeholder="ctrl+shift+o"></label>
       <br>

@@ -45,6 +45,12 @@ jobs:
           Stop-Process -Id $p.Id -Force
           if (-not $ok) { throw "L'exécutable n'a pas répondu sur le port 8799" }
           Write-Output "OK : $($info | ConvertTo-Json -Compress)"
+      - name: Vérifie que l'overlay (Qt) s'ouvre
+        shell: pwsh
+        run: |
+          $out = & dist\LMU-Assistant.exe --source mock --port 8798 --quit-after 25 2>&1 | Out-String
+          Write-Output $out
+          if ($LASTEXITCODE -ne 0 -or $out -notmatch "widgets \(Qt\)") { throw "L'overlay ne s'est pas ouvert" }
       - uses: actions/upload-artifact@v4
         with:
           name: LMU-Assistant-windows

@@ -102,11 +102,6 @@ class OverlayWindow(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     click_through: bool = Field(True, description="les clics traversent l'overlay vers le jeu (Windows)")
-    transparency: Literal["alpha", "colorkey"] = Field(
-        "alpha",
-        description="transparence des fenêtres sous Windows : alpha = fond réellement semi-transparent ; "
-        "colorkey = solution de secours (zones vides transparentes, fond du widget opaque)",
-    )
 
 
 OLD_DEFAULT_OPACITY = 0.85  # ancien champ `opacity`, avant la séparation fond / texte
@@ -157,6 +152,7 @@ class AppConfig(BaseModel):
     pit_loss_s: float = Field(
         60.0, ge=0, le=600, description="widget Stand : temps perdu au stand tant qu'aucun arrêt n'a été mesuré (s)"
     )
+    refresh_hz: int = Field(30, ge=5, le=60, description="rafraîchissement des données envoyées aux widgets (par seconde)")
     inputs_trace_s: float = Field(8.0, ge=2, le=30, description="widget Inputs : durée de la trace (s)")
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(
