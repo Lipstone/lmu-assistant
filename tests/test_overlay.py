@@ -25,9 +25,16 @@ class FakeWindow:
 
 def make_overlay(monkeypatch, overrides=None):
     clicks = []
-    monkeypatch.setattr(overlay, "set_click_through", lambda title, on: clicks.append((title, on)))
-    monkeypatch.setattr(overlay.Hotkey, "set", lambda self, combo: None)
     windows = {wid: FakeWindow() for wid in WIDGET_IDS}
+    names = {id(w): wid for wid, w in windows.items()}
+    native_ready = set(WIDGET_IDS)
+
+    def native(win, on, mode="alpha"):
+        clicks.append((names[id(win)], on, mode))
+        return names[id(win)] in native_ready
+
+    monkeypatch.setattr(overlay, "set_native_style", native)
+    monkeypatch.setattr(overlay.Hotkey, "set", lambda self, combo: None)
     return overlay.Overlay(windows, "http://x/api/config", overrides or {}, None), windows, clicks
 
 
@@ -60,7 +67,7 @@ def test_apply_moves_only_changed_windows(monkeypatch):
     ov, windows, clicks = make_overlay(monkeypatch)
     ov.apply(config())
     assert len(clicks) == len(WIDGET_IDS)
-    assert clicks[0][0] == overlay.window_title(WIDGET_IDS[0])
+    assert clicks[0] == (WIDGET_IDS[0], True, "alpha")
     for w in windows.values():
         w.calls.clear()
 
@@ -105,7 +112,7 @@ def test_placement_disables_click_through(monkeypatch):
     ov.apply(config())
     clicks.clear()
     ov.apply(config(placement=True))
-    assert ov.placement and clicks == [(overlay.window_title(w), False) for w in WIDGET_IDS]
+    assert ov.placement and clicks == [(w, False, "alpha") for w in WIDGET_IDS]
 
 
 def test_toggle_placement_saves_and_applies(monkeypatch):
@@ -150,3 +157,40 @@ def test_resize_with_grip(monkeypatch):
     windows["lap"].calls.clear()
     ov.apply(server.cfg)
     assert windows["lap"].calls == []
+
+
+def test_transparency_mode_change_reapplied(monkeypatch):
+    ov, _, clicks = make_overlay(monkeypatch)
+    ov.apply(config())
+    clicks.clear()
+    ov.apply(config())
+    assert clicks == []  # rien n'a changé
+    cfg = config()
+    cfg["window"]["transparency"] = "colorkey"
+    ov.apply(cfg)
+    assert clicks == [(w, True, "colorkey") for w in WIDGET_IDS]
+
+
+def test_native_style_retried_until_window_exists(monkeypatch):
+    ov, windows, clicks = make_overlay(monkeypatch)
+    monkeypatch.setattr(overlay, "set_native_style", lambda win, on, mode="alpha": clicks.append(on) or win is not windows["fuel"])
+    ov.apply(config())
+    assert ov.native_pending == {"fuel"}
+    clicks.clear()
+    monkeypatch.setattr(overlay, "set_native_style", lambda win, on, mode="alpha": clicks.append(on) or True)
+    ov.apply(config())
+    assert clicks == [True] and ov.native_pending == set()
+
+
+def test_ex_style():
+    base = 0x100
+    assert overlay.ex_style(base, False, "alpha") == base
+    assert overlay.ex_style(base, True, "alpha") == base | overlay.WS_EX_LAYERED | overlay.WS_EX_TRANSPARENT
+    assert overlay.ex_style(base, False, "colorkey") == base | overlay.WS_EX_LAYERED
+    on = base | overlay.WS_EX_LAYERED | overlay.WS_EX_TRANSPARENT
+    assert overlay.ex_style(on, False, "alpha") == base
+
+
+def test_native_style_noop_off_windows(monkeypatch):
+    monkeypatch.setattr(overlay.sys, "platform", "linux")
+    assert overlay.set_native_style(object(), False) is True

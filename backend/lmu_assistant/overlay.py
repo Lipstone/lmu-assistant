@@ -36,7 +36,7 @@ MIN_SCALE, MAX_SCALE = 0.25, 4.0
 
 
 def window_title(widget_id: str) -> str:
-    return f"{TITLE} - {widget_id}"  # titre unique : sert à retrouver la fenêtre native
+    return f"{TITLE} - {widget_id}"  # titre unique par fenêtre
 
 
 def warn(msg: str) -> None:
@@ -64,38 +64,92 @@ def put_config(config_url: str, cfg: dict) -> bool:
         return False
 
 
-# --- Clics traversants (Windows uniquement, via l'API Win32) -----------------
-# pywebview n'expose pas d'option « click-through » : on ajoute WS_EX_TRANSPARENT
-# au style étendu de la fenêtre. Sur les autres OS, la fonction ne fait rien.
+# --- Transparence et clics traversants (Windows uniquement, via l'API Win32) ----
+# pywebview (6.x) rend la page WebView2 transparente mais laisse le fond de la fenêtre WinForms
+# (gris clair « Control ») : ce sont les zones blanches derrière les widgets. On peint ce fond en noir
+# et on active la transparence par pixel de DWM (DwmEnableBlurBehindWindow avec une région vide :
+# aucun flou, seulement le canal alpha), comme le font Tauri/winit pour leurs fenêtres transparentes.
+# Mode « colorkey » de secours : le fond de la fenêtre prend une couleur clé rendue invisible par Windows
+# (les zones vides deviennent transparentes, un fond de widget semi-transparent devient opaque).
+# Clics traversants : pywebview n'a pas d'option, on ajoute WS_EX_TRANSPARENT au style étendu.
 GWL_EXSTYLE = -20
 WS_EX_LAYERED = 0x00080000
 WS_EX_TRANSPARENT = 0x00000020
+LWA_COLORKEY, LWA_ALPHA = 0x1, 0x2
+DWM_BB_ENABLE, DWM_BB_BLURREGION = 0x1, 0x2
+COLOR_KEY = (1, 0, 1)  # couleur clé du mode colorkey (quasi noire : bords du texte sans halo clair)
 
 
-def set_click_through(title: str, enabled: bool) -> None:
+def ex_style(style: int, click_through: bool, transparency: str) -> int:
+    """Style étendu voulu : fenêtre « layered » pour les clics traversants et pour la couleur clé."""
+    layered = click_through or transparency == "colorkey"
+    style = style | WS_EX_LAYERED if layered else style & ~WS_EX_LAYERED
+    return style | WS_EX_TRANSPARENT if click_through else style & ~WS_EX_TRANSPARENT
+
+
+def _on_gui_thread(form, fn) -> None:
+    """Exécute `fn` dans le thread de l'interface WinForms (propriétés .NET de la fenêtre)."""
+    from System import Action  # pythonnet, installé avec pywebview sous Windows
+
+    if form.InvokeRequired:
+        form.Invoke(Action(fn))
+    else:
+        fn()
+
+
+def set_native_style(win, click_through: bool, transparency: str = "alpha") -> bool:
+    """Applique transparence et clics traversants à la fenêtre native. False si elle n'existe pas encore."""
     if sys.platform != "win32":
-        if enabled:
+        if click_through:
             warn("clics traversants non pris en charge hors Windows")
-        return
-    try:
-        import ctypes
+        return True
+    form = getattr(win, "native", None)
+    if form is None:
+        return False
 
-        user32 = ctypes.windll.user32
-        user32.FindWindowW.restype = ctypes.c_void_p
+    def apply() -> None:
+        import ctypes
+        from ctypes import wintypes
+
+        from System.Drawing import Color
+
+        user32, dwmapi, gdi32 = ctypes.windll.user32, ctypes.windll.dwmapi, ctypes.windll.gdi32
+
+        class DWM_BLURBEHIND(ctypes.Structure):
+            _fields_ = [
+                ("dwFlags", wintypes.DWORD),
+                ("fEnable", wintypes.BOOL),
+                ("hRgnBlur", wintypes.HANDLE),
+                ("fTransitionOnMaximized", wintypes.BOOL),
+            ]
+
+        hwnd = ctypes.c_void_p(form.Handle.ToInt64())
         user32.GetWindowLongW.argtypes = [ctypes.c_void_p, ctypes.c_int]
         user32.SetWindowLongW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_long]
-        hwnd = user32.FindWindowW(None, title)
-        if not hwnd:
-            warn(f"fenêtre {title!r} introuvable pour les clics traversants")
-            return
-        style = user32.GetWindowLongW(hwnd, GWL_EXSTYLE)
-        if enabled:
-            style |= WS_EX_LAYERED | WS_EX_TRANSPARENT
-        else:
-            style &= ~WS_EX_TRANSPARENT
+        user32.SetLayeredWindowAttributes.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_ubyte, wintypes.DWORD]
+        gdi32.CreateRectRgn.restype = wintypes.HANDLE
+        dwmapi.DwmEnableBlurBehindWindow.argtypes = [ctypes.c_void_p, ctypes.POINTER(DWM_BLURBEHIND)]
+
+        colorkey = transparency == "colorkey"
+        form.BackColor = Color.FromArgb(255, *COLOR_KEY) if colorkey else Color.Black
+        style = ex_style(user32.GetWindowLongW(hwnd, GWL_EXSTYLE), click_through, transparency)
         user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
+        if colorkey:
+            r, g, b = COLOR_KEY
+            user32.SetLayeredWindowAttributes(hwnd, r | g << 8 | b << 16, 255, LWA_COLORKEY)
+        elif style & WS_EX_LAYERED:
+            user32.SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA)  # sans cet appel, fenêtre invisible
+        region = gdi32.CreateRectRgn(0, 0, -1, -1)
+        bb = DWM_BLURBEHIND(DWM_BB_ENABLE | DWM_BB_BLURREGION, not colorkey, region, False)
+        dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(bb))
+        gdi32.DeleteObject(region)
+        form.Invalidate(True)
+
+    try:
+        _on_gui_thread(form, apply)
     except Exception as exc:
-        warn(f"clics traversants impossibles : {exc}")
+        warn(f"transparence / clics traversants impossibles : {exc}")
+    return True
 
 
 # --- Raccourci global afficher/masquer ---------------------------------------
@@ -137,6 +191,7 @@ class WindowState:
     height: int
     visible: bool
     click_through: bool
+    transparency: str = "alpha"
 
 
 def plan(cfg: dict, overrides: dict | None = None) -> dict[str, WindowState]:
@@ -148,8 +203,9 @@ def plan(cfg: dict, overrides: dict | None = None) -> dict[str, WindowState]:
         config = AppConfig()
     # En mode placement, les fenêtres doivent recevoir la souris.
     click = (overrides or {}).get("click_through", config.window.click_through) and not config.placement
+    mode = config.window.transparency
     return {
-        w.id: WindowState(w.x, w.y, *window_size(w.id, w.scale), w.visible, click) for w in config.widgets
+        w.id: WindowState(w.x, w.y, *window_size(w.id, w.scale), w.visible, click, mode) for w in config.widgets
     }
 
 
@@ -178,6 +234,7 @@ class Overlay:
         self.applied: dict[str, WindowState] = {}
         self.resizing: set[str] = set()  # agrandissement en cours : la config ne doit pas le défaire
         self.unsaved: set[str] = set()  # déplacées à la souris, pas encore enregistrées sur le serveur
+        self.native_pending: set[str] = set()  # transparence / clics traversants pas encore appliqués
         self.lock = threading.RLock()  # raccourcis, appels JavaScript et boucle de suivi
         self.hotkey = Hotkey(self.toggle)
         self.placement_hotkey = Hotkey(self.toggle_placement)
@@ -209,8 +266,12 @@ class Overlay:
                     win.resize(new.width, new.height)
                 if old is None or new.visible != old.visible:
                     self._set_visible(wid, self.shown and new.visible)
-                if old is None or new.click_through != old.click_through:
-                    set_click_through(window_title(wid), new.click_through)
+                native = (new.click_through, new.transparency)
+                if old is None or wid in self.native_pending or native != (old.click_through, old.transparency):
+                    if set_native_style(win, *native):
+                        self.native_pending.discard(wid)
+                    else:  # fenêtre native pas encore créée : on réessaiera
+                        self.native_pending.add(wid)
                 self.applied[wid] = new
             self.hotkey.set(cfg.get("hotkey") or DEFAULT_HOTKEY)
             self.placement_hotkey.set(cfg.get("placement_hotkey") or DEFAULT_PLACEMENT_HOTKEY)
@@ -276,7 +337,7 @@ class Overlay:
 
     def run(self) -> None:
         """Lancé par pywebview dans un thread une fois les fenêtres créées."""
-        time.sleep(0.5)  # laisse les fenêtres natives apparaître (clics traversants)
+        time.sleep(0.5)  # laisse les fenêtres natives apparaître (transparence, clics traversants)
         self.apply(self.initial or {})
         while True:
             time.sleep(PLACEMENT_POLL_S if self.placement else POLL_S)
@@ -313,6 +374,7 @@ def run(url: str, overrides: dict | None = None) -> None:
             width=state.width,
             height=state.height,
             hidden=not state.visible,
+            background_color="#000000",
             min_size=(40, 40),  # défaut pywebview 200×100 : plus grand qu'un widget
             frameless=True,
             easy_drag=False,  # glisser seulement en mode placement (classe pywebview-drag-region)

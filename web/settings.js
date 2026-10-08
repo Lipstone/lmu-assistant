@@ -8,44 +8,86 @@ function num(input, fallback) {
   return Number.isFinite(v) ? v : fallback;
 }
 
-// Champ vide = null (valeur globale).
-function optNum(input) {
-  const v = parseFloat(input.value);
-  return Number.isFinite(v) ? v : null;
+const pct = (v) => `${Math.round(v * 100)} %`;
+// Opacités par widget : null = valeur globale (curseur grisé qui suit la valeur globale).
+const OPACITIES = [
+  { k: "background_opacity", global: "background-opacity", min: 0 },
+  { k: "text_opacity", global: "text-opacity", min: 0.1 },
+];
+// Valeur par widget en cours d'édition (null = globale), par id de widget puis par champ.
+let own = {};
+
+function opacityCell(o) {
+  return `<td class="opa" data-opa="${o.k}">
+    <input type="range" min="${o.min}" max="1" step="0.05" title="Glisser pour régler ce widget seul">
+    <span class="pct"></span><button type="button" class="reset" title="Revenir à la valeur globale">↺</button></td>`;
+}
+
+// Affiche les curseurs d'opacité des widgets (valeur propre, ou globale en grisé).
+function showOpacities() {
+  for (const tr of $("widgets").querySelectorAll("tr")) {
+    for (const o of OPACITIES) {
+      const td = tr.querySelector(`[data-opa="${o.k}"]`);
+      const v = own[tr.dataset.id][o.k];
+      const shown = v ?? parseFloat($(o.global).value);
+      td.classList.toggle("inherit", v === null);
+      const range = td.querySelector("input");
+      if (document.activeElement !== range) range.value = shown;
+      td.querySelector(".pct").textContent = v === null ? "globale" : pct(shown);
+    }
+  }
+  for (const o of OPACITIES) $(`${o.global}-val`).textContent = pct(parseFloat($(o.global).value));
+}
+
+// Remplit une valeur sans écraser le champ en cours d'édition (changement venu d'ailleurs pendant la saisie).
+function setValue(input, value) {
+  if (document.activeElement === input) return;
+  if (input.type === "checkbox") input.checked = value;
+  else input.value = value;
 }
 
 function fill(cfg) {
   config = cfg;
-  $("widgets").innerHTML = cfg.widgets
-    .map(
-      (w) => `<tr data-id="${w.id}">
-        <td>${NAMES[w.id] || w.id}</td>
-        <td><input type="checkbox" data-k="visible" ${w.visible ? "checked" : ""}></td>
-        <td><input type="number" data-k="x" value="${w.x}"></td>
-        <td><input type="number" data-k="y" value="${w.y}"></td>
-        <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05" value="${w.scale}"></td>
-        <td><input type="number" data-k="opacity" min="0.1" max="1" step="0.05" placeholder="globale" value="${w.opacity ?? ""}"></td>
-        <td><input type="number" data-k="background_opacity" min="0" max="1" step="0.05" placeholder="globale" value="${w.background_opacity ?? ""}"></td>
-      </tr>`
-    )
-    .join("");
-  $("opacity").value = cfg.opacity;
-  $("opacity-val").textContent = cfg.opacity;
-  $("background-opacity").value = cfg.background_opacity;
-  $("background-opacity-val").textContent = cfg.background_opacity;
-  $("hotkey").value = cfg.hotkey;
-  $("click-through").checked = cfg.window.click_through;
-  $("placement").checked = cfg.placement;
-  $("fuel-mode").value = cfg.fuel_mode;
-  $("delta-reference").value = cfg.delta_reference;
-  $("laptime-avg-laps").value = cfg.laptime_avg_laps;
-  $("tyre-temp-min").value = cfg.tyre_temp_min_c;
-  $("tyre-temp-max").value = cfg.tyre_temp_max_c;
-  $("pressure-unit").value = cfg.pressure_unit;
-  $("brake-overheat").value = cfg.brake_overheat_c;
-  $("pit-loss").value = cfg.pit_loss_s;
-  $("inputs-trace").value = cfg.inputs_trace_s;
-  $("placement-hotkey").value = cfg.placement_hotkey;
+  const rows = [...$("widgets").querySelectorAll("tr")].map((tr) => tr.dataset.id);
+  if (rows.join() !== cfg.widgets.map((w) => w.id).join()) {
+    $("widgets").innerHTML = cfg.widgets
+      .map(
+        (w) => `<tr data-id="${w.id}">
+          <td>${NAMES[w.id] || w.id}</td>
+          <td><input type="checkbox" data-k="visible"></td>
+          <td><input type="number" data-k="x"></td>
+          <td><input type="number" data-k="y"></td>
+          <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05"></td>
+          ${OPACITIES.map(opacityCell).join("")}
+        </tr>`
+      )
+      .join("");
+  }
+  for (const w of cfg.widgets) {
+    const tr = $("widgets").querySelector(`tr[data-id="${w.id}"]`);
+    for (const k of ["visible", "x", "y", "scale"]) setValue(tr.querySelector(`[data-k="${k}"]`), w[k]);
+    // Transparence en cours d'envoi : la config reçue entre-temps ne doit pas défaire le réglage en cours.
+    if (!livePending) own[w.id] = { background_opacity: w.background_opacity, text_opacity: w.text_opacity };
+  }
+  if (!livePending) {
+    setValue($("background-opacity"), cfg.background_opacity);
+    setValue($("text-opacity"), cfg.text_opacity);
+  }
+  showOpacities();
+  setValue($("transparency"), cfg.window.transparency);
+  setValue($("hotkey"), cfg.hotkey);
+  setValue($("click-through"), cfg.window.click_through);
+  setValue($("placement"), cfg.placement);
+  setValue($("fuel-mode"), cfg.fuel_mode);
+  setValue($("delta-reference"), cfg.delta_reference);
+  setValue($("laptime-avg-laps"), cfg.laptime_avg_laps);
+  setValue($("tyre-temp-min"), cfg.tyre_temp_min_c);
+  setValue($("tyre-temp-max"), cfg.tyre_temp_max_c);
+  setValue($("pressure-unit"), cfg.pressure_unit);
+  setValue($("brake-overheat"), cfg.brake_overheat_c);
+  setValue($("pit-loss"), cfg.pit_loss_s);
+  setValue($("inputs-trace"), cfg.inputs_trace_s);
+  setValue($("placement-hotkey"), cfg.placement_hotkey);
   sizePreview();
 }
 
@@ -59,14 +101,12 @@ function collect() {
       x: Math.round(num(get("x"), old.x)),
       y: Math.round(num(get("y"), old.y)),
       scale: num(get("scale"), old.scale),
-      opacity: optNum(get("opacity")),
-      background_opacity: optNum(get("background_opacity")),
+      ...opacities(tr.dataset.id),
     };
   });
   return {
     widgets,
-    opacity: num($("opacity"), config.opacity),
-    background_opacity: num($("background-opacity"), config.background_opacity),
+    ...globalOpacities(),
     hotkey: $("hotkey").value.trim() || config.hotkey,
     placement: $("placement").checked,
     fuel_mode: $("fuel-mode").value,
@@ -81,8 +121,46 @@ function collect() {
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {
       click_through: $("click-through").checked,
+      transparency: $("transparency").value,
     },
   };
+}
+
+const opacities = (id) => ({ ...own[id] });
+const globalOpacities = () => ({
+  background_opacity: num($("background-opacity"), config.background_opacity),
+  text_opacity: num($("text-opacity"), config.text_opacity),
+});
+
+// Transparence appliquée en direct : seuls les champs d'opacité partent, sur la dernière config enregistrée
+// (les autres modifications du formulaire attendent « Enregistrer »).
+let liveTimer = null;
+let livePending = false;
+let liveSeq = 0;
+function liveOpacity() {
+  showOpacities();
+  livePending = true;
+  const seq = ++liveSeq;
+  clearTimeout(liveTimer);
+  liveTimer = setTimeout(async () => {
+    const body = {
+      ...config,
+      ...globalOpacities(),
+      widgets: config.widgets.map((w) => ({ ...w, ...opacities(w.id) })),
+    };
+    try {
+      const r = await fetch("/api/config", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+      if (r.ok) config = await r.json();
+      else message("Transparence refusée par le serveur", true);
+    } catch (e) {
+      message(`Erreur : ${e}`, true);
+    }
+    if (seq === liveSeq) livePending = false; // pas d'autre réglage depuis
+  }, 120);
 }
 
 // Aperçu : l'écran entier en mode overlay, réduit à la largeur de la page.
@@ -125,8 +203,20 @@ async function save() {
 }
 
 $("save").addEventListener("click", save);
-$("opacity").addEventListener("input", () => ($("opacity-val").textContent = $("opacity").value));
-$("background-opacity").addEventListener("input", () => ($("background-opacity-val").textContent = $("background-opacity").value));
+$("background-opacity").addEventListener("input", liveOpacity);
+$("text-opacity").addEventListener("input", liveOpacity);
+$("widgets").addEventListener("input", (e) => {
+  const td = e.target.closest("td.opa");
+  if (!td) return;
+  own[td.closest("tr").dataset.id][td.dataset.opa] = parseFloat(e.target.value);
+  liveOpacity();
+});
+$("widgets").addEventListener("click", (e) => {
+  if (!e.target.classList.contains("reset")) return;
+  const td = e.target.closest("td.opa");
+  own[td.closest("tr").dataset.id][td.dataset.opa] = null;
+  liveOpacity();
+});
 $("screen-w").addEventListener("input", sizePreview);
 $("screen-h").addEventListener("input", sizePreview);
 window.addEventListener("resize", sizePreview);
