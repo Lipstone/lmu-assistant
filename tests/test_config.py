@@ -13,7 +13,8 @@ def test_defaults():
     cfg = AppConfig()
     assert [w.id for w in cfg.widgets] == list(WIDGET_IDS)
     assert all(w.visible and w.scale == 1.0 for w in cfg.widgets)
-    assert 0.1 <= cfg.opacity <= 1.0
+    assert (cfg.background_opacity, cfg.text_opacity) == (0.75, 1.0)
+    assert cfg.window.transparency == "alpha"
     assert cfg.hotkey == "ctrl+shift+o"
     assert cfg.window.click_through
     assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
@@ -60,11 +61,11 @@ def test_save_load_roundtrip(tmp_path):
     path = tmp_path / "sub" / "config.json"
     store = ConfigStore(path)
     data = AppConfig().model_dump()
-    data.update(opacity=0.5, hotkey="F9")
+    data.update(text_opacity=0.5, hotkey="F9")
     data["widgets"][0].update(visible=False, x=123)
     cfg = AppConfig.model_validate(data)
     store.save(cfg)
-    assert json.loads(path.read_text(encoding="utf-8"))["opacity"] == 0.5
+    assert json.loads(path.read_text(encoding="utf-8"))["text_opacity"] == 0.5
     loaded = ConfigStore(path).config
     assert loaded == cfg
     assert loaded.hotkey == "f9"  # normalisé en minuscules
@@ -72,13 +73,31 @@ def test_save_load_roundtrip(tmp_path):
 
 def test_widget_transparency_optional():
     cfg = AppConfig.model_validate(
-        {"background_opacity": 0.0, "widgets": [{"id": "fuel", "opacity": 0.6, "background_opacity": 0.2}]}
+        {"background_opacity": 0.0, "widgets": [{"id": "fuel", "text_opacity": 0.6, "background_opacity": 0.2}]}
     )
     fuel = next(w for w in cfg.widgets if w.id == "fuel")
-    assert (fuel.opacity, fuel.background_opacity) == (0.6, 0.2)
+    assert (fuel.text_opacity, fuel.background_opacity) == (0.6, 0.2)
     lap = next(w for w in cfg.widgets if w.id == "lap")
-    assert lap.opacity is None and lap.background_opacity is None  # valeurs globales
+    assert lap.text_opacity is None and lap.background_opacity is None  # valeurs globales
     assert cfg.background_opacity == 0.0
+
+
+def test_old_opacity_migrated():
+    """Ancien `opacity` (tout le widget) : devient l'opacité du texte, le fond garde le même rendu."""
+    cfg = AppConfig.model_validate(
+        {
+            "opacity": 0.85,  # ancien défaut : nouveaux défauts
+            "background_opacity": 0.75,
+            "widgets": [{"id": "fuel", "opacity": 0.5, "background_opacity": 0.4}, {"id": "lap", "opacity": 0.8}],
+        }
+    )
+    assert (cfg.text_opacity, cfg.background_opacity) == (1.0, 0.75)
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.text_opacity, fuel.background_opacity) == (0.5, 0.2)
+    lap = next(w for w in cfg.widgets if w.id == "lap")
+    assert (lap.text_opacity, lap.background_opacity) == (0.8, None)
+    cfg = AppConfig.model_validate({"opacity": 0.5, "background_opacity": 0.6})
+    assert (cfg.text_opacity, cfg.background_opacity) == (0.5, 0.3)
 
 
 def test_partial_widgets_completed():
@@ -101,6 +120,9 @@ def test_partial_widgets_completed():
         {"widgets": [{"id": "lap", "scale": 0}]},
         {"widgets": [{"id": "lap", "x": -20000}]},
         {"widgets": [{"id": "fuel", "opacity": 0.05}]},
+        {"widgets": [{"id": "fuel", "text_opacity": 0.05}]},
+        {"text_opacity": 1.5},
+        {"window": {"transparency": "flou"}},
         {"widgets": [{"id": "fuel", "background_opacity": 1.5}]},
         {"background_opacity": -0.1},
         {"window": {"click_through": "peut-être"}},
@@ -127,7 +149,7 @@ def test_get_config_defaults(client):
 
 def test_put_then_get(client, tmp_path):
     cfg = AppConfig().model_dump()
-    cfg["opacity"] = 0.4
+    cfg["text_opacity"] = 0.4
     cfg["widgets"][1]["visible"] = False
     cfg["window"]["click_through"] = False
     r = client.put("/api/config", json=cfg)
@@ -137,14 +159,14 @@ def test_put_then_get(client, tmp_path):
 
 
 def test_put_invalid_is_rejected_and_unchanged(client):
-    r = client.put("/api/config", json={"opacity": 5})
+    r = client.put("/api/config", json={"text_opacity": 5})
     assert r.status_code == 422
     assert client.get("/api/config").json() == AppConfig().model_dump()
 
 
 def test_put_broadcasts_config_on_websocket(client):
     cfg = AppConfig().model_dump()
-    cfg["opacity"] = 0.3
+    cfg["text_opacity"] = 0.3
     with client.websocket_connect("/ws") as ws:
         assert ws.receive_json()["type"] == "snapshot"  # client bien enregistré
         assert client.put("/api/config", json=cfg).status_code == 200

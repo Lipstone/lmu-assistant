@@ -46,7 +46,7 @@ Les fonctionnalités hors course sont surtout pour la page web ; une version com
 | T03 | Page web | Page de base connectée au WebSocket | ✅ squelette |
 | T04 | Overlay | Une fenêtre transparente toujours au premier plan par widget | ✅ |
 | T05 | Lecture LMU | Mémoire partagée du jeu → `Snapshot` | ✅ |
-| T06 | Config overlay | Choix, position écran et taille de chaque fenêtre widget (réglages ou à la souris en mode placement), opacité et fond, raccourcis afficher/masquer et placement | ✅ |
+| T06 | Config overlay | Choix, position écran et taille de chaque fenêtre widget (réglages ou à la souris en mode placement), opacité du fond et du texte par widget, raccourcis afficher/masquer et placement | ✅ |
 | T07 | Enregistrement / relecture | Enregistrer une session brute et la rejouer comme source | ✅ |
 | T08 | Accès réseau local | Page accessible depuis tablette/téléphone, QR code | ✅ |
 | T09 | Exécutable Windows (obligatoire) | L'application se lance via `LMU-Assistant.exe` (serveur + overlay), construit par la CI | ✅ |

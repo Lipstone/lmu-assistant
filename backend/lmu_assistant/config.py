@@ -1,4 +1,4 @@
-"""Configuration de l'overlay : widgets affichés, positions, taille, opacité, raccourci.
+"""Configuration de l'overlay : widgets affichés, positions, taille, transparence (fond et texte), raccourci.
 
 L'overlay ouvre une fenêtre transparente par widget : `x`/`y` d'un widget sont sa position sur l'écran,
 la taille de sa fenêtre est `WIDGET_SIZES` × `scale`.
@@ -75,10 +75,17 @@ class WidgetConfig(BaseModel):
     x: int = Field(0, ge=-10000, le=10000, description="position de la fenêtre du widget sur l'écran (pixels)")
     y: int = Field(0, ge=-10000, le=10000)
     scale: float = Field(1.0, ge=0.25, le=4.0)
-    opacity: float | None = Field(None, ge=0.1, le=1.0, description="opacité du widget en overlay (None = globale)")
     background_opacity: float | None = Field(
         None, ge=0.0, le=1.0, description="opacité du fond du widget en overlay (None = globale)"
     )
+    text_opacity: float | None = Field(
+        None, ge=0.1, le=1.0, description="opacité du texte et des jauges du widget en overlay (None = globale)"
+    )
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_opacity(cls, data):
+        return _migrate_opacity(data, is_global=False)
 
     @field_validator("id")
     @classmethod
@@ -95,6 +102,30 @@ class OverlayWindow(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
     click_through: bool = Field(True, description="les clics traversent l'overlay vers le jeu (Windows)")
+    transparency: Literal["alpha", "colorkey"] = Field(
+        "alpha",
+        description="transparence des fenêtres sous Windows : alpha = fond réellement semi-transparent ; "
+        "colorkey = solution de secours (zones vides transparentes, fond du widget opaque)",
+    )
+
+
+OLD_DEFAULT_OPACITY = 0.85  # ancien champ `opacity`, avant la séparation fond / texte
+
+
+def _migrate_opacity(data, is_global: bool):
+    """Ancien champ `opacity` (tout le widget, fond compris) -> `text_opacity`, avec le fond multiplié d'autant
+    pour garder le même rendu. Un `opacity` global resté à l'ancien défaut donne les nouveaux défauts."""
+    if not isinstance(data, dict) or "opacity" not in data:
+        return data
+    data = dict(data)
+    old = data.pop("opacity")
+    if not isinstance(old, (int, float)) or isinstance(old, bool) or (is_global and old == OLD_DEFAULT_OPACITY):
+        return data
+    data.setdefault("text_opacity", old)
+    bg = data.get("background_opacity", 0.75 if is_global else None)
+    if isinstance(bg, (int, float)) and not isinstance(bg, bool):
+        data["background_opacity"] = round(bg * old, 3)
+    return data
 
 
 def _default_widgets() -> list[WidgetConfig]:
@@ -105,10 +136,10 @@ class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     widgets: list[WidgetConfig] = Field(default_factory=_default_widgets)
-    opacity: float = Field(0.85, ge=0.1, le=1.0, description="opacité globale des widgets en overlay")
     background_opacity: float = Field(
         0.75, ge=0.0, le=1.0, description="opacité globale du fond des widgets en overlay (0 = texte seul)"
     )
+    text_opacity: float = Field(1.0, ge=0.1, le=1.0, description="opacité globale du texte et des jauges en overlay")
     window: OverlayWindow = Field(default_factory=OverlayWindow)
     fuel_mode: Literal["auto", "fuel", "energy"] = Field(
         "auto", description="widget Carburant : litres, % d'énergie virtuelle, ou auto (% EV si la voiture en a)"
@@ -132,6 +163,11 @@ class AppConfig(BaseModel):
         False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"
     )
     placement_hotkey: str = Field("ctrl+shift+p", min_length=1, max_length=64)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _old_opacity(cls, data):
+        return _migrate_opacity(data, is_global=True)
 
     @field_validator("hotkey", "placement_hotkey")
     @classmethod

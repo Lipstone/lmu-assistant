@@ -135,13 +135,38 @@ dd.good { color: var(--ok); }
 .aid { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; background: #333; color: var(--muted); }
 .aid.on { background: #fdd835; color: #000; }
 
-/* Mode overlay : fond transparent, widgets compacts et semi-opaques */
-body.overlay { background: transparent; overflow: hidden; }
+/* Mode overlay : fenêtre transparente, widgets compacts au style sombre.
+   --bg-alpha = opacité du fond du widget, --text-alpha = opacité du texte et des jauges (réglages, par widget). */
+html.overlay, html.overlay body, body.overlay { background: transparent; }
+body.overlay { overflow: hidden; font-family: "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; }
 body.overlay .topbar { display: none; }
 body.overlay .widgets { display: block; position: relative; width: 100vw; height: 100vh; padding: 0; overflow: hidden; }
-body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; background: rgba(15, 17, 21, var(--bg-alpha, 0.75)); padding: 8px 10px; }
-body.overlay .big { font-size: 24px; }
-body.overlay dl { font-size: 14px; }
+body.overlay .widget { --bg-alpha: 0.75; --text-alpha: 1;
+  position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; padding: 7px 10px 8px; border-radius: 6px;
+  background: linear-gradient(180deg, rgba(24, 28, 36, var(--bg-alpha)), rgba(10, 12, 16, var(--bg-alpha)));
+  border: 1px solid rgba(255, 255, 255, calc(var(--bg-alpha) * 0.12));
+  /* Lisible même sans fond : contour sombre d'autant plus marqué que le fond est transparent */
+  --halo: rgba(0, 0, 0, calc(1 - var(--bg-alpha) * 0.7));
+  text-shadow: 0 0 1px var(--halo), 0 0 2px var(--halo), 0 1px 3px var(--halo); }
+body.overlay .widget > :not(.grip) { opacity: var(--text-alpha); }
+/* Texte sur pastille colorée : pas de contour sombre */
+body.overlay :is(.temps span, .class-pos, .flag, .aid.on, .pit, .brake-alert) { text-shadow: none; }
+body.overlay .widget h2 { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #7fcff5; margin: 0 0 4px;
+  padding-bottom: 4px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+body.overlay .big { font-size: 26px; font-weight: 600; line-height: 1.15; letter-spacing: -0.01em; }
+body.overlay dl { font-size: 13.5px; gap: 1px 10px; margin-top: 6px; }
+body.overlay dt { color: rgba(232, 234, 237, calc(0.95 - var(--bg-alpha) * 0.35)); } /* plus clair sans fond */
+body.overlay dd { font-weight: 500; }
+body.overlay .bar, body.overlay .delta-bar, body.overlay .pedal-bar, body.overlay .steer { background: rgba(255, 255, 255, 0.12); }
+body.overlay .tyre, body.overlay .brake, body.overlay .inputs canvas { background: rgba(255, 255, 255, 0.06); }
+body.overlay .car-damage .zone { background: rgba(255, 255, 255, 0.12); }
+body.overlay .car-damage .zone.z1 { background: var(--warn); }
+body.overlay .car-damage .zone.z2 { background: var(--bad); }
+body.overlay .aid { background: rgba(255, 255, 255, 0.1); }
+body.overlay .aid.on { background: #fdd835; }
+body.overlay .relative td { border-top-color: rgba(255, 255, 255, 0.07); }
+body.overlay .relative tr.me td, body.overlay .standings tr.me td { background: rgba(79, 195, 247, 0.2); }
+body.overlay .laps td { border-top-color: rgba(255, 255, 255, 0.07); }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
 body.overlay .widget[data-widget="pit"] { width: 250px; }
@@ -163,6 +188,15 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings td { padding: 4px; }
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
+.settings td.opa { white-space: nowrap; }
+.settings td.opa input[type="range"] { width: 80px; vertical-align: middle; }
+.settings td.opa.inherit input[type="range"] { opacity: 0.4; }
+.settings td.opa.inherit .reset { visibility: hidden; }
+.settings .pct { display: inline-block; min-width: 3.2em; font-variant-numeric: tabular-nums; color: var(--muted); font-size: 13px; }
+.settings td.opa:not(.inherit) .pct { color: var(--text); }
+.settings button.reset { background: none; color: var(--muted); padding: 0 4px; font-weight: 400; font-size: 15px; }
+.settings button.reset:hover { color: var(--accent); }
+.opacity-global { display: flex; flex-wrap: wrap; gap: 4px 24px; }
 .settings input#inputs-trace, .settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }

@@ -408,9 +408,9 @@ function render(d) {
   renderStint(d);
 }
 
-// Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
+// Configuration (T06) : visibilité partout ; position (écran), taille, opacité du fond et du texte en mode overlay.
 // Fenêtre d'un seul widget : il est en haut à gauche, la fenêtre elle-même est placée par l'overlay.
-// Opacité et fond : valeur du widget si définie, sinon valeur globale.
+// Opacités du fond et du texte : valeur du widget si définie, sinon valeur globale.
 function applyConfig(cfg) {
   setPlacement(!!cfg.placement);
   fuelMode = cfg.fuel_mode || "auto";
@@ -428,8 +428,8 @@ function applyConfig(cfg) {
       const gripActive = w.id === ONLY && resizing; // la poignée est en cours d'utilisation
       if (!gripActive) el.style.transform = `scale(${w.scale})`;
       if (w.id === ONLY && !gripActive) scale = w.scale;
-      el.style.opacity = w.opacity ?? cfg.opacity;
       el.style.setProperty("--bg-alpha", w.background_opacity ?? cfg.background_opacity ?? 0.75);
+      el.style.setProperty("--text-alpha", w.text_opacity ?? cfg.text_opacity ?? 1);
     }
   }
 }

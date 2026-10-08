@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>LMU Assistant</title>
   <link rel="stylesheet" href="style.css">
+  <!-- Overlay : fond transparent dès le premier affichage (pas de flash avant le chargement de app.js) -->
+  <script>if (new URLSearchParams(location.search).get("mode") === "overlay") document.documentElement.classList.add("overlay");</script>
 </head>
 <body>
   <header class="topbar">
