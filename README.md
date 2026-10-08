@@ -119,6 +119,17 @@ Le widget **Session et piste** affiche le **temps restant** (en tours pour une c
 
 Calculs côté serveur (`backend/lmu_assistant/session.py`) à partir de la phase de jeu, des drapeaux et de la météo de la mémoire partagée (`mGamePhase`, `mYellowFlagState`, `mSectorFlag`, `mFlag`, `mAmbientTemp`, `mTrackTemp`, `mRaining`, `mAvgPathWetness`, `mTrackGripLevel`, `mCloudCoverage`, `mTimeOfDay`).
 
+## Dégâts (F11)
+
+Le widget **Dégâts** montre la voiture vue de dessus en 8 zones (avant gauche, avant, avant droit, côtés, arrière gauche, arrière, arrière droit) : gris = intacte, orange = déformation légère, rouge = lourde, avec l'**état de la carrosserie** en % au centre. En dessous :
+
+- **aéro** et **suspension** (la roue la plus touchée, le détail des 4 au survol), orange sous 90 %, et **temps de réparation** estimé au stand : ces trois valeurs viennent de l'**API REST locale du jeu** (`http://127.0.0.1:6397`, interrogée toutes les 2 s dans un fil séparé) et restent à « – » si elle ne répond pas ;
+- **dernier choc** (il y a combien de temps ; force et nombre de chocs de la session au survol) ;
+- températures **eau / huile** du moteur ;
+- bandeau rouge si une roue est **crevée** ou **arrachée**, si des pièces sont arrachées ou si le moteur **surchauffe**.
+
+Calculs côté serveur (`backend/lmu_assistant/damage.py`) à partir de `mDentSeverity`, `mFlat`, `mDetached`, `mLastImpactET`, `mLastImpactMagnitude`, `mOverheating`, `mEngineWaterTemp` et `mEngineOilTemp` de la mémoire partagée.
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

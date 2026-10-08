@@ -37,6 +37,8 @@ RAIN_START_S = 900.0  # météo (F10) : averses périodiques
 RAIN_PERIOD_S = 5400.0
 YELLOW_EVERY_S = 900.0  # un jaune local d'une minute toutes les 15 min
 YELLOW_S = 60.0
+FIRST_HIT_S = 1200.0  # dégâts simulés (F11)
+SECOND_HIT_S = 3000.0
 
 
 class MockSource(DataSource):
@@ -139,7 +141,25 @@ class MockSource(DataSource):
             wheels=wheels,
             vehicles=sorted(vehicles, key=lambda v: v.position),
             **self._session(now - self._start, fraction),
+            **self._damage(now - self._start),
         )
+
+    @staticmethod
+    def _damage(t: float) -> dict:
+        """Dégâts (F11) : un léger contact à l'avant gauche à 20 min, un choc plus fort à l'arrière à 50 min."""
+        dents = [0] * 8  # AVG, AV, AVD, G, D, ARG, AR, ARD
+        d = dict(dents=dents, water_temp_c=round(88 + 4 * math.sin(t / 300), 1),
+                 oil_temp_c=round(104 + 5 * math.sin(t / 420), 1), aero_damage=0.0, suspension_damage=[0.0] * 4,
+                 repair_time_s=0.0)
+        if t >= FIRST_HIT_S:
+            dents[0] = dents[1] = 1
+            d.update(last_impact_et=FIRST_HIT_S, last_impact_magnitude=1850.0, aero_damage=0.06,
+                     suspension_damage=[0.04, 0.0, 0.0, 0.0], repair_time_s=8.0)
+        if t >= SECOND_HIT_S:
+            dents[6], dents[5], dents[7] = 2, 1, 1
+            d.update(last_impact_et=SECOND_HIT_S, last_impact_magnitude=5400.0, aero_damage=0.19,
+                     suspension_damage=[0.04, 0.0, 0.0, 0.22], repair_time_s=31.0)
+        return d
 
     def _session(self, t: float, fraction: float) -> dict:
         """Session et piste (F10) : une averse de temps en temps, piste qui chauffe l'après-midi,

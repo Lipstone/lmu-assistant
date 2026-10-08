@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
-WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes", "relative", "standings", "pit", "session")
+WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes", "relative", "standings", "pit", "session", "damage")
 
 # Position par défaut de chaque fenêtre sur l'écran (pixels, coin haut gauche).
 _DEFAULT_POSITIONS = {
@@ -39,6 +39,7 @@ _DEFAULT_POSITIONS = {
     "standings": (1500, 220),
     "pit": (20, 540),
     "session": (1100, 20),
+    "damage": (1100, 290),
 }
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
@@ -53,6 +54,7 @@ WIDGET_SIZES = {
     "standings": (300, 350),
     "pit": (250, 190),
     "session": (230, 252),
+    "damage": (230, 250),
 }
 
 

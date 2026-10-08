@@ -283,6 +283,39 @@ function renderSession(d) {
   $("sess-tod").textContent = s.time_of_day_s == null ? "–" : fmtClock(s.time_of_day_s).slice(0, -3);
 }
 
+// F11 : dégâts ; calculs côté serveur (backend/lmu_assistant/damage.py). Carrosserie en 8 zones vue de dessus
+// (gris = rien, orange = léger, rouge = lourd), état global au centre ; aéro, suspension et réparation
+// viennent de l'API REST du jeu (« – » si elle ne répond pas).
+const BODY_ZONES = ["AVG", "AV", "AVD", "G", "D", "ARG", "AR", "ARD"];
+const fmtPctState = (p) => (p == null ? "–" : `${Math.round(p)} %`);
+
+function renderDamage(d) {
+  const g = d.damage || {};
+  const body = g.body || [];
+  const cell = (i) => `<div class="zone z${body[i] || 0}" title="${BODY_ZONES[i]}"></div>`;
+  $("dmg-body").innerHTML = cell(0) + cell(1) + cell(2) + cell(3) +
+    `<div class="zone-center ${g.body_pct < 100 ? "hit" : ""}">${Math.round(g.body_pct ?? 100)} %</div>` +
+    cell(4) + cell(5) + cell(6) + cell(7);
+  const alerts = [];
+  (g.wheels || []).forEach((w, i) => w && alerts.push(`${WHEELS[i]} ${w}`));
+  if (g.parts_detached) alerts.push("pièces arrachées");
+  if (g.engine_overheating) alerts.push("moteur en surchauffe");
+  $("dmg-alert").hidden = !alerts.length;
+  $("dmg-alert").textContent = alerts.join(" · ");
+  $("dmg-aero").textContent = fmtPctState(g.aero_pct);
+  $("dmg-aero").classList.toggle("alert", g.aero_pct != null && g.aero_pct < 90);
+  const susp = g.suspension_pct;
+  const worst = susp ? susp.reduce((m, p, i) => (p != null && p < susp[m] ? i : m), 0) : null;
+  $("dmg-susp").textContent = !susp ? "–" : susp[worst] >= 100 ? "OK" : `${WHEELS[worst]} ${Math.round(susp[worst])} %`;
+  $("dmg-susp").title = susp ? susp.map((p, i) => `${WHEELS[i]} ${fmtPctState(p)}`).join(" · ") : "";
+  $("dmg-susp").classList.toggle("alert", !!susp && susp[worst] < 90);
+  $("dmg-repair").textContent = g.repair_s == null ? "–" : g.repair_s ? `${Math.round(g.repair_s)} s` : "aucune";
+  $("dmg-impact").textContent = g.last_impact_ago_s == null ? "aucun" : `il y a ${fmtClock(g.last_impact_ago_s).replace(/^0:0?/, "")}`;
+  $("dmg-impact").title = g.last_impact_magnitude == null ? "" : `force ${Math.round(g.last_impact_magnitude)} · ${g.impacts} choc(s) dans la session`;
+  $("dmg-engine").textContent = g.water_temp_c == null ? "–" : `${Math.round(g.water_temp_c)} / ${Math.round(g.oil_temp_c ?? 0)} °C`;
+  $("dmg-engine").classList.toggle("alert", !!g.engine_overheating);
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -299,6 +332,7 @@ function render(d) {
   renderStandings(d);
   renderPit(d);
   renderSession(d);
+  renderDamage(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.

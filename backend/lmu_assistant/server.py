@@ -10,6 +10,7 @@ from fastapi.staticfiles import StaticFiles
 from .brakes import OVERHEAT_C, BrakesCalculator
 from .config import ConfigStore
 from .config_api import make_config_router
+from .damage import DamageCalculator
 from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
 from .laptimes import AVG_LAPS, LapTimesCalculator
@@ -43,6 +44,7 @@ class Broadcaster:
         self.brakes = BrakesCalculator()
         self.pit = PitCalculator()
         self.session = SessionCalculator()
+        self.damage = DamageCalculator()
 
     def compute(self, snap):
         cfg = self.config_store.config if self.config_store else None
@@ -50,7 +52,7 @@ class Broadcaster:
         snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
         snap = compute_standings(compute_relative(snap))
         snap = self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
-        return self.session.update(snap)
+        return self.damage.update(self.session.update(snap))
 
     async def run(self) -> None:
         while True:

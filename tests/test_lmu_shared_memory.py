@@ -248,3 +248,19 @@ def test_session_and_weather_fields():
     assert snap.raining == 0.25 and snap.wetness == 0.4
     assert snap.track_grip == 3 and snap.cloud_coverage == 6 and snap.time_of_day_s == 54000.0
     assert snap.session_elapsed_s == 1000.0 and snap.session_length_s == 3600.0
+
+
+def test_damage_fields():
+    d = make_data()
+    t = d.telemetry.telemInfo[2]
+    for i, v in enumerate([1, 2, 0, 0, 0, 0, 0, 1]):  # ordre rF2 : avant, avant gauche, …, avant droit
+        t.mDentSeverity[i] = v
+    t.mWheels[1].mFlat = True
+    t.mLastImpactET, t.mLastImpactMagnitude = 950.0, 1234.56
+    t.mEngineWaterTemp, t.mEngineOilTemp = 91.0, 106.5
+    t.mOverheating = True
+    snap = parse_buffer(bytes(d))
+    assert snap.dents == [2, 1, 1, 0, 0, 0, 0, 0]  # AVG, AV, AVD, …
+    assert snap.wheels[1].flat and not snap.wheels[0].flat
+    assert snap.last_impact_et == 950.0 and snap.last_impact_magnitude == 1234.6
+    assert snap.water_temp_c == 91.0 and snap.oil_temp_c == 106.5 and snap.engine_overheating
