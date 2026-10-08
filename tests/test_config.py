@@ -20,6 +20,15 @@ def test_defaults():
     assert cfg.fuel_mode == "auto"
     assert cfg.delta_reference == "best"
     assert cfg.laptime_avg_laps == 5
+    assert (cfg.tyre_temp_min_c, cfg.tyre_temp_max_c, cfg.pressure_unit) == (75.0, 100.0, "kpa")
+
+
+def test_tyre_settings_validated():
+    assert AppConfig(tyre_temp_min_c=80, tyre_temp_max_c=95, pressure_unit="psi").pressure_unit == "psi"
+    with pytest.raises(ValidationError):
+        AppConfig(tyre_temp_min_c=100, tyre_temp_max_c=90)
+    with pytest.raises(ValidationError):
+        AppConfig(pressure_unit="atm")
 
 
 def test_every_widget_has_a_window_size():

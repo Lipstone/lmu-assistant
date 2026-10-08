@@ -43,6 +43,14 @@
         </select>
       </label>
       <label>Widget Temps au tour : moyenne sur <input type="number" id="laptime-avg-laps" min="2" max="20" step="1"> tours valides</label>
+      <label>Widget Pneus : plage idéale de <input type="number" id="tyre-temp-min" min="0" max="200"> à <input type="number" id="tyre-temp-max" min="0" max="200"> °C</label>
+      <label>Pression en
+        <select id="pressure-unit">
+          <option value="kpa">kPa</option>
+          <option value="psi">psi</option>
+          <option value="bar">bar</option>
+        </select>
+      </label>
       <label>Raccourci afficher/masquer <input type="text" id="hotkey" placeholder="ctrl+shift+o"></label>
       <br>
       <label><input type="checkbox" id="click-through"> Clics traversants (les clics passent au jeu, Windows)</label>
