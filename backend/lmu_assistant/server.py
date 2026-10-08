@@ -16,6 +16,7 @@ from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
 from .history import DEFAULT_HISTORY_PATH, HistoryRecorder, HistoryStore
 from .history_api import make_history_router
+from .notes import NoteStore, make_notes_router
 from .laptimes import AVG_LAPS, LapTimesCalculator
 from .network import router as network_router
 from .pitstop import PIT_LOSS_S, PitCalculator
@@ -123,7 +124,9 @@ def create_app(
         await broadcaster.send_all({"type": "config", "data": config.model_dump()})
 
     app.include_router(make_config_router(config_store, config_changed))
-    app.include_router(make_history_router(history_store))
+    note_store = NoteStore(history_store)
+    app.include_router(make_history_router(history_store, note_store))
+    app.include_router(make_notes_router(note_store))
     app.include_router(make_strategy_router(lambda: broadcaster.latest))
     app.state.history = history_store
 

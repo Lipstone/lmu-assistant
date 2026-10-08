@@ -71,7 +71,18 @@ CREATE TABLE IF NOT EXISTS laps (
     trace TEXT
 );
 CREATE INDEX IF NOT EXISTS laps_session ON laps(session_id, lap);
+CREATE TABLE IF NOT EXISTS conditions (
+    id INTEGER PRIMARY KEY,
+    session_id INTEGER NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    session_time_s REAL,
+    recorded_at TEXT NOT NULL,
+    air_temp REAL, track_temp REAL, rain REAL, wetness REAL, grip INTEGER, cloud INTEGER
+);
+CREATE INDEX IF NOT EXISTS conditions_session ON conditions(session_id, session_time_s);
 """
+CONDITIONS_EVERY_S = 30.0  # relevé des conditions (F28) toutes les 30 s de session
+CONDITION_COLUMNS = ("session_id", "session_time_s", "recorded_at", "air_temp", "track_temp", "rain", "wetness",
+                     "grip", "cloud")
 
 LAP_COLUMNS = (
     "session_id", "lap", "recorded_at", "session_time_s", "time_s", "s1", "s2", "s3", "valid", "pit", "invalid",
@@ -129,6 +140,23 @@ class HistoryStore:
             self.db.execute("UPDATE sessions SET ended_at = ? WHERE id = ?", (values["recorded_at"], session_id))
             self.db.commit()
             return int(cur.lastrowid)
+
+    def add_conditions(self, session_id: int, **values: Any) -> None:
+        values["session_id"] = session_id
+        values.setdefault("recorded_at", _now())
+        with self._lock:
+            self.db.execute(
+                f"INSERT INTO conditions ({', '.join(CONDITION_COLUMNS)}) VALUES ({', '.join('?' * len(CONDITION_COLUMNS))})",
+                [values.get(c) for c in CONDITION_COLUMNS],
+            )
+            self.db.commit()
+
+    def conditions(self, session_id: int) -> list[dict]:
+        with self._lock:
+            rows = self.db.execute(
+                "SELECT * FROM conditions WHERE session_id = ? ORDER BY session_time_s, id", (session_id,)
+            ).fetchall()
+        return [dict(r) for r in rows]
 
     def delete_session(self, session_id: int) -> bool:
         with self._lock:
@@ -210,6 +238,7 @@ class HistoryRecorder:
         self._written: set[int] = set()
         self._prev: Snapshot | None = None
         self.session_laps: list[dict] = []  # tours de la session (aussi sans base), pour le relais en cours
+        self._last_conditions: float | None = None
         self._stint: StintInfo = StintInfo()
 
     def enabled(self, snap: Snapshot) -> bool:
@@ -251,6 +280,28 @@ class HistoryRecorder:
                 st.times[i] = round(snap.current_lap_s, 3)
                 st.speeds[i] = round(snap.speed_kmh, 1)
 
+    def _ensure_session(self, snap: Snapshot) -> None:
+        if self.session_id is None:
+            me = next((v for v in snap.vehicles if v.is_player), None)
+            self.session_id = self.store.new_session(
+                source=snap.source, session=snap.session, track=snap.track, car=snap.car,
+                car_class=me.car_class if me else "", driver=me.driver if me else "",
+            )
+
+    def _conditions(self, snap: Snapshot) -> None:
+        """Évolution des conditions (F28) : un relevé toutes les 30 s de session."""
+        t = snap.session_elapsed_s
+        if t is None or (snap.track_temp_c is None and snap.raining is None):
+            return
+        if self._last_conditions is not None and 0 <= t - self._last_conditions < CONDITIONS_EVERY_S:
+            return
+        self._last_conditions = t
+        self._ensure_session(snap)
+        self.store.add_conditions(
+            self.session_id, session_time_s=round(t, 1), air_temp=snap.air_temp_c, track_temp=snap.track_temp_c,
+            rain=snap.raining, wetness=snap.wetness, grip=snap.track_grip, cloud=snap.cloud_coverage,
+        )
+
     @staticmethod
     def _end_values(snap: Snapshot) -> dict:
         si = snap.session_info
@@ -266,11 +317,8 @@ class HistoryRecorder:
     def _write(self, snap: Snapshot, entry) -> None:
         st = self._laps.get(entry.lap)
         me = next((v for v in snap.vehicles if v.is_player), None)
-        if self.enabled(snap) and self.session_id is None:
-            self.session_id = self.store.new_session(
-                source=snap.source, session=snap.session, track=snap.track, car=snap.car,
-                car_class=me.car_class if me else "", driver=me.driver if me else "",
-            )
+        if self.enabled(snap):
+            self._ensure_session(snap)
         s1 = snap.last_sector1_s
         s2 = s3 = None
         if s1 is not None and snap.last_sector2_s is not None and entry.time_s is not None:
@@ -345,12 +393,15 @@ class HistoryRecorder:
             self._prev = None
             self.session_laps = []
             self._stint = StintInfo()
+            self._last_conditions = None
         # Tours terminés publiés par F04 : le temps est connu, on écrit avec les relevés du tour.
         for entry in sorted(snap.laps.recent, key=lambda e: e.lap):
             if entry.lap not in self._written and entry.time_s is not None:
                 self._written.add(entry.lap)
                 self._write(snap, entry)
         self._sample(snap)
+        if self.enabled(snap):
+            self._conditions(snap)
         self._prev = snap
         snap.stint = self._live_stint(snap)
         return snap
