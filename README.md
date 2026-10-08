@@ -43,3 +43,10 @@ python overlay/overlay.py
 
 - [PLAN.md](PLAN.md) : architecture et étapes.
 - [FEATURES.md](FEATURES.md) : liste des fonctionnalités, ajoutées une par une.
+
+## Tests
+
+```bash
+pip install -e ".[dev]"
+pytest
+```
