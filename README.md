@@ -7,7 +7,7 @@ Tout est affichable de deux façons, à partir des mêmes données :
 - **Page web locale** : `http://localhost:8765`, sur le PC, une tablette ou un téléphone du réseau local.
 - **Overlay en jeu** : une fenêtre transparente, sans bordure et toujours au premier plan qui affiche les mêmes widgets (jeu en mode *fenêtré sans bordure*).
 
-> État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu. La lecture réelle des données LMU est la prochaine étape (voir [PLAN.md](PLAN.md)).
+> État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu, ou avec la lecture réelle de LMU (`lmu`, à valider en jeu, voir [docs/donnees-lmu.md](docs/donnees-lmu.md)).
 
 ## Démarrage rapide
 
@@ -27,7 +27,24 @@ pip install -r overlay/requirements.txt
 python overlay/overlay.py
 ```
 
-`--source lmu` sélectionnera la lecture réelle du jeu dès qu'elle sera implémentée.
+`--source lmu` (par défaut) lit la mémoire partagée native du jeu sous Windows, sans plugin à installer : voir [docs/donnees-lmu.md](docs/donnees-lmu.md).
+
+## Enregistrer et rejouer une session
+
+Pour développer et tester sans lancer le jeu, une session peut être enregistrée puis rejouée comme source de données.
+
+```bash
+# Enregistre chaque Snapshot diffusé (au rythme --hz) dans data/recordings/<date>_<source>.jsonl.gz
+python -m lmu_assistant --source lmu --record
+python -m lmu_assistant --source mock --record ma_session.jsonl.gz   # chemin explicite
+
+# Rejoue un enregistrement (vitesse x2, en boucle)
+python -m lmu_assistant --source replay --file samples/mock_60s.jsonl.gz --speed 2 --loop
+```
+
+Format : JSON Lines compressé en gzip. La 1re ligne est un en-tête (`format`, `version`, source, date), puis une ligne par image : `{"t": <secondes depuis le début>, "data": <Snapshot>}`. La relecture ignore les champs inconnus et met les valeurs par défaut pour les champs absents, donc les anciens enregistrements restent lisibles quand le modèle évolue. Sans `--loop`, la dernière image reste affichée en fin de fichier. Un fichier coupé par un arrêt brutal reste lisible jusqu'à la dernière image complète.
+
+`samples/mock_60s.jsonl.gz` est un court exemple (60 s de la source simulée), utilisé aussi par les tests.
 
 ## Accès depuis une tablette / un téléphone
 
@@ -47,7 +64,8 @@ LMU Assistant : http://localhost:8765  (source : mock)
 | Dossier | Rôle |
 |---|---|
 | `backend/lmu_assistant/` | Lecture des données du jeu, calculs, serveur HTTP + WebSocket |
-| `backend/lmu_assistant/sources/` | Sources de données : `mock` (simulée), `lmu` (mémoire partagée du jeu) |
+| `backend/lmu_assistant/sources/` | Sources de données : `mock` (simulée), `lmu` (mémoire partagée du jeu), `replay` (relecture d'un enregistrement) |
+| `samples/` | Petits enregistrements d'exemple pour les tests et démos |
 | `web/` | Page web et widgets (HTML/CSS/JS sans build) |
 | `overlay/` | Fenêtre overlay transparente qui affiche les widgets web |
 | `docs/` | Notes techniques |
