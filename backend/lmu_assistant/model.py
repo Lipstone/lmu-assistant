@@ -219,6 +219,8 @@ class Snapshot:
     last_lap_s: float | None = None
     best_lap_s: float | None = None
     current_lap_s: float = 0.0
+    last_sector1_s: float | None = None  # dernier tour : fin du secteur 1 (s depuis la ligne)
+    last_sector2_s: float | None = None  # dernier tour : fin du secteur 2 (s depuis la ligne, S1 + S2)
     session_time_left_s: float | None = None
     max_laps: int | None = None  # course au nombre de tours (sinon None)
     lap_fraction: float | None = None  # avancement dans le tour en cours, 0..1

@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LMU Assistant : analyse</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="./" class="brand">LMU Assistant</a>
+    <span class="nav-current">Analyse hors course</span>
+    <a href="./" class="nav-link">Tableau de bord</a>
+    <a href="settings.html">Réglages overlay</a>
+  </header>
+
+  <main class="analyse">
+    <section class="widget">
+      <h2>Session</h2>
+      <div class="session-pick">
+        <select id="sessions"></select>
+        <button id="delete" class="secondary" title="Supprimer cette session de l'historique">Supprimer</button>
+      </div>
+      <p class="hint" id="session-info"></p>
+    </section>
+
+    <section class="widget" id="laps-section">
+      <h2>Historique des tours</h2>
+      <div class="table-wrap"><table class="data" id="laps"></table></div>
+      <p class="hint">Violet : meilleur secteur de la session ; vert : meilleur tour valide. Carburant et énergie : consommation du tour (sans ravitaillement). Usure : gomme restante moyenne des 4 pneus en fin de tour.</p>
+    </section>
+  </main>
+
+  <script src="analyse.js"></script>
+</body>
+</html>

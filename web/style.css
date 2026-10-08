@@ -172,6 +172,27 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .preview-box { overflow: hidden; margin-top: 8px; }
 .preview { transform-origin: top left; display: block; border: 1px dashed #555; background: repeating-conic-gradient(#2a2e36 0 25%, #20232a 0 50%) 0 0 / 20px 20px; }
 
+/* Page Analyse (hors course) */
+.analyse { padding: 16px; display: grid; gap: 16px; max-width: 1400px; }
+.session-pick { display: flex; gap: 8px; flex-wrap: wrap; }
+.session-pick select { flex: 1; min-width: 0; max-width: 100%; }
+.analyse select, .analyse input { background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 5px 7px; font: inherit; }
+.analyse button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 6px 14px; font-weight: 600; cursor: pointer; }
+.analyse button.secondary { background: #333; color: var(--text); }
+.analyse button:disabled { opacity: 0.5; cursor: default; }
+.table-wrap { overflow-x: auto; }
+.data { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+.data th { text-align: right; color: var(--muted); font-weight: 500; padding: 4px 6px; border-bottom: 1px solid #333; white-space: nowrap; }
+.data td { text-align: right; padding: 3px 6px; border-top: 1px solid #2a2e36; white-space: nowrap; }
+.data th:first-child, .data td:first-child { text-align: left; }
+.data td.purple { color: #ce93d8; font-weight: 600; }
+.data td.faster { color: var(--ok); font-weight: 600; }
+.data tr.excluded td { color: var(--muted); }
+.data td.muted { color: var(--muted); text-align: left; }
+.data .tags { text-align: left; }
+.data .tags span { display: inline-block; margin-right: 3px; padding: 0 4px; border-radius: 3px; background: #333; color: var(--text); font-size: 11px; }
+.topbar .brand { font-weight: 700; }
+
 /* Page Connexion (tablette / téléphone) */
 .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 16px; max-width: 760px; margin: 0 auto; }
 .qr { display: block; width: 100%; max-width: 280px; height: auto; aspect-ratio: 1; margin: 8px auto; background: #fff; border-radius: 6px; }

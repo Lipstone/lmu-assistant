@@ -14,6 +14,9 @@ def build_parser(description: str = "LMU Assistant : serveur local") -> argparse
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--hz", type=float, default=10.0, help="fréquence d'envoi aux clients")
     parser.add_argument("--config", default=None, help="fichier de configuration JSON (défaut : data/config.json)")
+    parser.add_argument("--history", choices=["auto", "on", "off"], default="auto",
+                        help="historique des tours (data/history.sqlite) : auto = lecture du jeu seulement")
+    parser.add_argument("--history-file", default=None, help="base de l'historique (défaut : data/history.sqlite)")
     rec = parser.add_argument_group("enregistrement / relecture")
     rec.add_argument("--record", nargs="?", const="", metavar="CHEMIN",
                      help="enregistre la session (défaut : data/recordings/<date>_<source>.jsonl.gz)")
@@ -36,7 +39,8 @@ def build_app(parser: argparse.ArgumentParser, args: argparse.Namespace):
         source = RecordingSource(source, args.record or None)
         print(f"Enregistrement : {source.path}")
 
-    app = create_app(source, hz=args.hz, config_path=args.config)
+    kw = {"history_path": args.history_file} if args.history_file else {}
+    app = create_app(source, hz=args.hz, config_path=args.config, history_mode=args.history, **kw)
     app.state.port, app.state.host = args.port, args.host
     print(f"LMU Assistant : http://localhost:{args.port}  (source : {args.source})")
     for url in lan_urls(args.port, args.host):

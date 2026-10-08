@@ -136,6 +136,18 @@ Le widget **Inputs** montre les commandes du pilote en direct : une **trace cour
 
 Valeurs brutes du pilote (`mUnfilteredThrottle`, `mUnfilteredBrake`, `mUnfilteredClutch`, `mUnfilteredSteering`, `mPhysicalSteeringWheelRange`, `mABSActive`, `mTCActive`) ; la trace est gardée par la page à partir des images reçues (10 par seconde par défaut, `--hz` pour plus de finesse).
 
+## Analyse hors course
+
+La page **Analyse** (lien dans la barre du haut, `http://localhost:8765/analyse.html`) rassemble ce qui sert après la course ou entre deux relais, à partir de l'historique enregistré pendant que l'on roule.
+
+### Historique des tours (F20)
+
+Chaque tour terminé est enregistré dans une base **SQLite** (`data/history.sqlite`, à côté de l'exe) : temps et **secteurs**, tour valide / invalidé / stand, **arrêt** (voiture immobile aux stands), ravitaillement et pneus changés, **carburant et énergie** consommés (sans ravitaillement pendant le tour), usure, températures et pressions des pneus en fin de tour, conditions (air, piste, pluie, piste mouillée, grip), position, pilote, chocs, et une trace du tour (temps et vitesse à chaque centième du tour, pour la comparaison de tours). Les tours d'une même session de jeu, piste et voiture forment une **session**.
+
+Sur la page Analyse : choix de la session (la plus récente d'abord ; la page suit la session en cours et ajoute les nouveaux tours d'elle-même), tableau des tours avec le meilleur tour en vert et les **meilleurs secteurs en violet**, et bouton pour supprimer une session.
+
+Par défaut seule la lecture du jeu est enregistrée : les données simulées et les relectures ne remplissent pas l'historique. `--history on` enregistre toutes les sources (pour essayer avec `--source mock`), `--history off` n'enregistre rien, `--history-file chemin.sqlite` change de base. API : `GET /api/history/sessions`, `GET`/`DELETE /api/history/sessions/{id}`, `GET /api/history/laps/{id}` (avec la trace). Code : `backend/lmu_assistant/history.py`.
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

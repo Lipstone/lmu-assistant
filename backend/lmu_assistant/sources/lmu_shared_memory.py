@@ -553,6 +553,8 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.lap = scoring.mTotalLaps + 1  # tour en cours
         snap.position = scoring.mPlace
         snap.last_lap_s = _lap_time(scoring.mLastLapTime)
+        snap.last_sector1_s = _lap_time(scoring.mLastSector1)
+        snap.last_sector2_s = _lap_time(scoring.mLastSector2)
         snap.best_lap_s = _lap_time(scoring.mBestLapTime)
         snap.current_lap_s = round(max(0.0, info.mCurrentET - scoring.mLapStartET), 3)
         snap.in_pits = bool(scoring.mInPits)

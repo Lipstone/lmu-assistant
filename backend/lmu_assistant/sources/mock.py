@@ -59,6 +59,8 @@ class MockSource(DataSource):
         self._invalid_at: float | None = None  # instant du tour où il sera invalidé (limites de piste)
         self._stops = 0
         self._wetness = 0.0
+        self._s1: float | None = None
+        self._s2: float | None = None
 
     def _fraction(self, current: float) -> float:
         x = current / self._lap_target
@@ -69,11 +71,14 @@ class MockSource(DataSource):
         current = now - self._lap_start
         if current >= self._lap_target:
             self._last = self._lap_target
+            # secteurs (F20) : 31 %, 38 %, 31 % du tour, à quelques dixièmes près
+            self._s1 = round(self._last * 0.31 + random.uniform(-0.4, 0.4), 3)
+            self._s2 = round(self._s1 + self._last * 0.38 + random.uniform(-0.4, 0.4), 3)
             self._best = min(self._best or self._last, self._last)
             self._lap += 1
             self._lap_start = now
-            self._fuel = max(0.0, self._fuel - FUEL_PER_LAP_L * random.uniform(0.95, 1.05))
-            self._energy = max(0.0, self._energy - ENERGY_PER_LAP_PCT * random.uniform(0.97, 1.03))
+            self._fuel = max(0.0, self._fuel - FUEL_PER_LAP_L * current / LAP_S * random.uniform(0.95, 1.05))
+            self._energy = max(0.0, self._energy - ENERGY_PER_LAP_PCT * current / LAP_S * random.uniform(0.97, 1.03))
             self._lap_target = LAP_S + random.uniform(-1.5, 1.5)
             self._wobble = random.uniform(-0.01, 0.01)  # temps gagné ou perdu en cours de tour (delta F03)
             current = 0.0
@@ -89,6 +94,8 @@ class MockSource(DataSource):
 
         phase = current / LAP_S * 2 * math.pi
         speed = 200 + 110 * math.sin(phase * 28)
+        if self._pit and current < PIT_S:
+            speed = 0.0 if 6 <= current < 18 else 60.0  # limiteur dans la voie des stands, arrêt au stand
         stint = self._lap - self._stint_start  # tours depuis les derniers pneus neufs
         wheels = [
             Wheel(
@@ -141,6 +148,8 @@ class MockSource(DataSource):
             fuel_capacity_l=100.0,
             virtual_energy_pct=round(self._energy - ENERGY_PER_LAP_PCT * current / LAP_S, 2),
             last_lap_s=self._last,
+            last_sector1_s=self._s1,
+            last_sector2_s=self._s2,
             best_lap_s=self._best,
             current_lap_s=round(current, 3),
             lap_fraction=fraction,
