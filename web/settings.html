@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Réglages overlay</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <strong>LMU Assistant</strong>
+    <span>Réglages overlay</span>
+    <a href="/">← Tableau de bord</a>
+  </header>
+
+  <main class="settings">
+    <section class="widget">
+      <h2>Widgets</h2>
+      <table>
+        <thead><tr><th>Widget</th><th>Visible</th><th>X (px)</th><th>Y (px)</th><th>Échelle</th></tr></thead>
+        <tbody id="widgets"></tbody>
+      </table>
+      <p class="hint">Positions en pixels dans la fenêtre overlay. Sur la page normale, seule la case « Visible » s'applique.</p>
+    </section>
+
+    <section class="widget">
+      <h2>Overlay</h2>
+      <label>Opacité <input type="range" id="opacity" min="0.1" max="1" step="0.05"> <span id="opacity-val"></span></label>
+      <label>Raccourci afficher/masquer <input type="text" id="hotkey" placeholder="ctrl+shift+o"></label>
+      <br>
+      <label>Fenêtre X <input type="number" id="win-x"></label>
+      <label>Y <input type="number" id="win-y"></label>
+      <label>Largeur <input type="number" id="win-width" min="50"></label>
+      <label>Hauteur <input type="number" id="win-height" min="50"></label>
+      <br>
+      <label><input type="checkbox" id="click-through"> Clics traversants (les clics passent au jeu, Windows)</label>
+      <p class="hint">Les widgets se mettent à jour immédiatement. Position/taille de la fenêtre, clics traversants et raccourci sont appliqués par l'overlay en cours sous ~2 s.</p>
+    </section>
+
+    <div class="actions">
+      <button id="save">Enregistrer</button>
+      <span id="msg"></span>
+    </div>
+
+    <section class="widget preview-wrap">
+      <h2>Aperçu (taille de la fenêtre overlay)</h2>
+      <iframe id="preview" class="preview" src="/?mode=overlay" title="Aperçu overlay"></iframe>
+    </section>
+  </main>
+
+  <script src="settings.js"></script>
+</body>
+</html>
