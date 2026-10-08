@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import ConfigStore
 from .config_api import make_config_router
+from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
 from .network import router as network_router
 from .paths import resource_dir
@@ -18,16 +19,17 @@ WEB_DIR = resource_dir() / "web"
 
 
 class Broadcaster:
-    def __init__(self, source: DataSource, hz: float) -> None:
+    def __init__(self, source: DataSource, hz: float, records_path: str | Path | None = DEFAULT_RECORDS_PATH) -> None:
         self.source = source
         self.period = 1.0 / hz
         self.clients: set[WebSocket] = set()
         self.latest: dict = {}
         self.fuel = FuelCalculator()
+        self.delta = DeltaCalculator(records_path)
 
     async def run(self) -> None:
         while True:
-            self.latest = self.fuel.update(self.source.read()).to_dict()
+            self.latest = self.delta.update(self.fuel.update(self.source.read())).to_dict()
             await self.send_all({"type": "snapshot", "data": self.latest})
             await asyncio.sleep(self.period)
 
@@ -39,8 +41,13 @@ class Broadcaster:
                 self.clients.discard(ws)
 
 
-def create_app(source: DataSource, hz: float = 10.0, config_path: str | Path | None = None) -> FastAPI:
-    broadcaster = Broadcaster(source, hz)
+def create_app(
+    source: DataSource,
+    hz: float = 10.0,
+    config_path: str | Path | None = None,
+    records_path: str | Path | None = DEFAULT_RECORDS_PATH,
+) -> FastAPI:
+    broadcaster = Broadcaster(source, hz, records_path)
     config_store = ConfigStore(config_path)
 
     @contextlib.asynccontextmanager

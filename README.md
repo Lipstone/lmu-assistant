@@ -56,6 +56,16 @@ Le widget **Carburant** affiche le niveau, la conso du dernier tour et la moyenn
 - Pas de marge de sécurité ajoutée : le chiffre « À ajouter » est le strict nécessaire.
 - **Énergie virtuelle (% EV)** : sur les voitures qui en ont (Hypercar, LMGT3), le widget passe en **Énergie virtuelle** avec les mêmes calculs en % (dernier tour, moyenne, tours restants, % à ajouter), et rappelle les litres sur une ligne. Réglage « Widget Carburant » dans Réglages overlay : Auto (par défaut), Litres ou % énergie virtuelle.
 
+## Delta (F03)
+
+Le widget **Delta** affiche en gros l'écart en direct avec le tour de référence, au même endroit de la piste (vert et négatif = plus rapide, rouge et positif = plus lent), une barre centrée (pleine à ±2 s), le **temps prévu** du tour en cours, le temps de la référence, et l'écart avec chacune des trois références :
+
+- **meilleur** tour de la session (référence par défaut) ;
+- **dernier** tour ;
+- **record** personnel pour la piste et la voiture, enregistré dans `data/records.json` et gardé d'une session à l'autre (seulement en lecture réelle du jeu : les données simulées ou rejouées ne changent pas les records).
+
+La référence affichée en gros se choisit dans Réglages overlay (« Widget Delta »). Calculs côté serveur (`backend/lmu_assistant/delta.py`) : pendant chaque tour on relève le temps écoulé selon l'avancement dans le tour ; un tour sert de référence s'il a été suivi depuis la ligne, sans passage aux stands ni trou dans les relevés. Meilleur et dernier tour repartent de zéro quand la session, la piste ou la voiture change. Le delta est masqué quand il n'a pas de sens (écart de plus de 25 % du tour, par exemple aux stands).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

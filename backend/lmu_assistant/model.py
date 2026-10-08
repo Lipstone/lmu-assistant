@@ -26,6 +26,19 @@ class FuelInfo:
 
 
 @dataclass
+class DeltaInfo:
+    """Delta en direct (F03), rempli par `delta.DeltaCalculator` : écart du tour en cours avec chaque
+    référence au même endroit de la piste (s, négatif = plus rapide), et temps au tour de chaque référence."""
+
+    best_s: float | None = None  # meilleur tour de la session
+    last_s: float | None = None  # dernier tour valide
+    record_s: float | None = None  # record personnel piste + voiture
+    vs_best: float | None = None
+    vs_last: float | None = None
+    vs_record: float | None = None
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -50,6 +63,7 @@ class Snapshot:
     wheels: list[Wheel] = field(default_factory=lambda: [Wheel() for _ in range(4)])  # AVG, AVD, ARG, ARD
     fuel: FuelInfo = field(default_factory=FuelInfo)
     energy: FuelInfo = field(default_factory=lambda: FuelInfo(unit="%"))
+    delta: DeltaInfo = field(default_factory=DeltaInfo)
 
     def to_dict(self) -> dict:
         return asdict(self)

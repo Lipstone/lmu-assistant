@@ -490,6 +490,13 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         # Le temps télémétrie est plus fin (mise à jour à chaque frame physique)
         snap.current_lap_s = round(max(0.0, telem.mElapsedTime - telem.mLapStartET), 3)
         snap.wheels = [_wheel(w, left_side=(i % 2 == 0)) for i, w in enumerate(telem.mWheels)]
+        if scoring is not None and info.mLapDist > 0:
+            # mLapDist n'est mis à jour qu'au rythme du scoring (~5 Hz) : on l'avance à l'instant de la
+            # télémétrie avec la vitesse, sinon le delta (F03) tremblerait de quelques dixièmes.
+            dt = telem.mElapsedTime - info.mCurrentET
+            if 0 < dt < 0.5:
+                dist = scoring.mLapDist + snap.speed_kmh / 3.6 * dt
+                snap.lap_fraction = round(min(max(dist / info.mLapDist, 0.0), 1.0), 4)
     return snap
 
 

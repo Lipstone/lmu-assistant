@@ -6,6 +6,7 @@
   --accent: #4fc3f7;
   --ok: #66bb6a;
   --warn: #ffb74d;
+  --bad: #ef5350;
 }
 * { box-sizing: border-box; }
 body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
@@ -31,6 +32,14 @@ dt, dd { white-space: nowrap; }
 .bar > div.alert { background: var(--warn); }
 dd.alert { color: var(--warn); font-weight: 600; }
 dd.good { color: var(--ok); }
+.faster { color: var(--ok); }
+.slower { color: var(--bad); }
+.big.delta { font-size: 40px; font-weight: 600; text-align: center; }
+.delta-bar { position: relative; height: 6px; background: #333; border-radius: 3px; margin-top: 6px; overflow: hidden; }
+.delta-bar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); }
+.delta-bar > div { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; }
+.delta-bar > div.faster { background: var(--ok); }
+.delta-bar > div.slower { background: var(--bad); }
 .tyres { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 20px; text-align: center; }
 .tyres div { background: #22262e; border-radius: 4px; padding: 6px; }
 
@@ -41,7 +50,8 @@ body.overlay .widgets { display: block; position: relative; width: 100vw; height
 body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; background: rgba(15, 17, 21, var(--bg-alpha, 0.75)); padding: 8px 10px; }
 body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
-body.overlay .widget[data-widget="fuel"] { width: 200px; } /* plus de lignes et des valeurs plus longues */
+body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"] { width: 200px; }
+body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */
 .grip { display: none; }

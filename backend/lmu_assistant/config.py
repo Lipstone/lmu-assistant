@@ -25,13 +25,25 @@ log = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
-WIDGET_IDS = ("lap", "fuel", "car", "tyres")
+WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres")
 
 # Position par défaut de chaque fenêtre sur l'écran (pixels, coin haut gauche).
-_DEFAULT_POSITIONS = {"lap": (20, 20), "fuel": (20, 170), "car": (220, 20), "tyres": (220, 150)}
+_DEFAULT_POSITIONS = {
+    "lap": (20, 20),
+    "delta": (860, 20),
+    "fuel": (20, 170),
+    "car": (220, 20),
+    "tyres": (220, 150),
+}
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
-WIDGET_SIZES = {"lap": (180, 136), "fuel": (200, 210), "car": (180, 118), "tyres": (180, 122)}
+WIDGET_SIZES = {
+    "lap": (180, 136),
+    "delta": (200, 196),
+    "fuel": (200, 210),
+    "car": (180, 118),
+    "tyres": (180, 122),
+}
 
 
 def window_size(widget_id: str, scale: float) -> tuple[int, int]:
@@ -84,6 +96,9 @@ class AppConfig(BaseModel):
     window: OverlayWindow = Field(default_factory=OverlayWindow)
     fuel_mode: Literal["auto", "fuel", "energy"] = Field(
         "auto", description="widget Carburant : litres, % d'énergie virtuelle, ou auto (% EV si la voiture en a)"
+    )
+    delta_reference: Literal["best", "last", "record"] = Field(
+        "best", description="widget Delta : meilleur tour de la session, dernier tour ou record personnel"
     )
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(
