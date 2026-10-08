@@ -22,18 +22,15 @@ class FakeWindow:
     def hide(self):
         self.calls.append(("hide",))
 
+    def set_click_through(self, on):
+        self.clicks.append((self.wid, on))
+
 
 def make_overlay(monkeypatch, overrides=None):
     clicks = []
     windows = {wid: FakeWindow() for wid in WIDGET_IDS}
-    names = {id(w): wid for wid, w in windows.items()}
-    native_ready = set(WIDGET_IDS)
-
-    def native(win, on, mode="alpha"):
-        clicks.append((names[id(win)], on, mode))
-        return names[id(win)] in native_ready
-
-    monkeypatch.setattr(overlay, "set_native_style", native)
+    for wid, w in windows.items():
+        w.wid, w.clicks = wid, clicks
     monkeypatch.setattr(overlay.Hotkey, "set", lambda self, combo: None)
     return overlay.Overlay(windows, "http://x/api/config", overrides or {}, None), windows, clicks
 
@@ -67,7 +64,7 @@ def test_apply_moves_only_changed_windows(monkeypatch):
     ov, windows, clicks = make_overlay(monkeypatch)
     ov.apply(config())
     assert len(clicks) == len(WIDGET_IDS)
-    assert clicks[0] == (WIDGET_IDS[0], True, "alpha")
+    assert clicks[0] == (WIDGET_IDS[0], True)
     for w in windows.values():
         w.calls.clear()
 
@@ -112,7 +109,7 @@ def test_placement_disables_click_through(monkeypatch):
     ov.apply(config())
     clicks.clear()
     ov.apply(config(placement=True))
-    assert ov.placement and clicks == [(w, False, "alpha") for w in WIDGET_IDS]
+    assert ov.placement and clicks == [(w, False) for w in WIDGET_IDS]
 
 
 def test_toggle_placement_saves_and_applies(monkeypatch):
@@ -159,38 +156,33 @@ def test_resize_with_grip(monkeypatch):
     assert windows["lap"].calls == []
 
 
-def test_transparency_mode_change_reapplied(monkeypatch):
+def test_click_through_applied_only_when_changed(monkeypatch):
     ov, _, clicks = make_overlay(monkeypatch)
     ov.apply(config())
+    assert clicks == [(w, True) for w in WIDGET_IDS]
     clicks.clear()
     ov.apply(config())
     assert clicks == []  # rien n'a changé
-    cfg = config()
-    cfg["window"]["transparency"] = "colorkey"
-    ov.apply(cfg)
-    assert clicks == [(w, True, "colorkey") for w in WIDGET_IDS]
 
 
-def test_native_style_retried_until_window_exists(monkeypatch):
-    ov, windows, clicks = make_overlay(monkeypatch)
-    monkeypatch.setattr(overlay, "set_native_style", lambda win, on, mode="alpha": clicks.append(on) or win is not windows["fuel"])
+def test_window_fits_measured_widget(monkeypatch):
+    ov, windows, _ = make_overlay(monkeypatch)
+    ov.apply(config(scale=1.5))
+    windows["fuel"].calls.clear()
+    ov.set_content("fuel", 200, 151.2)  # mesuré par la page, à l'échelle 1
+    assert windows["fuel"].calls == [("resize", 300, 227)]
+    assert (ov.applied["fuel"].width, ov.applied["fuel"].height) == (300, 227)
+    windows["fuel"].calls.clear()
+    ov.apply(config(scale=1.5))  # la config relue ne remet pas la taille par défaut
+    assert windows["fuel"].calls == []
+    ov.set_scale("fuel", 1.0, final=False)
+    assert windows["fuel"].calls == [("resize", 200, 152)]
+
+
+def test_fit_before_first_apply_is_kept(monkeypatch):
+    ov, windows, _ = make_overlay(monkeypatch)
+    ov.set_content("lap", 220, 180)
     ov.apply(config())
-    assert ov.native_pending == {"fuel"}
-    clicks.clear()
-    monkeypatch.setattr(overlay, "set_native_style", lambda win, on, mode="alpha": clicks.append(on) or True)
-    ov.apply(config())
-    assert clicks == [True] and ov.native_pending == set()
-
-
-def test_ex_style():
-    base = 0x100
-    assert overlay.ex_style(base, False, "alpha") == base
-    assert overlay.ex_style(base, True, "alpha") == base | overlay.WS_EX_LAYERED | overlay.WS_EX_TRANSPARENT
-    assert overlay.ex_style(base, False, "colorkey") == base | overlay.WS_EX_LAYERED
-    on = base | overlay.WS_EX_LAYERED | overlay.WS_EX_TRANSPARENT
-    assert overlay.ex_style(on, False, "alpha") == base
-
-
-def test_native_style_noop_off_windows(monkeypatch):
-    monkeypatch.setattr(overlay.sys, "platform", "linux")
-    assert overlay.set_native_style(object(), False) is True
+    assert ("resize", 220, 180) in windows["lap"].calls
+    ov.set_content("lap", "x", None)  # valeur invalide de la page : ignorée
+    assert ov.content["lap"] == (220.0, 180.0)

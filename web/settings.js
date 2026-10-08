@@ -74,7 +74,6 @@ function fill(cfg) {
     setValue($("text-opacity"), cfg.text_opacity);
   }
   showOpacities();
-  setValue($("transparency"), cfg.window.transparency);
   setValue($("hotkey"), cfg.hotkey);
   setValue($("click-through"), cfg.window.click_through);
   setValue($("placement"), cfg.placement);
@@ -87,6 +86,7 @@ function fill(cfg) {
   setValue($("brake-overheat"), cfg.brake_overheat_c);
   setValue($("pit-loss"), cfg.pit_loss_s);
   setValue($("inputs-trace"), cfg.inputs_trace_s);
+  setValue($("refresh-hz"), cfg.refresh_hz);
   setValue($("placement-hotkey"), cfg.placement_hotkey);
   sizePreview();
 }
@@ -117,11 +117,11 @@ function collect() {
     brake_overheat_c: num($("brake-overheat"), config.brake_overheat_c),
     pit_loss_s: num($("pit-loss"), config.pit_loss_s),
     inputs_trace_s: num($("inputs-trace"), config.inputs_trace_s),
+    refresh_hz: Math.round(num($("refresh-hz"), config.refresh_hz)),
     laptime_avg_laps: Math.round(num($("laptime-avg-laps"), config.laptime_avg_laps)),
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {
       click_through: $("click-through").checked,
-      transparency: $("transparency").value,
     },
   };
 }

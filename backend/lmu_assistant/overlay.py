@@ -1,5 +1,8 @@
 """Overlay : une fenêtre transparente, sans bordure, toujours au premier plan, par widget.
 
+Fenêtres Qt (PySide6 / QtWebEngine, voir overlay_qt.py) : fond réellement transparent pixel par pixel,
+chaque fenêtre ajustée à la taille de son widget (aucune zone vide autour).
+
 Chaque fenêtre affiche un seul widget de la page web locale (`/?mode=overlay&widget=<id>`),
 et se place indépendamment sur l'écran. Lancer le serveur d'abord
 (l'exécutable LMU-Assistant lance les deux ensemble, voir launcher.py).
@@ -17,6 +20,7 @@ traversent plus, chaque fenêtre se déplace en la faisant glisser et s'agrandit
 
 import argparse
 import json
+import math
 import sys
 import threading
 import time
@@ -64,94 +68,6 @@ def put_config(config_url: str, cfg: dict) -> bool:
         return False
 
 
-# --- Transparence et clics traversants (Windows uniquement, via l'API Win32) ----
-# pywebview (6.x) rend la page WebView2 transparente mais laisse le fond de la fenêtre WinForms
-# (gris clair « Control ») : ce sont les zones blanches derrière les widgets. On peint ce fond en noir
-# et on active la transparence par pixel de DWM (DwmEnableBlurBehindWindow avec une région vide :
-# aucun flou, seulement le canal alpha), comme le font Tauri/winit pour leurs fenêtres transparentes.
-# Mode « colorkey » de secours : le fond de la fenêtre prend une couleur clé rendue invisible par Windows
-# (les zones vides deviennent transparentes, un fond de widget semi-transparent devient opaque).
-# Clics traversants : pywebview n'a pas d'option, on ajoute WS_EX_TRANSPARENT au style étendu.
-GWL_EXSTYLE = -20
-WS_EX_LAYERED = 0x00080000
-WS_EX_TRANSPARENT = 0x00000020
-LWA_COLORKEY, LWA_ALPHA = 0x1, 0x2
-DWM_BB_ENABLE, DWM_BB_BLURREGION = 0x1, 0x2
-COLOR_KEY = (1, 0, 1)  # couleur clé du mode colorkey (quasi noire : bords du texte sans halo clair)
-
-
-def ex_style(style: int, click_through: bool, transparency: str) -> int:
-    """Style étendu voulu : fenêtre « layered » pour les clics traversants et pour la couleur clé."""
-    layered = click_through or transparency == "colorkey"
-    style = style | WS_EX_LAYERED if layered else style & ~WS_EX_LAYERED
-    return style | WS_EX_TRANSPARENT if click_through else style & ~WS_EX_TRANSPARENT
-
-
-def _on_gui_thread(form, fn) -> None:
-    """Exécute `fn` dans le thread de l'interface WinForms (propriétés .NET de la fenêtre)."""
-    from System import Action  # pythonnet, installé avec pywebview sous Windows
-
-    if form.InvokeRequired:
-        form.Invoke(Action(fn))
-    else:
-        fn()
-
-
-def set_native_style(win, click_through: bool, transparency: str = "alpha") -> bool:
-    """Applique transparence et clics traversants à la fenêtre native. False si elle n'existe pas encore."""
-    if sys.platform != "win32":
-        if click_through:
-            warn("clics traversants non pris en charge hors Windows")
-        return True
-    form = getattr(win, "native", None)
-    if form is None:
-        return False
-
-    def apply() -> None:
-        import ctypes
-        from ctypes import wintypes
-
-        from System.Drawing import Color
-
-        user32, dwmapi, gdi32 = ctypes.windll.user32, ctypes.windll.dwmapi, ctypes.windll.gdi32
-
-        class DWM_BLURBEHIND(ctypes.Structure):
-            _fields_ = [
-                ("dwFlags", wintypes.DWORD),
-                ("fEnable", wintypes.BOOL),
-                ("hRgnBlur", wintypes.HANDLE),
-                ("fTransitionOnMaximized", wintypes.BOOL),
-            ]
-
-        hwnd = ctypes.c_void_p(form.Handle.ToInt64())
-        user32.GetWindowLongW.argtypes = [ctypes.c_void_p, ctypes.c_int]
-        user32.SetWindowLongW.argtypes = [ctypes.c_void_p, ctypes.c_int, ctypes.c_long]
-        user32.SetLayeredWindowAttributes.argtypes = [ctypes.c_void_p, wintypes.DWORD, ctypes.c_ubyte, wintypes.DWORD]
-        gdi32.CreateRectRgn.restype = wintypes.HANDLE
-        dwmapi.DwmEnableBlurBehindWindow.argtypes = [ctypes.c_void_p, ctypes.POINTER(DWM_BLURBEHIND)]
-
-        colorkey = transparency == "colorkey"
-        form.BackColor = Color.FromArgb(255, *COLOR_KEY) if colorkey else Color.Black
-        style = ex_style(user32.GetWindowLongW(hwnd, GWL_EXSTYLE), click_through, transparency)
-        user32.SetWindowLongW(hwnd, GWL_EXSTYLE, style)
-        if colorkey:
-            r, g, b = COLOR_KEY
-            user32.SetLayeredWindowAttributes(hwnd, r | g << 8 | b << 16, 255, LWA_COLORKEY)
-        elif style & WS_EX_LAYERED:
-            user32.SetLayeredWindowAttributes(hwnd, 0, 255, LWA_ALPHA)  # sans cet appel, fenêtre invisible
-        region = gdi32.CreateRectRgn(0, 0, -1, -1)
-        bb = DWM_BLURBEHIND(DWM_BB_ENABLE | DWM_BB_BLURREGION, not colorkey, region, False)
-        dwmapi.DwmEnableBlurBehindWindow(hwnd, ctypes.byref(bb))
-        gdi32.DeleteObject(region)
-        form.Invalidate(True)
-
-    try:
-        _on_gui_thread(form, apply)
-    except Exception as exc:
-        warn(f"transparence / clics traversants impossibles : {exc}")
-    return True
-
-
 # --- Raccourci global afficher/masquer ---------------------------------------
 class Hotkey:
     """Raccourci global via le paquet `keyboard` ; avertit et ne fait rien s'il manque."""
@@ -191,11 +107,18 @@ class WindowState:
     height: int
     visible: bool
     click_through: bool
-    transparency: str = "alpha"
+    scale: float = 1.0
 
 
-def plan(cfg: dict, overrides: dict | None = None) -> dict[str, WindowState]:
-    """État voulu de chaque fenêtre (une par widget) d'après la config du serveur."""
+def fit_size(content: tuple[float, float], scale: float) -> tuple[int, int]:
+    """Taille de fenêtre qui contient exactement le widget (taille mesurée par sa page, à l'échelle 1)."""
+    return max(40, math.ceil(content[0] * scale)), max(40, math.ceil(content[1] * scale))
+
+
+def plan(cfg: dict, overrides: dict | None = None, content: dict | None = None) -> dict[str, WindowState]:
+    """État voulu de chaque fenêtre (une par widget) d'après la config du serveur.
+    `content` : taille mesurée de chaque widget ; la fenêtre colle alors au widget (aucune zone vide autour).
+    Sans mesure (page pas encore chargée), taille par défaut `WIDGET_SIZES` × échelle."""
     try:
         config = AppConfig.model_validate(cfg)
     except ValueError as exc:  # serveur d'une autre version, etc.
@@ -203,9 +126,13 @@ def plan(cfg: dict, overrides: dict | None = None) -> dict[str, WindowState]:
         config = AppConfig()
     # En mode placement, les fenêtres doivent recevoir la souris.
     click = (overrides or {}).get("click_through", config.window.click_through) and not config.placement
-    mode = config.window.transparency
+    content = content or {}
+
+    def size(w):
+        return fit_size(content[w.id], w.scale) if w.id in content else window_size(w.id, w.scale)
+
     return {
-        w.id: WindowState(w.x, w.y, *window_size(w.id, w.scale), w.visible, click, mode) for w in config.widgets
+        w.id: WindowState(w.x, w.y, *size(w), w.visible, click, w.scale) for w in config.widgets
     }
 
 
@@ -214,7 +141,7 @@ def clamp_scale(scale: float) -> float:
 
 
 class WidgetApi:
-    """Fonctions appelées par la page d'un widget (window.pywebview.api) : agrandissement à la souris."""
+    """Fonctions appelées par la page d'un widget (window.pywebview.api) : taille du contenu, agrandissement."""
 
     def __init__(self, overlay: "Overlay", widget_id: str) -> None:
         self._overlay = overlay  # attributs en _ : non exposés au JavaScript
@@ -222,6 +149,9 @@ class WidgetApi:
 
     def set_scale(self, scale: float, final: bool = False) -> None:
         self._overlay.set_scale(self._wid, scale, final)
+
+    def fit(self, width: float, height: float) -> None:
+        self._overlay.set_content(self._wid, width, height)
 
 
 class Overlay:
@@ -234,7 +164,7 @@ class Overlay:
         self.applied: dict[str, WindowState] = {}
         self.resizing: set[str] = set()  # agrandissement en cours : la config ne doit pas le défaire
         self.unsaved: set[str] = set()  # déplacées à la souris, pas encore enregistrées sur le serveur
-        self.native_pending: set[str] = set()  # transparence / clics traversants pas encore appliqués
+        self.content: dict[str, tuple[float, float]] = {}  # taille mesurée de chaque widget (échelle 1)
         self.lock = threading.RLock()  # raccourcis, appels JavaScript et boucle de suivi
         self.hotkey = Hotkey(self.toggle)
         self.placement_hotkey = Hotkey(self.toggle_placement)
@@ -253,7 +183,7 @@ class Overlay:
     def apply(self, cfg: dict) -> None:
         with self.lock:
             self.placement = bool(cfg.get("placement"))
-            for wid, new in plan(cfg, self.overrides).items():
+            for wid, new in plan(cfg, self.overrides, self.content).items():
                 old = self.applied.get(wid)
                 win = self.windows[wid]
                 if wid in self.resizing and old is not None:
@@ -266,12 +196,8 @@ class Overlay:
                     win.resize(new.width, new.height)
                 if old is None or new.visible != old.visible:
                     self._set_visible(wid, self.shown and new.visible)
-                native = (new.click_through, new.transparency)
-                if old is None or wid in self.native_pending or native != (old.click_through, old.transparency):
-                    if set_native_style(win, *native):
-                        self.native_pending.discard(wid)
-                    else:  # fenêtre native pas encore créée : on réessaiera
-                        self.native_pending.add(wid)
+                if old is None or new.click_through != old.click_through:
+                    win.set_click_through(new.click_through)
                 self.applied[wid] = new
             self.hotkey.set(cfg.get("hotkey") or DEFAULT_HOTKEY)
             self.placement_hotkey.set(cfg.get("placement_hotkey") or DEFAULT_PLACEMENT_HOTKEY)
@@ -318,26 +244,39 @@ class Overlay:
                     moved[wid] = {"x": x, "y": y}
         return moved
 
+    def _resize(self, wid: str, scale: float) -> None:
+        state = self.applied[wid]
+        width, height = fit_size(self.content[wid], scale) if wid in self.content else window_size(wid, scale)
+        if (width, height) != (state.width, state.height):
+            self.windows[wid].resize(width, height)
+        self.applied[wid] = replace(state, width=width, height=height, scale=scale)
+
+    def set_content(self, wid: str, width: float, height: float) -> None:
+        """La page du widget a mesuré son contenu : la fenêtre prend exactement cette taille."""
+        try:
+            content = (max(1.0, float(width)), max(1.0, float(height)))
+        except (TypeError, ValueError):
+            return
+        with self.lock:
+            self.content[wid] = content
+            if wid in self.applied:
+                self._resize(wid, self.applied[wid].scale)
+
     def set_scale(self, wid: str, scale: float, final: bool) -> None:
         scale = clamp_scale(scale)
-        width, height = window_size(wid, scale)
         with self.lock:
-            state = self.applied.get(wid)
-            if state is None:
+            if wid not in self.applied:
                 return
             if final:
                 self.resizing.discard(wid)
             else:
                 self.resizing.add(wid)
-            if (width, height) != (state.width, state.height):
-                self.windows[wid].resize(width, height)
-                self.applied[wid] = replace(state, width=width, height=height)
+            self._resize(wid, scale)
         if final:
             self.save_widgets({wid: {"scale": scale}})
 
     def run(self) -> None:
-        """Lancé par pywebview dans un thread une fois les fenêtres créées."""
-        time.sleep(0.5)  # laisse les fenêtres natives apparaître (transparence, clics traversants)
+        """Boucle de suivi de la configuration, dans un thread à part (la boucle Qt occupe le principal)."""
         self.apply(self.initial or {})
         while True:
             time.sleep(PLACEMENT_POLL_S if self.placement else POLL_S)
@@ -352,36 +291,21 @@ class Overlay:
                 self.apply(cfg)
 
 
-def run(url: str, overrides: dict | None = None) -> None:
+def run(url: str, overrides: dict | None = None, quit_after: float | None = None) -> int:
     """Ouvre une fenêtre par widget sur `url` (page en mode overlay) ; bloque jusqu'à la
-    fermeture de toutes les fenêtres (thread principal)."""
-    import webview  # pywebview : dépendance optionnelle `overlay`
+    fermeture (thread principal). `quit_after` : ferme au bout de N s (vérification de l'exécutable).
+    Renvoie le nombre de fenêtres ouvertes."""
+    from . import overlay_qt  # PySide6 : dépendance optionnelle `overlay`
 
     overrides = overrides or {}
     parts = urlsplit(url)
     config_url = f"{parts.scheme}://{parts.netloc}/api/config"
     initial = fetch_config(config_url)
     sep = "&" if parts.query else "?"
-
     overlay = Overlay({}, config_url, overrides, initial)
-    for wid, state in plan(initial or {}, overrides).items():
-        overlay.windows[wid] = webview.create_window(
-            window_title(wid),
-            f"{url}{sep}widget={wid}",
-            js_api=WidgetApi(overlay, wid),
-            x=state.x,
-            y=state.y,
-            width=state.width,
-            height=state.height,
-            hidden=not state.visible,
-            background_color="#000000",
-            min_size=(40, 40),  # défaut pywebview 200×100 : plus grand qu'un widget
-            frameless=True,
-            easy_drag=False,  # glisser seulement en mode placement (classe pywebview-drag-region)
-            on_top=True,
-            transparent=True,
-        )
-    webview.start(overlay.run)
+    return overlay_qt.run(
+        overlay, lambda wid: f"{url}{sep}widget={wid}", window_title, plan(initial or {}, overrides), quit_after
+    )
 
 
 def main() -> None:

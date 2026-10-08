@@ -1,9 +1,10 @@
 """Point d'entrée de l'exécutable LMU-Assistant : serveur + overlay en un seul lancement.
 
-Le serveur tourne dans un thread ; l'overlay (pywebview) occupe le thread principal.
+Le serveur tourne dans un thread ; l'overlay (Qt) occupe le thread principal.
 Fermer l'overlay arrête le serveur. Avec --no-overlay, le serveur tourne jusqu'à Ctrl+C.
 """
 
+import argparse
 import sys
 import threading
 import time
@@ -32,6 +33,7 @@ def main(argv: list[str] | None = None) -> None:
     parser = build_parser("LMU Assistant : serveur + overlay")
     parser.add_argument("--no-overlay", action="store_true", help="serveur et page web seulement")
     parser.add_argument("--browser", action="store_true", help="ouvre aussi la page web dans le navigateur")
+    parser.add_argument("--quit-after", type=float, metavar="S", help=argparse.SUPPRESS)  # vérification CI de l'exe
     args = parser.parse_args(argv)
 
     app = build_app(parser, args)
@@ -45,9 +47,11 @@ def main(argv: list[str] | None = None) -> None:
             try:
                 from .overlay import run as run_overlay
 
-                run_overlay(f"{local}/?mode=overlay")  # bloque jusqu'à la fermeture de l'overlay
+                run_overlay(f"{local}/?mode=overlay", quit_after=args.quit_after)  # bloque jusqu'à la fermeture
                 return
-            except Exception as exc:  # pywebview absent ou pas d'affichage
+            except Exception as exc:  # PySide6 absent ou pas d'affichage
+                if args.quit_after:  # vérification de l'exécutable : l'overlay doit marcher
+                    raise
                 print(f"[overlay] indisponible ({exc}) : page web seulement", file=sys.stderr)
         print("Ctrl+C pour quitter.")
         while thread.is_alive():

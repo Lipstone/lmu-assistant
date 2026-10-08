@@ -12,7 +12,7 @@ def build_parser(description: str = "LMU Assistant : serveur local") -> argparse
     parser.add_argument("--source", choices=["mock", "lmu", "replay"], default="lmu")
     parser.add_argument("--host", default="0.0.0.0", help="0.0.0.0 = accessible depuis le réseau local")
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--hz", type=float, default=10.0, help="fréquence d'envoi aux clients")
+    parser.add_argument("--hz", type=float, default=None, help="fréquence d'envoi aux clients (défaut : réglage refresh_hz, 30/s)")
     parser.add_argument("--config", default=None, help="fichier de configuration JSON (défaut : data/config.json)")
     parser.add_argument("--history", choices=["auto", "on", "off"], default="auto",
                         help="historique des tours (data/history.sqlite) : auto = lecture du jeu seulement")
