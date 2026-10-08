@@ -48,4 +48,4 @@ Les fonctionnalités hors course sont surtout pour la page web ; une version com
 | T05 | Lecture LMU | Mémoire partagée du jeu → `Snapshot` | ⬜ |
 | T06 | Config overlay | Choix et position des widgets, opacité, raccourci afficher/masquer | ⬜ |
 | T07 | Enregistrement / relecture | Enregistrer une session brute et la rejouer comme source | ✅ |
-| T08 | Accès réseau local | Page accessible depuis tablette/téléphone, QR code | ⬜ |
+| T08 | Accès réseau local | Page accessible depuis tablette/téléphone, QR code | ✅ |

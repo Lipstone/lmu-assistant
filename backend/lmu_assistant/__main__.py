@@ -2,6 +2,7 @@ import argparse
 
 import uvicorn
 
+from .network import lan_urls
 from .server import create_app
 from .sources import get_source
 
@@ -33,7 +34,10 @@ def main() -> None:
         print(f"Enregistrement : {source.path}")
 
     app = create_app(source, hz=args.hz)
+    app.state.port, app.state.host = args.port, args.host
     print(f"LMU Assistant : http://localhost:{args.port}  (source : {args.source})")
+    for url in lan_urls(args.port, args.host):
+        print(f"  Réseau local : {url}  (QR code : http://localhost:{args.port}/connect.html)")
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 
 

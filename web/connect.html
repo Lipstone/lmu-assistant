@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LMU Assistant : connexion</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="./" class="brand">LMU Assistant</a>
+    <span class="nav-current">Connexion tablette / téléphone</span>
+  </header>
+
+  <main class="connect">
+    <section class="widget">
+      <h2>Scanner avec la tablette ou le téléphone</h2>
+      <img id="qr" class="qr" alt="QR code de l'adresse de la page">
+      <p class="hint">L'appareil doit être connecté au même réseau (Wi-Fi) que le PC.</p>
+    </section>
+
+    <section class="widget">
+      <h2>Ou saisir l'adresse</h2>
+      <ul id="urls" class="urls"><li>Chargement…</li></ul>
+      <p class="hint" id="info"></p>
+      <p class="hint">Rien ne s'affiche sur l'appareil ? Autoriser Python dans le pare-feu Windows
+        (réseaux privés) et vérifier que le serveur n'a pas été lancé avec <code>--host 127.0.0.1</code>.</p>
+    </section>
+  </main>
+
+  <script src="connect.js"></script>
+</body>
+</html>

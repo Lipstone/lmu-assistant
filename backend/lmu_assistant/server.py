@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
+from .network import router as network_router
 from .sources import DataSource
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
@@ -42,6 +43,8 @@ def create_app(source: DataSource, hz: float = 10.0) -> FastAPI:
         source.close()
 
     app = FastAPI(title="LMU Assistant", lifespan=lifespan)
+    app.state.source = source
+    app.include_router(network_router)  # /api/info, /api/qr.svg
 
     @app.get("/api/snapshot")
     async def snapshot() -> dict:
