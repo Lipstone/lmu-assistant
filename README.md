@@ -148,6 +148,16 @@ Sur la page Analyse : choix de la session (la plus récente d'abord ; la page su
 
 Par défaut seule la lecture du jeu est enregistrée : les données simulées et les relectures ne remplissent pas l'historique. `--history on` enregistre toutes les sources (pour essayer avec `--source mock`), `--history off` n'enregistre rien, `--history-file chemin.sqlite` change de base. API : `GET /api/history/sessions`, `GET`/`DELETE /api/history/sessions/{id}`, `GET /api/history/laps/{id}` (avec la trace). Code : `backend/lmu_assistant/history.py`.
 
+### Relais et dégradation des pneus (F21, F22)
+
+Les tours sont découpés automatiquement en **relais** : un nouveau relais commence au tour de sortie d'un arrêt au stand (voiture immobile aux stands ou ravitaillée) ou quand le pilote change. Section **Relais** de la page Analyse, une ligne par relais : tours, pilote, durée, moyenne, meilleur tour, régularité (tours propres : valides et hors stand), consommation de carburant et d'énergie par tour, pneus (neufs, ou leur âge en tours au début du relais), dégradation, usure par tour du pneu qui s'use le plus et gomme restante en fin de relais.
+
+Section **Dégradation des pneus** : pour le relais choisi (ou tous les relais superposés), les temps au tour propres selon le tour dans le relais avec leur **tendance** (droite de régression : la pente est le temps perdu par tour), et la **gomme restante de chaque pneu** tour après tour. Le résumé donne la dégradation, les 3 premiers et 3 derniers tours, l'usure par tour de chaque pneu et le nombre de tours avant qu'un pneu ne descende à 30 %.
+
+Widget **Relais** (page web et overlay, pour suivre le relais en cours pendant la course) : numéro du relais, tours faits, durée, moyenne et régularité, dégradation (orange au-delà de +0,15 s par tour), consommation par tour, âge des pneus et gomme restante du pneu le plus usé avec son usure par tour (orange à moins de 3 tours des 30 %). Il marche même sans enregistrement dans l'historique (données simulées).
+
+Calculs côté serveur (`backend/lmu_assistant/analysis.py`).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

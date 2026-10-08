@@ -78,3 +78,10 @@ def test_history_api(tmp_path):
         assert client.delete(f"/api/history/sessions/{sid}").status_code == 200
         assert client.get(f"/api/history/sessions/{sid}").status_code == 404
         assert "Historique des tours" in client.get("/analyse.html").text
+
+
+def test_live_stint_widget_without_database(run_mock):
+    b = run_mock(27 * 226, HistoryRecorder(None, "auto"), step=1.0)
+    s = b.compute(b.source.read()).stint
+    assert s.number == 2 and s.start_lap == 24 and s.laps >= 3 and s.tyre_age_laps == s.laps
+    assert s.avg_s and s.worst_wheel and s.wear_left_pct > 80

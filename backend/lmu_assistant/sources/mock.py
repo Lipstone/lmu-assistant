@@ -79,7 +79,8 @@ class MockSource(DataSource):
             self._lap_start = now
             self._fuel = max(0.0, self._fuel - FUEL_PER_LAP_L * current / LAP_S * random.uniform(0.95, 1.05))
             self._energy = max(0.0, self._energy - ENERGY_PER_LAP_PCT * current / LAP_S * random.uniform(0.97, 1.03))
-            self._lap_target = LAP_S + random.uniform(-1.5, 1.5)
+            # pneus qui s'usent (+0,06 s par tour, F22) et piste mouillée (F28) ralentissent
+            self._lap_target = LAP_S + random.uniform(-1.5, 1.5) + 0.06 * (self._lap - self._stint_start) + 12 * self._wetness
             self._wobble = random.uniform(-0.01, 0.01)  # temps gagné ou perdu en cours de tour (delta F03)
             current = 0.0
             self._invalid_at = random.uniform(30, 200) if random.random() < 0.15 else None

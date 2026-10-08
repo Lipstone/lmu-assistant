@@ -1,9 +1,10 @@
-"""API de l'historique (F20) : sessions et tours enregistrés, lus par la page Analyse (web/analyse.html)."""
+"""API de l'historique (F20) : sessions, tours et relais (F21, F22) enregistrés, lus par la page Analyse (web/analyse.html)."""
 
 from __future__ import annotations
 
 from fastapi import APIRouter, HTTPException
 
+from . import analysis
 from .history import HistoryStore
 
 
@@ -22,7 +23,8 @@ def make_history_router(store: HistoryStore) -> APIRouter:
 
     @router.get("/sessions/{session_id}")
     def session(session_id: int) -> dict:
-        return {"session": _session(session_id), "laps": store.laps(session_id)}
+        laps = store.laps(session_id)
+        return {"session": _session(session_id), "laps": laps, "stints": analysis.stints(laps)}
 
     @router.delete("/sessions/{session_id}")
     def delete_session(session_id: int) -> dict:

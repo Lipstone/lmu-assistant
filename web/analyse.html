@@ -29,6 +29,22 @@
       <div class="table-wrap"><table class="data" id="laps"></table></div>
       <p class="hint">Violet : meilleur secteur de la session ; vert : meilleur tour valide. Carburant et énergie : consommation du tour (sans ravitaillement). Usure : gomme restante moyenne des 4 pneus en fin de tour.</p>
     </section>
+
+    <section class="widget" id="stints-section">
+      <h2>Relais</h2>
+      <div class="table-wrap"><table class="data" id="stints"></table></div>
+      <p class="hint">Un relais commence au tour de sortie d'un arrêt au stand (ou à un changement de pilote). Rythme et régularité sur les tours propres (valides, hors stand). Pneus : âge en tours au début du relais (« ? » si montés avant l'enregistrement).</p>
+    </section>
+
+    <section class="widget" id="deg-section">
+      <h2>Dégradation des pneus</h2>
+      <div class="chart-pick"><label>Relais <select id="deg-stint"></select></label></div>
+      <div class="charts">
+        <figure><figcaption>Temps au tour selon le tour dans le relais (tours propres, pointillés : tendance)</figcaption><div class="chart" id="deg-times"></div></figure>
+        <figure><figcaption>Gomme restante par pneu (%)</figcaption><div class="chart" id="deg-wear"></div></figure>
+      </div>
+      <p class="hint" id="deg-summary"></p>
+    </section>
   </main>
 
   <script src="analyse.js"></script>

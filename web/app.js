@@ -367,6 +367,26 @@ function renderInputs(d) {
   $("inp-tc").classList.toggle("on", !!d.tc_active);
 }
 
+// F21 / F22 : relais en cours ; découpage et dégradation côté serveur (backend/lmu_assistant/analysis.py).
+// Dégradation = temps perdu par tour sur les tours propres du relais (orange au-delà de 0,15 s/tour).
+function renderStint(d) {
+  const s = d.stint || {};
+  $("stint-title").textContent = s.number ? `Relais ${s.number}` : "Relais";
+  $("stint-laps").textContent = s.number ? `${s.laps} tour${s.laps > 1 ? "s" : ""}` : "–";
+  $("stint-time").textContent = s.time_s == null ? "–" : fmtClock(s.time_s);
+  $("stint-avg").textContent = s.avg_s == null ? "–" : fmtLap(s.avg_s) + (s.stdev_s != null ? ` ±${s.stdev_s.toFixed(2)}` : "");
+  const deg = s.deg_s_per_lap;
+  $("stint-deg").textContent = deg == null ? "–" : `${deg >= 0 ? "+" : "−"}${Math.abs(deg).toFixed(2)} s/tour`;
+  $("stint-deg").classList.toggle("alert", deg != null && deg > 0.15);
+  $("stint-fuel").textContent = s.energy_per_lap != null ? `${s.energy_per_lap.toFixed(2)} %/tour` : s.fuel_per_lap != null ? `${s.fuel_per_lap.toFixed(2)} L/tour` : "–";
+  $("stint-tyres").textContent = s.tyre_age_laps == null ? "?" : `${s.tyre_age_laps} tour${s.tyre_age_laps > 1 ? "s" : ""}`;
+  $("stint-wear-label").textContent = s.worst_wheel ? `Usure ${s.worst_wheel}` : "Usure";
+  $("stint-wear").textContent = s.wear_left_pct == null ? "–" :
+    `${Math.round(s.wear_left_pct)} %` + (s.wear_per_lap_pct ? ` · −${s.wear_per_lap_pct.toFixed(1)} %/t` : "");
+  $("stint-wear").title = s.laps_to_wear_limit == null ? "" : `${s.laps_to_wear_limit.toFixed(0)} tours avant 30 % de gomme`;
+  $("stint-wear").classList.toggle("alert", s.laps_to_wear_limit != null && s.laps_to_wear_limit < 3);
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -385,6 +405,7 @@ function render(d) {
   renderSession(d);
   renderDamage(d);
   renderInputs(d);
+  renderStint(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
