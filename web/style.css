@@ -111,6 +111,13 @@ dd.good { color: var(--ok); }
 .flag.red { background: var(--bad); color: #fff; }
 .flag.checkered { background: repeating-conic-gradient(#fff 0 25%, #000 0 50%) 0 0 / 12px 12px; color: #000; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 
+.car-damage { display: grid; grid-template-columns: 1fr 2fr 1fr; grid-template-rows: 22px 34px 22px; gap: 3px; width: 140px; margin: 2px auto 0; }
+.car-damage .zone { border-radius: 3px; background: #3a3f48; }
+.car-damage .zone.z1 { background: var(--warn); }
+.car-damage .zone.z2 { background: var(--bad); }
+.car-damage .zone-center { display: flex; align-items: center; justify-content: center; font-weight: 600; font-variant-numeric: tabular-nums; }
+.car-damage .zone-center.hit { color: var(--warn); }
+
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
 body.overlay { background: transparent; overflow: hidden; }
 body.overlay .topbar { display: none; }
@@ -121,7 +128,7 @@ body.overlay dl { font-size: 14px; }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
 body.overlay .widget[data-widget="pit"] { width: 250px; }
-body.overlay .widget[data-widget="session"] { width: 230px; }
+body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"] { width: 300px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 

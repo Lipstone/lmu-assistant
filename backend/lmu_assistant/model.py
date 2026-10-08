@@ -9,6 +9,8 @@ class Wheel:
     pressure_kpa: float = 0.0
     wear: float = 1.0  # 1.0 = neuf
     brake_temp_c: float = 0.0
+    flat: bool = False  # crevaison (F11)
+    detached: bool = False  # roue arrachée (F11)
 
 
 @dataclass
@@ -180,6 +182,26 @@ class SessionInfo:
 
 
 @dataclass
+class DamageInfo:
+    """Dégâts (F11), remplis par `damage.DamageCalculator`."""
+
+    body: list[int] = field(default_factory=lambda: [0] * 8)  # AVG, AV, AVD, G, D, ARG, AR, ARD : 0 rien, 1 léger, 2 lourd
+    body_pct: float = 100.0  # état de la carrosserie, 100 = intacte
+    aero_pct: float | None = None  # état de l'aéro (API du jeu), 100 = intacte
+    suspension_pct: list[float] | None = None  # état de chaque suspension (AVG, AVD, ARG, ARD), 100 = intacte
+    wheels: list[str] = field(default_factory=lambda: [""] * 4)  # « crevé », « arrachée » ou vide
+    parts_detached: bool = False  # éléments de carrosserie arrachés
+    impacts: int = 0  # chocs depuis le début de la session
+    last_impact_ago_s: float | None = None
+    last_impact_magnitude: float | None = None
+    repair_s: float | None = None  # temps de réparation estimé au stand (API du jeu)
+    engine_overheating: bool = False
+    water_temp_c: float | None = None
+    oil_temp_c: float | None = None
+    damaged: bool = False  # au moins un dégât
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -218,6 +240,17 @@ class Snapshot:
     cloud_coverage: int | None = None  # 0 dégagé … 7 couvert et pluie fine
     track_grip: int | None = None  # 0 vert, 1 faible, 2 moyen, 3 élevé, 4 saturé
     time_of_day_s: float | None = None
+    # Dégâts (F11), valeurs brutes de la source
+    dents: list[int] = field(default_factory=lambda: [0] * 8)  # même ordre que DamageInfo.body
+    parts_detached: bool = False
+    last_impact_et: float | None = None  # instant du dernier choc (temps de session)
+    last_impact_magnitude: float | None = None
+    engine_overheating: bool = False
+    water_temp_c: float | None = None
+    oil_temp_c: float | None = None
+    aero_damage: float | None = None  # 0 intacte … 1 détruite (API REST du jeu)
+    suspension_damage: list[float] | None = None  # 0..1 par roue (API REST du jeu)
+    repair_time_s: float | None = None  # API REST du jeu
     fuel: FuelInfo = field(default_factory=FuelInfo)
     energy: FuelInfo = field(default_factory=lambda: FuelInfo(unit="%"))
     delta: DeltaInfo = field(default_factory=DeltaInfo)
@@ -228,6 +261,7 @@ class Snapshot:
     standings: list[ClassStandings] = field(default_factory=list)  # F08 : classement simplifié par classe
     pit: PitInfo = field(default_factory=PitInfo)  # F09 : fenêtre de stand
     session_info: SessionInfo = field(default_factory=SessionInfo)  # F10 : session et piste
+    damage: DamageInfo = field(default_factory=DamageInfo)  # F11 : dégâts
 
     def to_dict(self) -> dict:
         return asdict(self)

@@ -433,7 +433,28 @@ def _wheel(w: TelemWheel, left_side: bool) -> Wheel:
         pressure_kpa=round(w.mPressure, 1),
         wear=round(w.mWear, 4),
         brake_temp_c=round(w.mBrakeTemp, 1),
+        flat=bool(w.mFlat),
+        detached=bool(w.mDetached),
     )
+
+
+# mDentSeverity (ordre rF2 : 0 avant, 1 avant gauche, 2 gauche, 3 arrière gauche, 4 arrière, 5 arrière droit,
+# 6 droite, 7 avant droit) → AVG, AV, AVD, G, D, ARG, AR, ARD (ligne par ligne, vue de dessus)
+DENT_ORDER = (1, 0, 7, 2, 6, 3, 4, 5)
+
+
+def _damage(snap: Snapshot, telem: TelemInfo) -> None:
+    """Dégâts (F11) lus dans la télémétrie."""
+    dents = list(telem.mDentSeverity)
+    snap.dents = [dents[i] for i in DENT_ORDER]
+    snap.parts_detached = bool(telem.mDetached)
+    snap.last_impact_et = _finite(telem.mLastImpactET, 0)
+    snap.last_impact_magnitude = _finite(telem.mLastImpactMagnitude, 0)
+    if snap.last_impact_magnitude is not None:
+        snap.last_impact_magnitude = round(snap.last_impact_magnitude, 1)
+    snap.engine_overheating = bool(telem.mOverheating)
+    snap.water_temp_c = _finite(telem.mEngineWaterTemp, -50, 300)
+    snap.oil_temp_c = _finite(telem.mEngineOilTemp, -50, 300)
 
 
 _NUMBER = re.compile(r"#\s*(\d+)")
@@ -556,6 +577,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.current_lap_s = round(max(0.0, telem.mElapsedTime - telem.mLapStartET), 3)
         snap.lap_invalid = bool(telem.mLapInvalidated)
         snap.wheels = [_wheel(w, left_side=(i % 2 == 0)) for i, w in enumerate(telem.mWheels)]
+        _damage(snap, telem)
         if scoring is not None and info.mLapDist > 0:
             # mLapDist n'est mis à jour qu'au rythme du scoring (~5 Hz) : on l'avance à l'instant de la
             # télémétrie avec la vitesse, sinon le delta (F03) tremblerait de quelques dixièmes.
@@ -601,6 +623,77 @@ def read_consistent(buf: Any, tries: int = 5) -> bytes:
     return copy
 
 
+# --- API REST locale du jeu (aéro, suspension, réparation) ---------------------
+
+REST_URL = "http://127.0.0.1:6397"
+REST_EVERY_S = 2.0
+
+
+def parse_rest(repair_and_refuel: dict | None, pitstop_estimate: dict | None) -> dict:
+    """Réponses de /rest/garage/UIScreen/RepairAndRefuel et /rest/strategy/pitstop-estimate →
+    champs du Snapshot (aero_damage, suspension_damage, repair_time_s). Champs absents ignorés."""
+    out: dict = {}
+    wear = (repair_and_refuel or {}).get("wearables") or {}
+    aero = (wear.get("body") or {}).get("aero") if isinstance(wear.get("body"), dict) else None
+    if isinstance(aero, (int, float)) and 0 <= aero <= 1:
+        out["aero_damage"] = float(aero)
+    susp = wear.get("suspension")
+    if isinstance(susp, list) and len(susp) >= 4 and all(isinstance(x, (int, float)) for x in susp[:4]):
+        out["suspension_damage"] = [float(x) for x in susp[:4]]
+    repair = (pitstop_estimate or {}).get("damage")
+    if isinstance(repair, (int, float)) and repair >= 0:
+        out["repair_time_s"] = float(repair)
+    return out
+
+
+class RestPoller:
+    """Interroge l'API REST locale du jeu dans un fil séparé (la lecture de la mémoire partagée ne doit
+    jamais attendre le réseau). `latest` = derniers champs lus, vide si l'API ne répond pas."""
+
+    def __init__(self, base_url: str = REST_URL, every_s: float = REST_EVERY_S) -> None:
+        self.base_url = base_url
+        self.every_s = every_s
+        self.latest: dict = {}
+        self._stop = None
+        self._thread = None
+
+    def _get(self, path: str) -> dict | None:
+        import json
+        import urllib.request
+
+        try:
+            with urllib.request.urlopen(self.base_url + path, timeout=1.0) as r:
+                data = json.load(r)
+                return data if isinstance(data, dict) else None
+        except Exception:
+            return None
+
+    def poll_once(self) -> None:
+        self.latest = parse_rest(self._get("/rest/garage/UIScreen/RepairAndRefuel"),
+                                 self._get("/rest/strategy/pitstop-estimate"))
+
+    def start(self) -> None:
+        import threading
+
+        if self._thread is not None:
+            return
+        stop = self._stop = threading.Event()
+
+        def run() -> None:
+            while not stop.is_set():
+                self.poll_once()
+                stop.wait(self.every_s)
+
+        self._thread = threading.Thread(target=run, name="lmu-rest", daemon=True)
+        self._thread.start()
+
+    def stop(self) -> None:
+        if self._stop is not None:
+            self._stop.set()
+        self._thread = None
+        self.latest = {}
+
+
 # --- Source Windows ----------------------------------------------------------
 
 
@@ -632,6 +725,7 @@ class LmuSharedMemorySource(DataSource):
     def __init__(self) -> None:
         self._mm: Any = None
         self._next_try = 0.0
+        self.rest = RestPoller()
 
     def _open(self) -> bool:
         now = time.monotonic()
@@ -661,12 +755,17 @@ class LmuSharedMemorySource(DataSource):
                 # Jeu fermé : notre handle garderait la zone en vie, on la libère
                 self.close()
                 return Snapshot(connected=False, source=self.name)
-            return to_snapshot(data)
+            self.rest.start()
+            snap = to_snapshot(data)
+            for k, v in self.rest.latest.items():
+                setattr(snap, k, v)
+            return snap
         except (OSError, ValueError):
             self.close()
             return Snapshot(connected=False, source=self.name)
 
     def close(self) -> None:
+        self.rest.stop()
         if self._mm is not None:
             try:
                 self._mm.close()
