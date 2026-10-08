@@ -86,7 +86,20 @@ dd.good { color: var(--ok); }
 .relative tr.lap-up .driver, .relative tr.lap-up .laps-diff { color: var(--warn); }
 .relative tr.lap-down .driver, .relative tr.lap-down .laps-diff { color: var(--accent); }
 .relative tr.other-class .driver { opacity: 0.75; }
-.relative .pit { font-size: 10px; padding: 0 3px; border-radius: 3px; background: var(--muted); color: #000; font-weight: 600; }
+.standings { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 13px; }
+.standings td { padding: 1px 3px; white-space: nowrap; }
+.standings .class-head td { padding-top: 5px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+.standings tr.class-head:first-child td { padding-top: 0; }
+.standings .class-dot { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+.standings .muted { font-weight: 400; }
+.standings .cpos { color: var(--muted); }
+.standings .num { color: var(--muted); font-size: 12px; }
+.standings .driver { max-width: 120px; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.standings .gap, .standings .last { text-align: right; }
+.standings .last { color: var(--muted); font-size: 12px; }
+.standings tr.me td { background: #2c3340; font-weight: 600; }
+.standings tr.skip td { text-align: center; color: var(--muted); line-height: 8px; font-size: 11px; }
+.relative .pit, .standings .pit { font-size: 10px; padding: 0 3px; border-radius: 3px; background: var(--muted); color: #000; font-weight: 600; }
 
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
 body.overlay { background: transparent; overflow: hidden; }
@@ -97,7 +110,7 @@ body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
-body.overlay .widget[data-widget="relative"] { width: 300px; }
+body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"] { width: 300px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */

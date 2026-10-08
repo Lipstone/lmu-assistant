@@ -113,6 +113,36 @@ class RelativeEntry:
 
 
 @dataclass
+class StandingEntry:
+    """Une ligne du classement par classe (F08)."""
+
+    id: int = 0
+    driver: str = ""
+    number: str = ""
+    class_position: int = 0
+    position: int = 0  # au général
+    gap_leader_s: float | None = None  # écart au leader de la classe (s), si moins d'un tour
+    laps_leader: int = 0  # tours de retard sur le leader de la classe
+    interval_s: float | None = None  # écart à la voiture juste devant dans la classe (s)
+    laps_interval: int = 0
+    last_lap_s: float | None = None
+    best_lap_s: float | None = None
+    in_pits: bool = False
+    pitstops: int = 0
+    is_player: bool = False
+    skipped_before: bool = False  # des voitures de la classe sont omises juste avant cette ligne
+
+
+@dataclass
+class ClassStandings:
+    """Classement d'une classe (F08), classe du joueur en premier."""
+
+    car_class: str = ""
+    cars: int = 0  # nombre de voitures dans la classe
+    entries: list[StandingEntry] = field(default_factory=list)
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -143,6 +173,7 @@ class Snapshot:
     brakes: BrakeInfo = field(default_factory=BrakeInfo)
     vehicles: list[Vehicle] = field(default_factory=list)  # toutes les voitures de la session
     relative: list[RelativeEntry] = field(default_factory=list)  # F07 : voitures proches, la plus en avant d'abord
+    standings: list[ClassStandings] = field(default_factory=list)  # F08 : classement simplifié par classe
 
     def to_dict(self) -> dict:
         return asdict(self)
