@@ -23,7 +23,7 @@ DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
 WIDGET_IDS = ("lap", "fuel", "car", "tyres")
 
-_DEFAULT_POSITIONS = {"lap": (8, 8), "fuel": (196, 8), "car": (8, 170), "tyres": (196, 170)}
+_DEFAULT_POSITIONS = {"lap": (8, 8), "fuel": (196, 8), "car": (8, 170), "tyres": (196, 240)}  # le carburant (F01) est plus haut
 
 
 class WidgetConfig(BaseModel):
@@ -34,6 +34,10 @@ class WidgetConfig(BaseModel):
     x: int = Field(0, ge=0, le=10000, description="position en pixels dans la fenêtre overlay")
     y: int = Field(0, ge=0, le=10000)
     scale: float = Field(1.0, ge=0.25, le=4.0)
+    opacity: float | None = Field(None, ge=0.1, le=1.0, description="opacité du widget en overlay (None = globale)")
+    background_opacity: float | None = Field(
+        None, ge=0.0, le=1.0, description="opacité du fond du widget en overlay (None = globale)"
+    )
 
     @field_validator("id")
     @classmethod
@@ -62,6 +66,9 @@ class AppConfig(BaseModel):
 
     widgets: list[WidgetConfig] = Field(default_factory=_default_widgets)
     opacity: float = Field(0.85, ge=0.1, le=1.0, description="opacité globale des widgets en overlay")
+    background_opacity: float = Field(
+        0.75, ge=0.0, le=1.0, description="opacité globale du fond des widgets en overlay (0 = texte seul)"
+    )
     window: OverlayWindow = Field(default_factory=OverlayWindow)
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
 

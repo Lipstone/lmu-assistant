@@ -8,6 +8,12 @@ function num(input, fallback) {
   return Number.isFinite(v) ? v : fallback;
 }
 
+// Champ vide = null (valeur globale).
+function optNum(input) {
+  const v = parseFloat(input.value);
+  return Number.isFinite(v) ? v : null;
+}
+
 function fill(cfg) {
   config = cfg;
   $("widgets").innerHTML = cfg.widgets
@@ -18,11 +24,15 @@ function fill(cfg) {
         <td><input type="number" data-k="x" min="0" value="${w.x}"></td>
         <td><input type="number" data-k="y" min="0" value="${w.y}"></td>
         <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05" value="${w.scale}"></td>
+        <td><input type="number" data-k="opacity" min="0.1" max="1" step="0.05" placeholder="globale" value="${w.opacity ?? ""}"></td>
+        <td><input type="number" data-k="background_opacity" min="0" max="1" step="0.05" placeholder="globale" value="${w.background_opacity ?? ""}"></td>
       </tr>`
     )
     .join("");
   $("opacity").value = cfg.opacity;
   $("opacity-val").textContent = cfg.opacity;
+  $("background-opacity").value = cfg.background_opacity;
+  $("background-opacity-val").textContent = cfg.background_opacity;
   $("hotkey").value = cfg.hotkey;
   $("win-x").value = cfg.window.x;
   $("win-y").value = cfg.window.y;
@@ -42,11 +52,14 @@ function collect() {
       x: Math.round(num(get("x"), old.x)),
       y: Math.round(num(get("y"), old.y)),
       scale: num(get("scale"), old.scale),
+      opacity: optNum(get("opacity")),
+      background_opacity: optNum(get("background_opacity")),
     };
   });
   return {
     widgets,
     opacity: num($("opacity"), config.opacity),
+    background_opacity: num($("background-opacity"), config.background_opacity),
     hotkey: $("hotkey").value.trim() || config.hotkey,
     window: {
       x: Math.round(num($("win-x"), config.window.x)),
@@ -92,6 +105,7 @@ async function save() {
 
 $("save").addEventListener("click", save);
 $("opacity").addEventListener("input", () => ($("opacity-val").textContent = $("opacity").value));
+$("background-opacity").addEventListener("input", () => ($("background-opacity-val").textContent = $("background-opacity").value));
 $("win-width").addEventListener("input", sizePreview);
 $("win-height").addEventListener("input", sizePreview);
 

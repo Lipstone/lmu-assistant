@@ -8,7 +8,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 
 | ID | Fonctionnalité | Détail | État |
 |---|---|---|---|
-| F01 | Carburant | Niveau, conso dernier tour et moyenne, tours restants, carburant à ajouter pour finir | ⬜ |
+| F01 | Carburant | Niveau, conso dernier tour et moyenne, tours restants, carburant à ajouter pour finir ; transparence réglable (widget et fond) | ✅ |
 | F02 | Énergie virtuelle | Énergie restante, conso par tour, tours restants (catégories concernées) | ⬜ |
 | F03 | Delta | Écart en direct au meilleur tour personnel / tour de référence | ⬜ |
 | F04 | Temps au tour | Dernier, meilleur, moyenne des N derniers, régularité | ⬜ |

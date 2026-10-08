@@ -59,6 +59,9 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 | `rpm` | `mEngineRPM` | tr/min |
 | `gear` | `mGear` | -1 = R, 0 = N |
 | `fuel_l`, `fuel_capacity_l` | `mFuel`, `mFuelCapacity` | litres |
+| `max_laps` | `ScoringInfoV01.mMaxLaps` | `None` si ≤ 0 ou ≥ 10 000 (course chronométrée) |
+| `lap_fraction` | `VehicleScoringInfoV01.mLapDist / ScoringInfoV01.mLapDist` | 0-1, borné |
+| `in_pits` | `mInPits` | |
 | `wheels[i]` | `mWheels[i]`, ordre 0 = AVG, 1 = AVD, 2 = ARG, 3 = ARD (même ordre que Snapshot) | |
 | `temp_c` | `mTemperature[3]` | Kelvin − 273,15 → °C |
 | `pressure_kpa` | `mPressure` | kPa |
@@ -83,4 +86,5 @@ Champs disponibles pour plus tard (déjà décrits dans les structures) : énerg
 - `lap = mTotalLaps + 1` et `mLapNumber` cohérents avec l'affichage du jeu.
 - Sens gauche/droite de `mTemperature` (intérieur/extérieur) sur une voiture au carrossage marqué.
 - Sens de `mWear` : l'en-tête dit « fraction of maximum » ; on suppose 1,0 = neuf (convention habituelle rF2), à confirmer avec des pneus neufs puis usés.
+- `mMaxLaps` en course chronométrée (très grand nombre attendu) et `mInPits` pendant l'arrêt et la sortie des stands (F01).
 - Fréquence des lectures incohérentes (sans prise du verrou du jeu).

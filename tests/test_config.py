@@ -43,6 +43,17 @@ def test_save_load_roundtrip(tmp_path):
     assert loaded.hotkey == "f9"  # normalisé en minuscules
 
 
+def test_widget_transparency_optional():
+    cfg = AppConfig.model_validate(
+        {"background_opacity": 0.0, "widgets": [{"id": "fuel", "opacity": 0.6, "background_opacity": 0.2}]}
+    )
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.opacity, fuel.background_opacity) == (0.6, 0.2)
+    lap = next(w for w in cfg.widgets if w.id == "lap")
+    assert lap.opacity is None and lap.background_opacity is None  # valeurs globales
+    assert cfg.background_opacity == 0.0
+
+
 def test_partial_widgets_completed():
     cfg = AppConfig.model_validate({"widgets": [{"id": "fuel", "visible": False}]})
     assert [w.id for w in cfg.widgets][0] == "fuel"
@@ -59,6 +70,9 @@ def test_partial_widgets_completed():
         {"widgets": [{"id": "lap"}, {"id": "lap"}]},
         {"widgets": [{"id": "lap", "scale": 0}]},
         {"widgets": [{"id": "lap", "x": -5}]},
+        {"widgets": [{"id": "fuel", "opacity": 0.05}]},
+        {"widgets": [{"id": "fuel", "background_opacity": 1.5}]},
+        {"background_opacity": -0.1},
         {"window": {"width": 1}},
         {"champ_inconnu": 1},
     ],

@@ -25,8 +25,12 @@ body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); col
 dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
 dt { color: var(--muted); }
 dd { margin: 0; text-align: right; }
+dt, dd { white-space: nowrap; }
 .bar { height: 6px; background: #333; border-radius: 3px; margin-top: 8px; overflow: hidden; }
 .bar > div { height: 100%; width: 0; background: var(--accent); }
+.bar > div.alert { background: var(--warn); }
+dd.alert { color: var(--warn); font-weight: 600; }
+dd.good { color: var(--ok); }
 .tyres { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 20px; text-align: center; }
 .tyres div { background: #22262e; border-radius: 4px; padding: 6px; }
 
@@ -34,8 +38,9 @@ dd { margin: 0; text-align: right; }
 body.overlay { background: transparent; overflow: hidden; }
 body.overlay .topbar { display: none; }
 body.overlay .widgets { display: block; position: relative; width: 100vw; height: 100vh; padding: 0; overflow: hidden; }
-body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; background: rgba(15, 17, 21, 0.75); padding: 8px 10px; }
+body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; background: rgba(15, 17, 21, var(--bg-alpha, 0.75)); padding: 8px 10px; }
 body.overlay .big { font-size: 24px; }
+body.overlay dl { font-size: 14px; }
 
 /* Page de réglages */
 .settings { max-width: 900px; padding: 16px; display: grid; gap: 16px; }

@@ -17,15 +17,17 @@
     <section class="widget">
       <h2>Widgets</h2>
       <table>
-        <thead><tr><th>Widget</th><th>Visible</th><th>X (px)</th><th>Y (px)</th><th>Échelle</th></tr></thead>
+        <thead><tr><th>Widget</th><th>Visible</th><th>X (px)</th><th>Y (px)</th><th>Échelle</th><th>Opacité</th><th>Fond</th></tr></thead>
         <tbody id="widgets"></tbody>
       </table>
-      <p class="hint">Positions en pixels dans la fenêtre overlay. Sur la page normale, seule la case « Visible » s'applique.</p>
+      <p class="hint">Positions en pixels dans la fenêtre overlay. Sur la page normale, seule la case « Visible » s'applique.
+        Opacité (tout le widget) et Fond (le fond seul, 0 = texte sur l'écran du jeu) : de 0 à 1, laisser vide pour la valeur globale.</p>
     </section>
 
     <section class="widget">
       <h2>Overlay</h2>
       <label>Opacité <input type="range" id="opacity" min="0.1" max="1" step="0.05"> <span id="opacity-val"></span></label>
+      <label>Fond <input type="range" id="background-opacity" min="0" max="1" step="0.05"> <span id="background-opacity-val"></span></label>
       <label>Raccourci afficher/masquer <input type="text" id="hotkey" placeholder="ctrl+shift+o"></label>
       <br>
       <label>Fenêtre X <input type="number" id="win-x"></label>

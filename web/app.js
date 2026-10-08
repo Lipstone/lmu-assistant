@@ -11,6 +11,25 @@ function fmtLap(s) {
   return `${m}:${(s - m * 60).toFixed(3).padStart(6, "0")}`;
 }
 
+// Au-delà de 100, pas de décimale (garde le widget overlay étroit, ex. carburant à ajouter sur 24 h).
+const fmt = (v, digits, unit = "") => (v == null ? "–" : `${v.toFixed(Math.abs(v) >= 100 ? 0 : digits)}${unit}`);
+
+// F01 : carburant (les calculs viennent du serveur, voir backend/lmu_assistant/fuel.py)
+function renderFuel(d) {
+  const f = d.fuel || {};
+  $("fuel").textContent = `${d.fuel_l.toFixed(1)} L`;
+  $("fuel-bar").style.width = d.fuel_capacity_l ? `${(100 * d.fuel_l) / d.fuel_capacity_l}%` : "0";
+  $("fuel-last").textContent = fmt(f.last_lap_l, 2, " L");
+  $("fuel-avg").textContent = f.avg_lap_l == null ? "–" : `${f.avg_lap_l.toFixed(2)} L (${f.valid_laps})`;
+  $("fuel-laps").textContent = fmt(f.laps_left, 1);
+  $("fuel-finish").textContent = fmt(f.laps_to_finish, 1);
+  $("fuel-add").textContent = f.to_add_l == null ? "–" : f.to_add_l > 0 ? `+${fmt(f.to_add_l, 1, " L")}` : "assez";
+  const low = f.laps_left != null && f.laps_left < 2;
+  $("fuel-laps").classList.toggle("alert", low);
+  $("fuel-bar").classList.toggle("alert", low);
+  $("fuel-add").classList.toggle("good", f.to_add_l === 0);
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -19,15 +38,15 @@ function render(d) {
   $("current").textContent = fmtLap(d.current_lap_s);
   $("last").textContent = fmtLap(d.last_lap_s);
   $("best").textContent = fmtLap(d.best_lap_s);
-  $("fuel").textContent = `${d.fuel_l.toFixed(1)} L`;
-  $("fuel-bar").style.width = d.fuel_capacity_l ? `${(100 * d.fuel_l) / d.fuel_capacity_l}%` : "0";
+  renderFuel(d);
   $("speed").textContent = `${Math.round(d.speed_kmh)} km/h`;
   $("gear").textContent = d.gear === 0 ? "N" : d.gear < 0 ? "R" : d.gear;
   $("rpm").textContent = Math.round(d.rpm);
   $("tyres").innerHTML = d.wheels.map((w) => `<div>${Math.round(w.temp_c[1])}</div>`).join("");
 }
 
-// Configuration (T06) : visibilité partout ; position, taille et opacité en mode overlay.
+// Configuration (T06) : visibilité partout ; position, taille, opacité et fond en mode overlay.
+// Opacité et fond : valeur du widget si définie, sinon valeur globale.
 function applyConfig(cfg) {
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
@@ -37,7 +56,8 @@ function applyConfig(cfg) {
       el.style.left = `${w.x}px`;
       el.style.top = `${w.y}px`;
       el.style.transform = `scale(${w.scale})`;
-      el.style.opacity = cfg.opacity;
+      el.style.opacity = w.opacity ?? cfg.opacity;
+      el.style.setProperty("--bg-alpha", w.background_opacity ?? cfg.background_opacity ?? 0.75);
     }
   }
 }
