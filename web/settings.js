@@ -1,6 +1,6 @@
 // Page de réglages de l'overlay (T06) : lit GET /api/config, enregistre via PUT.
 const $ = (id) => document.getElementById(id);
-const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus" };
+const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins" };
 let config = null;
 
 function num(input, fallback) {
@@ -42,6 +42,7 @@ function fill(cfg) {
   $("tyre-temp-min").value = cfg.tyre_temp_min_c;
   $("tyre-temp-max").value = cfg.tyre_temp_max_c;
   $("pressure-unit").value = cfg.pressure_unit;
+  $("brake-overheat").value = cfg.brake_overheat_c;
   $("placement-hotkey").value = cfg.placement_hotkey;
   sizePreview();
 }
@@ -71,6 +72,7 @@ function collect() {
     tyre_temp_min_c: num($("tyre-temp-min"), config.tyre_temp_min_c),
     tyre_temp_max_c: num($("tyre-temp-max"), config.tyre_temp_max_c),
     pressure_unit: $("pressure-unit").value,
+    brake_overheat_c: num($("brake-overheat"), config.brake_overheat_c),
     laptime_avg_laps: Math.round(num($("laptime-avg-laps"), config.laptime_avg_laps)),
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {

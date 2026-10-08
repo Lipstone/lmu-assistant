@@ -63,6 +63,16 @@ class LapTimesInfo:
 
 
 @dataclass
+class BrakeInfo:
+    """Freins (F06), rempli par `brakes.BrakesCalculator` ; listes dans l'ordre des roues (AVG, AVD, ARG, ARD)."""
+
+    peak_lap_c: list[float] = field(default_factory=lambda: [0.0] * 4)  # pic pendant le tour en cours
+    peak_last_lap_c: list[float] | None = None  # pic pendant le tour précédent
+    overheat: list[bool] = field(default_factory=lambda: [False] * 4)  # alerte surchauffe en cours
+    threshold_c: float = 800.0  # seuil de surchauffe utilisé
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -90,6 +100,7 @@ class Snapshot:
     energy: FuelInfo = field(default_factory=lambda: FuelInfo(unit="%"))
     delta: DeltaInfo = field(default_factory=DeltaInfo)
     laps: LapTimesInfo = field(default_factory=LapTimesInfo)
+    brakes: BrakeInfo = field(default_factory=BrakeInfo)
 
     def to_dict(self) -> dict:
         return asdict(self)

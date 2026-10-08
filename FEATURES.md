@@ -13,7 +13,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F03 | Delta | Écart en direct au meilleur tour de la session, au dernier tour ou au record personnel (piste + voiture, gardé d'une session à l'autre), temps prévu | ✅ |
 | F04 | Temps au tour | Dernier, meilleur, moyenne des N derniers, régularité | ✅ |
 | F05 | Pneus | Températures (int/milieu/ext), pressions, usure par roue | ✅ |
-| F06 | Freins | Températures par roue, alerte surchauffe | ⬜ |
+| F06 | Freins | Températures par roue, alerte surchauffe | ✅ |
 | F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard | ⬜ |
 | F08 | Classement | Classement simplifié par classe, écarts, dernier tour | ⬜ |
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ⬜ |

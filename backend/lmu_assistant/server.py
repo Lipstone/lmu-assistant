@@ -7,6 +7,7 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
+from .brakes import OVERHEAT_C, BrakesCalculator
 from .config import ConfigStore
 from .config_api import make_config_router
 from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
@@ -35,10 +36,12 @@ class Broadcaster:
         self.fuel = FuelCalculator()
         self.delta = DeltaCalculator(records_path)
         self.laps = LapTimesCalculator()
+        self.brakes = BrakesCalculator()
 
     def compute(self, snap):
-        avg_laps = self.config_store.config.laptime_avg_laps if self.config_store else AVG_LAPS
-        return self.laps.update(self.delta.update(self.fuel.update(snap)), avg_laps)
+        cfg = self.config_store.config if self.config_store else None
+        snap = self.laps.update(self.delta.update(self.fuel.update(snap)), cfg.laptime_avg_laps if cfg else AVG_LAPS)
+        return self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
 
     async def run(self) -> None:
         while True:

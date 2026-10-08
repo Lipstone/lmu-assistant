@@ -145,6 +145,37 @@ function renderTyres(d) {
     .join("");
 }
 
+// F06 : freins ; pics par tour et alerte surchauffe (avec hystérésis) côté serveur (backend/lmu_assistant/brakes.py).
+// Couleur : bleu sous 200 °C (freins froids), vert, orange à moins de 100 °C du seuil, rouge en surchauffe.
+const BRAKES_COLD_C = 200;
+const BRAKES_WARN_C = 100;
+
+function brakeClass(t, threshold, overheat) {
+  if (overheat || t > threshold) return "hot";
+  if (t > threshold - BRAKES_WARN_C) return "warm";
+  return t < BRAKES_COLD_C ? "cold" : "ideal";
+}
+
+function renderBrakes(d) {
+  const b = d.brakes || {};
+  const thr = b.threshold_c ?? 800;
+  const over = b.overheat || [];
+  const peaks = b.peak_last_lap_c || b.peak_lap_c || [];
+  $("brakes").innerHTML = d.wheels
+    .map((w, i) => {
+      const t = w.brake_temp_c;
+      return `<div class="brake ${i % 2 ? "right" : "left"}"><span class="wheel-name">${WHEELS[i]}</span>` +
+        `<span class="brake-temp ${brakeClass(t, thr, over[i])}">${Math.round(t)}</span>` +
+        `<span class="brake-peak" title="${b.peak_last_lap_c ? "pic du tour précédent" : "pic du tour en cours"}">` +
+        `pic ${peaks[i] == null ? "–" : Math.round(peaks[i])}</span></div>`;
+    })
+    .join("");
+  const hot = WHEELS.filter((_, i) => over[i]);
+  $("brake-alert").hidden = !hot.length;
+  $("brake-alert").textContent = hot.length ? `Surchauffe ${hot.join(" ")}` : "";
+  $("brake-alert").title = `au-delà de ${Math.round(thr)} °C`;
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -156,6 +187,7 @@ function render(d) {
   $("gear").textContent = d.gear === 0 ? "N" : d.gear < 0 ? "R" : d.gear;
   $("rpm").textContent = Math.round(d.rpm);
   renderTyres(d);
+  renderBrakes(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.

@@ -69,7 +69,10 @@ class MockSource(DataSource):
                 ),
                 pressure_kpa=round(172 - 3 * (i // 2) + min(stint, 3) + math.sin(phase * 7 + i), 1),
                 wear=round(max(0.0, 1.0 - (0.014 if i < 2 else 0.011) * stint - 0.014 * current / LAP_S), 3),
-                brake_temp_c=350 + 150 * max(0.0, math.sin(phase * 7 + 1)),
+                # avant plus sollicité : l'avant gauche dépasse 800 °C dans les gros freinages
+                brake_temp_c=round(
+                    (300 if i < 2 else 260) + (560 - 30 * i if i < 2 else 380) * max(0.0, math.sin(phase * 7 + 1)) ** 3, 1
+                ),
             )
             for i in range(4)
         ]
