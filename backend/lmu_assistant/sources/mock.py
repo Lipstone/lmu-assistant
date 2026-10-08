@@ -88,7 +88,7 @@ class MockSource(DataSource):
                 self._energy = 100.0
 
         phase = current / LAP_S * 2 * math.pi
-        speed = 200 + 110 * math.sin(phase * 7)
+        speed = 200 + 110 * math.sin(phase * 28)
         stint = self._lap - self._stint_start  # tours depuis les derniers pneus neufs
         wheels = [
             Wheel(
@@ -107,6 +107,15 @@ class MockSource(DataSource):
             )
             for i in range(4)
         ]
+        # Inputs (F12) : accélère quand la vitesse monte, freine fort avant les points lents
+        accel = math.cos(phase * 28)
+        throttle = min(max(accel * 1.6 + 0.35, 0.0), 1.0)
+        brake = min(max(-accel * 1.8 - 0.75, 0.0), 1.0)
+        inputs = dict(
+            throttle=round(throttle, 3), brake=round(brake, 3), clutch=0.0,
+            steering=round(0.45 * math.sin(phase * 28 + 1.3) + 0.08 * math.sin(phase * 97), 3),
+            steering_range_deg=400.0, abs_active=brake > 0.85, tc_active=throttle > 0.9 and speed < 160,
+        )
         fraction = round(min(self._fraction(current), 1.0), 4)
         in_pits = self._pit and current < PIT_S
         vehicles = self._field(now - self._start)
@@ -142,6 +151,7 @@ class MockSource(DataSource):
             vehicles=sorted(vehicles, key=lambda v: v.position),
             **self._session(now - self._start, fraction),
             **self._damage(now - self._start),
+            **inputs,
         )
 
     @staticmethod

@@ -316,6 +316,57 @@ function renderDamage(d) {
   $("dmg-engine").classList.toggle("alert", !!g.engine_overheating);
 }
 
+// F12 : inputs. Valeurs brutes du pilote ; la trace (accélérateur vert, frein rouge) est gardée par la page,
+// à partir des images reçues (10 par seconde), sur la durée réglée dans Réglages overlay.
+let traceS = 8;
+const trace = [];
+
+function drawTrace() {
+  const c = $("inp-trace");
+  const ctx = c.getContext("2d");
+  const w = c.width, h = c.height, pad = 4;
+  ctx.clearRect(0, 0, w, h);
+  ctx.strokeStyle = "rgba(255,255,255,0.12)";
+  ctx.lineWidth = 1;
+  for (const y of [0.25, 0.5, 0.75]) {
+    ctx.beginPath(); ctx.moveTo(0, pad + (h - 2 * pad) * y); ctx.lineTo(w, pad + (h - 2 * pad) * y); ctx.stroke();
+  }
+  if (trace.length < 2) return;
+  const t1 = trace[trace.length - 1].t;
+  const line = (key, color) => {
+    ctx.strokeStyle = color;
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    trace.forEach((p, i) => {
+      const x = w - ((t1 - p.t) / (traceS * 1000)) * w;
+      const y = pad + (h - 2 * pad) * (1 - p[key]);
+      i ? ctx.lineTo(x, y) : ctx.moveTo(x, y);
+    });
+    ctx.stroke();
+  };
+  line("thr", "#66bb6a");
+  line("brk", "#ef5350");
+}
+
+function renderInputs(d) {
+  const now = performance.now();
+  trace.push({ t: now, thr: d.throttle || 0, brk: d.brake || 0 });
+  while (trace.length && now - trace[0].t > traceS * 1000) trace.shift();
+  drawTrace();
+  for (const [id, v] of [["thr", d.throttle], ["brk", d.brake], ["clu", d.clutch]]) {
+    $(`inp-${id}`).style.height = `${Math.round(100 * (v || 0))}%`;
+    $(`inp-${id}-v`).textContent = Math.round(100 * (v || 0));
+  }
+  const st = d.steering || 0;
+  const bar = $("inp-steer");
+  bar.style.width = `${Math.abs(st) * 50}%`;
+  bar.style.left = st < 0 ? `${50 + st * 50}%` : "50%";
+  const deg = d.steering_range_deg ? Math.round((st * d.steering_range_deg) / 2) : null;
+  $("inp-steer-v").textContent = deg == null ? `${Math.round(st * 100)}%` : `${deg}°`;
+  $("inp-abs").classList.toggle("on", !!d.abs_active);
+  $("inp-tc").classList.toggle("on", !!d.tc_active);
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -333,6 +384,7 @@ function render(d) {
   renderPit(d);
   renderSession(d);
   renderDamage(d);
+  renderInputs(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
@@ -344,6 +396,7 @@ function applyConfig(cfg) {
   deltaRef = cfg.delta_reference || "best";
   tyreRange = [cfg.tyre_temp_min_c ?? 75, cfg.tyre_temp_max_c ?? 100];
   pressureUnit = cfg.pressure_unit || "kpa";
+  traceS = cfg.inputs_trace_s || 8;
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;

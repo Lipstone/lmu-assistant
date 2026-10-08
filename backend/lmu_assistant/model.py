@@ -251,6 +251,14 @@ class Snapshot:
     aero_damage: float | None = None  # 0 intacte … 1 détruite (API REST du jeu)
     suspension_damage: list[float] | None = None  # 0..1 par roue (API REST du jeu)
     repair_time_s: float | None = None  # API REST du jeu
+    # Inputs (F12) : commandes du pilote
+    throttle: float = 0.0  # 0..1
+    brake: float = 0.0  # 0..1
+    clutch: float = 0.0  # 0..1
+    steering: float = 0.0  # -1 (gauche) .. 1 (droite)
+    steering_range_deg: float | None = None  # rotation totale du volant (butée à butée)
+    abs_active: bool = False
+    tc_active: bool = False
     fuel: FuelInfo = field(default_factory=FuelInfo)
     energy: FuelInfo = field(default_factory=lambda: FuelInfo(unit="%"))
     delta: DeltaInfo = field(default_factory=DeltaInfo)

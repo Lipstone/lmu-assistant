@@ -578,6 +578,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.lap_invalid = bool(telem.mLapInvalidated)
         snap.wheels = [_wheel(w, left_side=(i % 2 == 0)) for i, w in enumerate(telem.mWheels)]
         _damage(snap, telem)
+        _inputs(snap, telem)
         if scoring is not None and info.mLapDist > 0:
             # mLapDist n'est mis à jour qu'au rythme du scoring (~5 Hz) : on l'avance à l'instant de la
             # télémétrie avec la vitesse, sinon le delta (F03) tremblerait de quelques dixièmes.
@@ -621,6 +622,22 @@ def read_consistent(buf: Any, tries: int = 5) -> bytes:
         if _signature(buf) == before:
             break
     return copy
+
+
+def _unit(value: float, lo: float = 0.0) -> float:
+    return round(min(max(value, lo), 1.0), 3) if math.isfinite(value) else 0.0
+
+
+def _inputs(snap: Snapshot, telem: TelemInfo) -> None:
+    """Inputs (F12) : commandes brutes du pilote (avant filtrage, aides comprises)."""
+    snap.throttle = _unit(telem.mUnfilteredThrottle)
+    snap.brake = _unit(telem.mUnfilteredBrake)
+    snap.clutch = _unit(telem.mUnfilteredClutch)
+    snap.steering = _unit(telem.mUnfilteredSteering, -1.0)
+    rng = telem.mPhysicalSteeringWheelRange
+    snap.steering_range_deg = round(float(rng), 1) if math.isfinite(rng) and 90 <= rng <= 2000 else None
+    snap.abs_active = bool(telem.mABSActive)
+    snap.tc_active = bool(telem.mTCActive)
 
 
 # --- API REST locale du jeu (aéro, suspension, réparation) ---------------------

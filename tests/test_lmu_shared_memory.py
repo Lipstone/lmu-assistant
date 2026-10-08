@@ -264,3 +264,15 @@ def test_damage_fields():
     assert snap.wheels[1].flat and not snap.wheels[0].flat
     assert snap.last_impact_et == 950.0 and snap.last_impact_magnitude == 1234.6
     assert snap.water_temp_c == 91.0 and snap.oil_temp_c == 106.5 and snap.engine_overheating
+
+
+def test_inputs_fields():
+    d = make_data()
+    t = d.telemetry.telemInfo[2]
+    t.mUnfilteredThrottle, t.mUnfilteredBrake, t.mUnfilteredClutch = 0.756, 1.2, 0.0
+    t.mUnfilteredSteering, t.mPhysicalSteeringWheelRange = -0.25, 540.0
+    t.mABSActive, t.mTCActive = True, False
+    snap = parse_buffer(bytes(d))
+    assert (snap.throttle, snap.brake, snap.clutch, snap.steering) == (0.756, 1.0, 0.0, -0.25)
+    assert snap.steering_range_deg == 540.0 and snap.abs_active and not snap.tc_active
+    assert parse_buffer(bytes(make_data())).steering_range_deg is None  # 0 : inconnu

@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
-WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes", "relative", "standings", "pit", "session", "damage")
+WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes", "relative", "standings", "pit", "session", "damage", "inputs")
 
 # Position par défaut de chaque fenêtre sur l'écran (pixels, coin haut gauche).
 _DEFAULT_POSITIONS = {
@@ -40,6 +40,7 @@ _DEFAULT_POSITIONS = {
     "pit": (20, 540),
     "session": (1100, 20),
     "damage": (1100, 290),
+    "inputs": (760, 860),
 }
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
@@ -55,6 +56,7 @@ WIDGET_SIZES = {
     "pit": (250, 190),
     "session": (230, 252),
     "damage": (230, 250),
+    "inputs": (300, 132),
 }
 
 
@@ -122,6 +124,7 @@ class AppConfig(BaseModel):
     pit_loss_s: float = Field(
         60.0, ge=0, le=600, description="widget Stand : temps perdu au stand tant qu'aucun arrêt n'a été mesuré (s)"
     )
+    inputs_trace_s: float = Field(8.0, ge=2, le=30, description="widget Inputs : durée de la trace (s)")
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(
         False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"

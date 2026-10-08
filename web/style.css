@@ -118,6 +118,23 @@ dd.good { color: var(--ok); }
 .car-damage .zone-center { display: flex; align-items: center; justify-content: center; font-weight: 600; font-variant-numeric: tabular-nums; }
 .car-damage .zone-center.hit { color: var(--warn); }
 
+.inputs { display: flex; gap: 8px; align-items: stretch; }
+.inputs canvas { flex: 1; min-width: 0; width: 100%; height: 70px; background: #22262e; border-radius: 4px; }
+.pedals { display: flex; gap: 4px; }
+.pedal { display: flex; flex-direction: column; align-items: center; width: 22px; font-size: 11px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pedal-bar { position: relative; flex: 1; width: 12px; background: #333; border-radius: 3px; overflow: hidden; }
+.pedal-bar > div { position: absolute; bottom: 0; left: 0; right: 0; height: 0; }
+.pedal-bar .thr { background: var(--ok); }
+.pedal-bar .brk { background: var(--bad); }
+.pedal-bar .clu { background: var(--accent); }
+.steer-row { display: flex; gap: 6px; align-items: center; margin-top: 6px; font-size: 13px; font-variant-numeric: tabular-nums; }
+.steer { position: relative; flex: 1; height: 8px; background: #333; border-radius: 4px; overflow: hidden; }
+.steer::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); }
+.steer > div { position: absolute; top: 0; bottom: 0; left: 50%; width: 0; background: #fdd835; }
+#inp-steer-v { min-width: 42px; text-align: right; }
+.aid { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; background: #333; color: var(--muted); }
+.aid.on { background: #fdd835; color: #000; }
+
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
 body.overlay { background: transparent; overflow: hidden; }
 body.overlay .topbar { display: none; }
@@ -129,7 +146,7 @@ body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delt
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
 body.overlay .widget[data-widget="pit"] { width: 250px; }
 body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
-body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"] { width: 300px; }
+body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"], body.overlay .widget[data-widget="inputs"] { width: 300px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */
@@ -145,7 +162,7 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings td { padding: 4px; }
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
-.settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
+.settings input#inputs-trace, .settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .settings .actions { display: flex; gap: 12px; align-items: center; }

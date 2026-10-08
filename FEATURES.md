@@ -19,7 +19,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ✅ |
 | F10 | Session et piste | Temps restant, drapeaux (jaune local, FCY, bleu…), météo, température piste/air et son évolution, grip | ✅ |
 | F11 | Dégâts | État carrosserie (8 zones), aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
-| F12 | Inputs | Pédales et volant en direct (trace courte) | ⬜ |
+| F12 | Inputs | Pédales et volant en direct (trace courte réglable), témoins ABS / TC | ✅ |
 
 ## Hors course (ingénieur augmenté)
 
