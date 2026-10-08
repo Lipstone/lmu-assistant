@@ -90,6 +90,12 @@ Le widget **Relative** montre les 3 voitures juste **devant** et les 3 juste **d
 
 Calculs côté serveur (`backend/lmu_assistant/relative.py`) à partir du classement du jeu : écart sur la piste (avancement dans le tour, ramené à moins d'un demi-tour devant ou derrière) × notre meilleur tour (sinon dernier tour, sinon estimation du jeu).
 
+## Classement (F08)
+
+Le widget **Classement** donne un classement simplifié **par classe**, la classe du joueur en premier, puis les autres dans l'ordre de leur meilleure voiture au général (nombre de voitures entre parenthèses). Dans chaque classe : les 3 premiers, et dans la classe du joueur la voiture juste devant, le joueur (en surbrillance) et celle juste derrière ; « ⋯ » marque les voitures omises. Par ligne : position dans la classe, numéro, pilote, **écart au leader de la classe** (en secondes, ou en tours dès qu'il y a au moins un tour, « +1T »), et **dernier tour**. L'écart à la voiture juste devant s'affiche au survol ; les voitures aux stands sont marquées STAND.
+
+Calculs côté serveur (`backend/lmu_assistant/standings.py`) à partir du classement du jeu (`mPlace`, `mVehicleClass`, `mTimeBehindLeader`, distance parcourue).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

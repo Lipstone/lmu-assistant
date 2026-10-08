@@ -15,7 +15,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F05 | Pneus | Températures (int/milieu/ext), pressions, usure par roue | ✅ |
 | F06 | Freins | Températures par roue, alerte surchauffe | ✅ |
 | F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard | ✅ |
-| F08 | Classement | Classement simplifié par classe, écarts, dernier tour | ⬜ |
+| F08 | Classement | Classement simplifié par classe, écarts, dernier tour | ✅ |
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ⬜ |
 | F10 | Session et piste | Temps restant, drapeaux, météo, température piste/air, grip | ⬜ |
 | F11 | Dégâts | État carrosserie, aéro, suspension | ⬜ |

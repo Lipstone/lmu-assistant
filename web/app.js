@@ -206,6 +206,32 @@ function renderRelative(d) {
     .join("");
 }
 
+// F08 : classement par classe ; sélection des lignes et écarts côté serveur (backend/lmu_assistant/standings.py).
+// Écart au leader de la classe (en tours s'il y a au moins un tour), écart à la voiture devant au survol.
+const fmtGap = (s, laps) => (laps ? `+${laps}T` : s == null ? "–" : `+${s.toFixed(1)}`);
+const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45.6
+
+function renderStandings(d) {
+  $("standings").innerHTML = (d.standings || [])
+    .map((c) => {
+      const head = `<tr class="class-head"><td colspan="5"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
+        `${esc(c.car_class || "?")} <span class="muted">(${c.cars})</span></td></tr>`;
+      return head + c.entries
+        .map((e) => {
+          const sep = e.skipped_before ? '<tr class="skip"><td colspan="5">⋯</td></tr>' : "";
+          const leader = e.class_position === 1;
+          return sep + `<tr class="${e.is_player ? "me" : ""}"><td class="cpos">P${e.class_position}</td>` +
+            `<td class="num">${e.number ? "#" + esc(e.number) : ""}</td>` +
+            `<td class="driver">${esc(e.driver)}${e.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
+            `<td class="gap" title="${leader ? "" : "à la voiture devant : " + fmtGap(e.interval_s, e.laps_interval)}">` +
+            `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>` +
+            `<td class="last" title="dernier tour">${fmtShortLap(e.last_lap_s)}</td></tr>`;
+        })
+        .join("");
+    })
+    .join("");
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -219,6 +245,7 @@ function render(d) {
   renderTyres(d);
   renderBrakes(d);
   renderRelative(d);
+  renderStandings(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
