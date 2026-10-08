@@ -91,6 +91,25 @@ def test_parse_player_snapshot():
     assert snap.best_lap_s == 208.25
     assert snap.current_lap_s == pytest.approx(40.5)
     assert snap.session_time_left_s == pytest.approx(2600.0)
+    assert snap.max_laps is None  # mMaxLaps = 0
+    assert snap.virtual_energy_pct is None  # mVirtualEnergy = 0 : voiture sans énergie virtuelle
+    assert snap.in_pits is False
+
+
+def test_lap_race_pits_and_lap_fraction():
+    d = make_data()
+    d.scoring.scoringInfo.mLapDist = 13_626.0
+    d.scoring.scoringInfo.mMaxLaps = 30
+    d.scoring.vehScoringInfo[1].mLapDist = 3_406.5
+    d.scoring.vehScoringInfo[1].mInPits = True
+    snap = parse_buffer(bytes(d))
+    assert snap.max_laps == 30
+    assert snap.lap_fraction == pytest.approx(0.25)
+    assert snap.in_pits is True
+    d.telemetry.telemInfo[2].mVirtualEnergy = 0.6243  # fraction
+    assert parse_buffer(bytes(d)).virtual_energy_pct == pytest.approx(62.43)
+    d.scoring.scoringInfo.mMaxLaps = 2_147_483_647  # course chronométrée
+    assert parse_buffer(bytes(d)).max_laps is None
 
 
 def test_wheels_kelvin_and_inner_outer():

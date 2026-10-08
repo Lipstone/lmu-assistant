@@ -9,6 +9,7 @@ from fastapi.staticfiles import StaticFiles
 
 from .config import ConfigStore
 from .config_api import make_config_router
+from .fuel import FuelCalculator
 from .network import router as network_router
 from .paths import resource_dir
 from .sources import DataSource
@@ -22,10 +23,11 @@ class Broadcaster:
         self.period = 1.0 / hz
         self.clients: set[WebSocket] = set()
         self.latest: dict = {}
+        self.fuel = FuelCalculator()
 
     async def run(self) -> None:
         while True:
-            self.latest = self.source.read().to_dict()
+            self.latest = self.fuel.update(self.source.read()).to_dict()
             await self.send_all({"type": "snapshot", "data": self.latest})
             await asyncio.sleep(self.period)
 

@@ -5,7 +5,7 @@ Assistant « ingénieur augmenté » pour **Le Mans Ultimate** : les données si
 Tout est affichable de deux façons, à partir des mêmes données :
 
 - **Page web locale** : `http://localhost:8765`, sur le PC, une tablette ou un téléphone du réseau local.
-- **Overlay en jeu** : une fenêtre transparente, sans bordure et toujours au premier plan qui affiche les mêmes widgets (jeu en mode *fenêtré sans bordure*).
+- **Overlay en jeu** : une petite fenêtre transparente, sans bordure et toujours au premier plan **par widget**, placée où l'on veut sur l'écran, qui affiche les mêmes widgets (jeu en mode *fenêtré sans bordure*).
 
 > État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu, ou avec la lecture réelle de LMU (`lmu`, à valider en jeu, voir [docs/donnees-lmu.md](docs/donnees-lmu.md)).
 
@@ -47,12 +47,23 @@ python overlay/overlay.py
 
 `--source lmu` (par défaut) lit la mémoire partagée native du jeu sous Windows, sans plugin à installer : voir [docs/donnees-lmu.md](docs/donnees-lmu.md).
 
+## Carburant et énergie virtuelle (F01, F02)
+
+Le widget **Carburant** affiche le niveau, la conso du dernier tour et la moyenne des 5 derniers tours valides (nombre de tours entre parenthèses), les tours possibles avec le carburant à bord, les tours restant jusqu'à l'arrivée et le **carburant à ajouter pour finir** (« assez » s'il n'en manque pas). Les calculs sont faits côté serveur (`backend/lmu_assistant/fuel.py`), donc identiques sur la page web, la tablette et l'overlay.
+
+- Un tour compte dans la moyenne s'il a été suivi depuis la ligne, sans passage aux stands ni ravitaillement. La moyenne repart de zéro quand la session, la piste ou la voiture change.
+- Course chronométrée : à la fin du temps on finit le tour en cours, l'estimation arrondit donc au passage de ligne suivant (avec le temps au tour moyen). Course au nombre de tours : tours restants d'après `mMaxLaps`.
+- Pas de marge de sécurité ajoutée : le chiffre « À ajouter » est le strict nécessaire.
+- **Énergie virtuelle (% EV)** : sur les voitures qui en ont (Hypercar, LMGT3), le widget passe en **Énergie virtuelle** avec les mêmes calculs en % (dernier tour, moyenne, tours restants, % à ajouter), et rappelle les litres sur une ligne. Réglage « Widget Carburant » dans Réglages overlay : Auto (par défaut), Litres ou % énergie virtuelle.
+
 ## Réglages de l'overlay
 
-- Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position (pixels dans la fenêtre overlay), échelle, opacité, position/taille de la fenêtre, clics traversants et raccourci. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay relit la fenêtre et le raccourci sous ~2 s.
+- Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.
+- **Transparence** : « Opacité » rend tout le widget transparent (texte compris) ; « Fond » ne touche que le fond (0 = chiffres posés directement sur l'image du jeu). Les colonnes Opacité/Fond d'un widget remplacent les valeurs globales ; laisser vide pour garder la valeur globale.
 - Sur la page normale, seule la visibilité des widgets s'applique (grille automatique).
 - Raccourci global **afficher/masquer** : `ctrl+shift+o` par défaut (paquet `keyboard`, inclus dans l'exe et dans `pip install -e ".[overlay]"` sous Windows ; sans lui l'overlay marche, sans raccourci).
-- **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc la fenêtre ne se déplace plus à la souris ; la placer depuis la page de réglages, ou lancer `python overlay/overlay.py --no-click-through` pour la déplacer à la main.
+- **Placement à la souris** : activer le **mode placement** (raccourci `ctrl+shift+p`, ou case « Mode placement » dans les réglages). Chaque fenêtre est alors encadrée : la faire glisser pour la déplacer, tirer la poignée en bas à droite pour l'agrandir ou la réduire. Positions et tailles sont enregistrées automatiquement ; refaire le raccourci pour revenir en jeu.
+- **Clics traversants** (Windows, activé par défaut) : hors mode placement, les clics passent au jeu à travers les fenêtres.
 - Les réglages sont dans `data/config.json` (autre fichier : `python -m lmu_assistant --config chemin.json`). API : `GET`/`PUT /api/config`.
 
 ## Enregistrer et rejouer une session

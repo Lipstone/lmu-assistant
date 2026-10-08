@@ -9,6 +9,9 @@ from .base import DataSource
 
 LAP_S = 225.0  # ~3 min 45 s
 FUEL_PER_LAP_L = 3.4
+ENERGY_PER_LAP_PCT = 4.1  # énergie virtuelle (Hypercar)
+PIT_BELOW_L = 8.0  # passage au stand (plein) quand il reste moins que ça au passage de ligne
+PIT_S = 25.0  # durée passée « dans les stands » au début du tour suivant
 
 
 class MockSource(DataSource):
@@ -19,9 +22,11 @@ class MockSource(DataSource):
         self._lap = 1
         self._lap_start = self._start
         self._fuel = 90.0
+        self._energy = 100.0
         self._last: float | None = None
         self._best: float | None = None
         self._lap_target = LAP_S
+        self._pit = False
 
     def read(self) -> Snapshot:
         now = time.monotonic()
@@ -32,8 +37,13 @@ class MockSource(DataSource):
             self._lap += 1
             self._lap_start = now
             self._fuel = max(0.0, self._fuel - FUEL_PER_LAP_L * random.uniform(0.95, 1.05))
+            self._energy = max(0.0, self._energy - ENERGY_PER_LAP_PCT * random.uniform(0.97, 1.03))
             self._lap_target = LAP_S + random.uniform(-1.5, 1.5)
             current = 0.0
+            self._pit = self._fuel < PIT_BELOW_L or self._energy < 2 * ENERGY_PER_LAP_PCT
+            if self._pit:
+                self._fuel = 90.0
+                self._energy = 100.0
 
         phase = current / LAP_S * 2 * math.pi
         speed = 200 + 110 * math.sin(phase * 7)
@@ -59,9 +69,12 @@ class MockSource(DataSource):
             gear=max(1, min(7, int(speed / 45))),
             fuel_l=round(self._fuel - FUEL_PER_LAP_L * current / LAP_S, 2),
             fuel_capacity_l=100.0,
+            virtual_energy_pct=round(self._energy - ENERGY_PER_LAP_PCT * current / LAP_S, 2),
             last_lap_s=self._last,
             best_lap_s=self._best,
             current_lap_s=round(current, 3),
+            lap_fraction=round(min(current / self._lap_target, 1.0), 4),
+            in_pits=self._pit and current < PIT_S,
             session_time_left_s=max(0.0, 6 * 3600 - (now - self._start)),
             wheels=wheels,
         )

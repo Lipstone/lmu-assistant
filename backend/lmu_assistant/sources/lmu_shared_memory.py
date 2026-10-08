@@ -26,6 +26,7 @@ MAP_NAME = "LMU_Data"
 MAX_VEHICLES = 104
 MAX_PATH_LENGTH = 260
 KELVIN = 273.15
+MAX_RACE_LAPS = 10_000  # au-delà, mMaxLaps signifie « pas de limite de tours »
 
 
 class _Struct(ctypes.Structure):
@@ -459,6 +460,8 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
     snap.track = _text(info.mTrackName)
     if info.mEndET > 0:
         snap.session_time_left_s = round(max(0.0, info.mEndET - info.mCurrentET), 3)
+    if 0 < info.mMaxLaps < MAX_RACE_LAPS:  # course chronométrée : mMaxLaps vaut un très grand nombre
+        snap.max_laps = info.mMaxLaps
 
     scoring, telem = find_player(data)
     if scoring is not None:
@@ -468,6 +471,9 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.last_lap_s = _lap_time(scoring.mLastLapTime)
         snap.best_lap_s = _lap_time(scoring.mBestLapTime)
         snap.current_lap_s = round(max(0.0, info.mCurrentET - scoring.mLapStartET), 3)
+        snap.in_pits = bool(scoring.mInPits)
+        if info.mLapDist > 0:
+            snap.lap_fraction = round(min(max(scoring.mLapDist / info.mLapDist, 0.0), 1.0), 4)
     if telem is not None:
         v = telem.mLocalVel
         snap.speed_kmh = round(math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * 3.6, 1)
@@ -475,6 +481,8 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.gear = telem.mGear
         snap.fuel_l = round(telem.mFuel, 2)
         snap.fuel_capacity_l = round(telem.mFuelCapacity, 1)
+        if telem.mVirtualEnergy > 0:  # fraction 0-1 ; 0 pour les voitures sans énergie virtuelle
+            snap.virtual_energy_pct = round(min(telem.mVirtualEnergy, 1.0) * 100, 2)
         snap.car = snap.car or _text(telem.mVehicleName)
         snap.track = snap.track or _text(telem.mTrackName)
         if scoring is None:

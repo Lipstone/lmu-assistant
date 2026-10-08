@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from pydantic import ValidationError
 
-from lmu_assistant.config import WIDGET_IDS, AppConfig, ConfigStore
+from lmu_assistant.config import WIDGET_IDS, WIDGET_SIZES, AppConfig, ConfigStore, window_size
 from lmu_assistant.server import create_app
 from lmu_assistant.sources import get_source
 
@@ -15,7 +15,21 @@ def test_defaults():
     assert all(w.visible and w.scale == 1.0 for w in cfg.widgets)
     assert 0.1 <= cfg.opacity <= 1.0
     assert cfg.hotkey == "ctrl+shift+o"
-    assert cfg.window.width > 0 and cfg.window.height > 0
+    assert cfg.window.click_through
+    assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
+    assert cfg.fuel_mode == "auto"
+
+
+def test_every_widget_has_a_window_size():
+    assert set(WIDGET_SIZES) == set(WIDGET_IDS)
+    assert window_size("fuel", 2.0) == (2 * WIDGET_SIZES["fuel"][0], 2 * WIDGET_SIZES["fuel"][1])
+
+
+def test_old_single_window_config_still_loads():
+    # Avant le découpage en une fenêtre par widget, "window" avait x/y/width/height : ignorés.
+    cfg = AppConfig.model_validate({"window": {"x": 5, "y": 5, "width": 400, "height": 420, "click_through": False}})
+    assert cfg.window.click_through is False
+    assert "width" not in cfg.window.model_dump()
 
 
 def test_missing_file_gives_defaults(tmp_path):
@@ -43,6 +57,17 @@ def test_save_load_roundtrip(tmp_path):
     assert loaded.hotkey == "f9"  # normalisé en minuscules
 
 
+def test_widget_transparency_optional():
+    cfg = AppConfig.model_validate(
+        {"background_opacity": 0.0, "widgets": [{"id": "fuel", "opacity": 0.6, "background_opacity": 0.2}]}
+    )
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.opacity, fuel.background_opacity) == (0.6, 0.2)
+    lap = next(w for w in cfg.widgets if w.id == "lap")
+    assert lap.opacity is None and lap.background_opacity is None  # valeurs globales
+    assert cfg.background_opacity == 0.0
+
+
 def test_partial_widgets_completed():
     cfg = AppConfig.model_validate({"widgets": [{"id": "fuel", "visible": False}]})
     assert [w.id for w in cfg.widgets][0] == "fuel"
@@ -55,11 +80,16 @@ def test_partial_widgets_completed():
         {"opacity": 2},
         {"opacity": 0},
         {"hotkey": "   "},
+        {"placement_hotkey": ""},
+        {"fuel_mode": "kwh"},
         {"widgets": [{"id": "inconnu"}]},
         {"widgets": [{"id": "lap"}, {"id": "lap"}]},
         {"widgets": [{"id": "lap", "scale": 0}]},
-        {"widgets": [{"id": "lap", "x": -5}]},
-        {"window": {"width": 1}},
+        {"widgets": [{"id": "lap", "x": -20000}]},
+        {"widgets": [{"id": "fuel", "opacity": 0.05}]},
+        {"widgets": [{"id": "fuel", "background_opacity": 1.5}]},
+        {"background_opacity": -0.1},
+        {"window": {"click_through": "peut-être"}},
         {"champ_inconnu": 1},
     ],
 )
