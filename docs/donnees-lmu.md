@@ -71,6 +71,8 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 
 **Intérieur / extérieur** : `mTemperature` est en gauche / centre / droite vu du pilote, pas intérieur / extérieur. Pour les roues gauches (AVG, ARG), l'extérieur est à gauche : `(int, milieu, ext) = (T[2], T[1], T[0])`. Pour les roues droites (AVD, ARD) : `(T[0], T[1], T[2])`.
 
+Delta (F03) : calculé par l'appli à partir de `mLapDist` (scoring, avancé à l'instant de la télémétrie avec la vitesse) et du temps du tour, pour avoir aussi le dernier tour et le record personnel comme référence. Le `mDeltaBest` du jeu n'est pas utilisé.
+
 Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, météo (`mRaining`, `mAmbientTemp`, `mTrackTemp`, `mTrackGripLevel`), dégâts `mDentSeverity`, pédales, réglages TC/ABS, composés de pneus, secteurs, état des stands.
 
 ## Sources

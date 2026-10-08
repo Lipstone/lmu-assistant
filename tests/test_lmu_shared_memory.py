@@ -112,6 +112,15 @@ def test_lap_race_pits_and_lap_fraction():
     assert parse_buffer(bytes(d)).max_laps is None
 
 
+def test_lap_fraction_advanced_to_telemetry_time():
+    d = make_data()
+    d.scoring.scoringInfo.mLapDist = 13_626.0
+    d.scoring.vehScoringInfo[1].mLapDist = 3_406.5
+    d.telemetry.telemInfo[2].mElapsedTime = 1000.2  # scoring relevé 0,2 s plus tôt, à ~50 m/s
+    speed_ms = parse_buffer(bytes(d)).speed_kmh / 3.6
+    assert parse_buffer(bytes(d)).lap_fraction == pytest.approx((3_406.5 + speed_ms * 0.2) / 13_626.0, abs=1e-4)
+
+
 def test_wheels_kelvin_and_inner_outer():
     w = parse_buffer(bytes(make_data())).wheels
     # Roues gauches (AVG, ARG) : intérieur = droite ; roues droites : intérieur = gauche

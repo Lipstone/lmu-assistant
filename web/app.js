@@ -51,6 +51,41 @@ function renderFuel(d) {
   $("fuel-other").textContent = energy ? fmt(d.fuel_l, 1, " L") : fmt(d.virtual_energy_pct, 1, "%");
 }
 
+// F03 : delta en direct ; traces de référence et calculs côté serveur (backend/lmu_assistant/delta.py).
+let deltaRef = "best";
+const DELTA_REFS = { best: "meilleur", last: "dernier", record: "record" };
+const DELTA_BAR_S = 2; // la barre est pleine à ±2 s
+
+const fmtDelta = (v) => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toFixed(2)}`);
+
+function setSign(el, v) {
+  el.classList.toggle("faster", v != null && v < 0);
+  el.classList.toggle("slower", v != null && v > 0);
+}
+
+function renderDelta(d) {
+  const info = d.delta || {};
+  const v = info[`vs_${deltaRef}`];
+  const ref = info[`${deltaRef}_s`];
+  $("delta-title").textContent = `Delta · ${DELTA_REFS[deltaRef]}`;
+  $("delta").textContent = fmtDelta(v);
+  setSign($("delta"), v);
+  // Barre centrée : vers la gauche (vert) quand on gagne du temps, vers la droite (rouge) quand on en perd.
+  const k = v == null ? 0 : Math.min(1, Math.abs(v) / DELTA_BAR_S) * 50;
+  const bar = $("delta-bar");
+  bar.style.width = `${k}%`;
+  bar.style.left = v != null && v < 0 ? `${50 - k}%` : "50%";
+  setSign(bar, v);
+  $("delta-predicted").textContent = v == null || ref == null ? "–" : fmtLap(ref + v);
+  $("delta-ref-label").textContent = deltaRef === "record" ? "Record" : deltaRef === "last" ? "Dernier" : "Meilleur";
+  $("delta-ref").textContent = fmtLap(ref);
+  for (const r of Object.keys(DELTA_REFS)) {
+    const el = $(`delta-vs-${r}`);
+    el.textContent = fmtDelta(info[`vs_${r}`]);
+    setSign(el, info[`vs_${r}`]);
+  }
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -59,6 +94,7 @@ function render(d) {
   $("current").textContent = fmtLap(d.current_lap_s);
   $("last").textContent = fmtLap(d.last_lap_s);
   $("best").textContent = fmtLap(d.best_lap_s);
+  renderDelta(d);
   renderFuel(d);
   $("speed").textContent = `${Math.round(d.speed_kmh)} km/h`;
   $("gear").textContent = d.gear === 0 ? "N" : d.gear < 0 ? "R" : d.gear;
@@ -72,6 +108,7 @@ function render(d) {
 function applyConfig(cfg) {
   setPlacement(!!cfg.placement);
   fuelMode = cfg.fuel_mode || "auto";
+  deltaRef = cfg.delta_reference || "best";
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;

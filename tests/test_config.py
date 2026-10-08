@@ -18,6 +18,7 @@ def test_defaults():
     assert cfg.window.click_through
     assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
     assert cfg.fuel_mode == "auto"
+    assert cfg.delta_reference == "best"
 
 
 def test_every_widget_has_a_window_size():
@@ -82,6 +83,7 @@ def test_partial_widgets_completed():
         {"hotkey": "   "},
         {"placement_hotkey": ""},
         {"fuel_mode": "kwh"},
+        {"delta_reference": "optimal"},
         {"widgets": [{"id": "inconnu"}]},
         {"widgets": [{"id": "lap"}, {"id": "lap"}]},
         {"widgets": [{"id": "lap", "scale": 0}]},

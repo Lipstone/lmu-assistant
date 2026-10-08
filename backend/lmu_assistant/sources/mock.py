@@ -27,6 +27,11 @@ class MockSource(DataSource):
         self._best: float | None = None
         self._lap_target = LAP_S
         self._pit = False
+        self._wobble = 0.0
+
+    def _fraction(self, current: float) -> float:
+        x = current / self._lap_target
+        return x + self._wobble * math.sin(2 * math.pi * x) / (2 * math.pi) * 6
 
     def read(self) -> Snapshot:
         now = time.monotonic()
@@ -39,6 +44,7 @@ class MockSource(DataSource):
             self._fuel = max(0.0, self._fuel - FUEL_PER_LAP_L * random.uniform(0.95, 1.05))
             self._energy = max(0.0, self._energy - ENERGY_PER_LAP_PCT * random.uniform(0.97, 1.03))
             self._lap_target = LAP_S + random.uniform(-1.5, 1.5)
+            self._wobble = random.uniform(-0.01, 0.01)  # temps gagné ou perdu en cours de tour (delta F03)
             current = 0.0
             self._pit = self._fuel < PIT_BELOW_L or self._energy < 2 * ENERGY_PER_LAP_PCT
             if self._pit:
@@ -73,7 +79,7 @@ class MockSource(DataSource):
             last_lap_s=self._last,
             best_lap_s=self._best,
             current_lap_s=round(current, 3),
-            lap_fraction=round(min(current / self._lap_target, 1.0), 4),
+            lap_fraction=round(min(self._fraction(current), 1.0), 4),
             in_pits=self._pit and current < PIT_S,
             session_time_left_s=max(0.0, 6 * 3600 - (now - self._start)),
             wheels=wheels,
