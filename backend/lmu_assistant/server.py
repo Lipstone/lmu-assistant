@@ -16,6 +16,7 @@ from .laptimes import AVG_LAPS, LapTimesCalculator
 from .network import router as network_router
 from .pitstop import PIT_LOSS_S, PitCalculator
 from .relative import compute_relative
+from .session import SessionCalculator
 from .standings import compute_standings
 from .paths import resource_dir
 from .sources import DataSource
@@ -41,13 +42,15 @@ class Broadcaster:
         self.laps = LapTimesCalculator()
         self.brakes = BrakesCalculator()
         self.pit = PitCalculator()
+        self.session = SessionCalculator()
 
     def compute(self, snap):
         cfg = self.config_store.config if self.config_store else None
         snap = self.laps.update(self.delta.update(self.fuel.update(snap)), cfg.laptime_avg_laps if cfg else AVG_LAPS)
         snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
         snap = compute_standings(compute_relative(snap))
-        return self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
+        snap = self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
+        return self.session.update(snap)
 
     async def run(self) -> None:
         while True:

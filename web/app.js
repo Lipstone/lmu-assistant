@@ -254,6 +254,35 @@ function renderPit(d) {
   $("pit-rejoin").textContent = p.rejoin_class_position == null ? "–" : `P${p.rejoin_class_position} classe`;
 }
 
+// F10 : session et piste ; drapeau, tendance de la piste et libellés côté serveur (backend/lmu_assistant/session.py).
+const fmtClock = (s) => {
+  if (s == null) return "–";
+  s = Math.max(0, Math.floor(s));
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = s % 60;
+  return `${h}:${String(m).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+};
+
+function renderSession(d) {
+  const s = d.session_info || {};
+  $("sess-left").textContent = s.laps_left != null ? `${s.laps_left} tour${s.laps_left > 1 ? "s" : ""}` : fmtClock(s.time_left_s);
+  $("sess-bar").style.width = `${Math.round(100 * (s.progress || 0))}%`;
+  const flag = $("sess-flag");
+  flag.hidden = !s.flag_label;
+  flag.textContent = s.flag_label || "";
+  flag.className = `flag ${s.flag || "none"}`;
+  $("sess-temps").textContent = s.air_temp_c == null ? "–" : `${Math.round(s.air_temp_c)} / ${Math.round(s.track_temp_c ?? 0)} °C`;
+  const tr = s.track_temp_trend_c;
+  $("sess-trend").textContent = tr == null ? "–" : `${tr > 0 ? "+" : tr < 0 ? "−" : "±"}${Math.abs(tr).toFixed(1)} °C`;
+  $("sess-trend").title = "évolution de la température piste sur les 10 dernières minutes";
+  $("sess-rain").textContent = s.rain_pct == null ? "–" : s.rain_pct ? `${s.rain_pct} %` : "non";
+  $("sess-rain").classList.toggle("alert", !!s.rain_pct);
+  $("sess-wet").textContent = s.wetness_pct == null ? "–" : `${s.wetness_pct} %`;
+  $("sess-wet").classList.toggle("alert", (s.wetness_pct || 0) >= 10);
+  $("sess-grip").textContent = s.grip || "–";
+  $("sess-sky").textContent = s.sky || "–";
+  $("sess-tod").textContent = s.time_of_day_s == null ? "–" : fmtClock(s.time_of_day_s).slice(0, -3);
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -269,6 +298,7 @@ function render(d) {
   renderRelative(d);
   renderStandings(d);
   renderPit(d);
+  renderSession(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.

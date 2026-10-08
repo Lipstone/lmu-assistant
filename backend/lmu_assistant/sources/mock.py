@@ -32,6 +32,12 @@ FIELD = [
 ]
 FIELD_PIT_EVERY = 12  # tours entre deux arrêts des autres voitures
 
+RACE_S = 6 * 3600.0  # course de 6 h
+RAIN_START_S = 900.0  # météo (F10) : averses périodiques
+RAIN_PERIOD_S = 5400.0
+YELLOW_EVERY_S = 900.0  # un jaune local d'une minute toutes les 15 min
+YELLOW_S = 60.0
+
 
 class MockSource(DataSource):
     name = "mock"
@@ -50,6 +56,7 @@ class MockSource(DataSource):
         self._stint_start = 1  # tour où des pneus neufs ont été montés
         self._invalid_at: float | None = None  # instant du tour où il sera invalidé (limites de piste)
         self._stops = 0
+        self._wetness = 0.0
 
     def _fraction(self, current: float) -> float:
         x = current / self._lap_target
@@ -128,9 +135,37 @@ class MockSource(DataSource):
             lap_fraction=fraction,
             in_pits=in_pits,
             lap_invalid=self._invalid_at is not None and current >= self._invalid_at,
-            session_time_left_s=max(0.0, 6 * 3600 - (now - self._start)),
+            session_time_left_s=max(0.0, RACE_S - (now - self._start)),
             wheels=wheels,
             vehicles=sorted(vehicles, key=lambda v: v.position),
+            **self._session(now - self._start, fraction),
+        )
+
+    def _session(self, t: float, fraction: float) -> dict:
+        """Session et piste (F10) : une averse de temps en temps, piste qui chauffe l'après-midi,
+        un jaune local d'une minute toutes les 15 min dans un secteur différent."""
+        rain = min(max((math.sin(2 * math.pi * (t - RAIN_START_S) / RAIN_PERIOD_S) - 0.7) / 0.3, 0.0), 1.0) * 0.6
+        # la piste sèche moins vite qu'elle ne se mouille
+        self._wetness += (rain - self._wetness) * (0.004 if rain > self._wetness else 0.001)
+        self._wetness = max(0.0, self._wetness)
+        cycle = t % YELLOW_EVERY_S
+        flags = [0, 0, 0]
+        if YELLOW_EVERY_S - YELLOW_S <= cycle:
+            flags[int(t // YELLOW_EVERY_S) % 3] = 1
+        return dict(
+            session_elapsed_s=round(t, 3),
+            session_length_s=RACE_S,
+            game_phase=5,
+            yellow_flag_state=0,
+            sector_flags=flags,
+            sector=min(3, int(fraction * 3) + 1),
+            air_temp_c=round(22 + 3 * math.sin(2 * math.pi * t / 21600) - 2 * rain, 1),
+            track_temp_c=round(31 + 7 * math.sin(2 * math.pi * t / 21600) - 9 * self._wetness, 1),
+            raining=round(rain, 3),
+            wetness=round(self._wetness, 3),
+            cloud_coverage=7 if rain > 0.3 else 6 if rain > 0 else 3 if self._wetness > 0.05 else 1,
+            track_grip=2 if self._wetness > 0.2 else 3,
+            time_of_day_s=(15 * 3600 + t) % 86400,
         )
 
     @staticmethod

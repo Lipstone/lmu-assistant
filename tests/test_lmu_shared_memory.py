@@ -227,3 +227,24 @@ def test_parse_vehicles_for_relative_and_standings():
     assert snap.vehicles[2].car_class == "LMGT3" and snap.vehicles[2].number == "52"
     assert snap.vehicles[1].lap_fraction == 0.2 and snap.vehicles[1].laps == 11
     assert snap.vehicles[2].time_behind_leader_s == 3.0
+
+
+def test_session_and_weather_fields():
+    d = make_data()
+    info = d.scoring.scoringInfo
+    info.mGamePhase = 6
+    info.mYellowFlagState = b"\x02"
+    info.mSectorFlag[0], info.mSectorFlag[1], info.mSectorFlag[2] = 0, 1, 0  # index 1 = secteur 1
+    info.mAmbientTemp, info.mTrackTemp = 21.5, 33.25
+    info.mRaining, info.mAvgPathWetness = 0.25, 0.4
+    info.mTrackGripLevel, info.mCloudCoverage = 3, 6
+    info.mTimeOfDay = 54000.0
+    d.scoring.vehScoringInfo[1].mSector = 0  # secteur 3
+    d.scoring.vehScoringInfo[1].mFlag = 6
+    snap = parse_buffer(bytes(d))
+    assert snap.game_phase == 6 and snap.yellow_flag_state == 2
+    assert snap.sector_flags == [1, 0, 0] and snap.sector == 3 and snap.player_flag == 6
+    assert snap.air_temp_c == 21.5 and snap.track_temp_c == 33.25
+    assert snap.raining == 0.25 and snap.wetness == 0.4
+    assert snap.track_grip == 3 and snap.cloud_coverage == 6 and snap.time_of_day_s == 54000.0
+    assert snap.session_elapsed_s == 1000.0 and snap.session_length_s == 3600.0
