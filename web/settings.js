@@ -1,6 +1,6 @@
 // Page de réglages de l'overlay (T06) : lit GET /api/config, enregistre via PUT.
 const $ = (id) => document.getElementById(id);
-const NAMES = { lap: "Tour", fuel: "Carburant", car: "Voiture", tyres: "Pneus" };
+const NAMES = { lap: "Tour", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus" };
 let config = null;
 
 function num(input, fallback) {
@@ -36,6 +36,7 @@ function fill(cfg) {
   $("hotkey").value = cfg.hotkey;
   $("click-through").checked = cfg.window.click_through;
   $("placement").checked = cfg.placement;
+  $("fuel-mode").value = cfg.fuel_mode;
   $("placement-hotkey").value = cfg.placement_hotkey;
   sizePreview();
 }
@@ -60,6 +61,7 @@ function collect() {
     background_opacity: num($("background-opacity"), config.background_opacity),
     hotkey: $("hotkey").value.trim() || config.hotkey,
     placement: $("placement").checked,
+    fuel_mode: $("fuel-mode").value,
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {
       click_through: $("click-through").checked,

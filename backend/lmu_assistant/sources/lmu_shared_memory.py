@@ -481,6 +481,8 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.gear = telem.mGear
         snap.fuel_l = round(telem.mFuel, 2)
         snap.fuel_capacity_l = round(telem.mFuelCapacity, 1)
+        if telem.mVirtualEnergy > 0:  # fraction 0-1 ; 0 pour les voitures sans énergie virtuelle
+            snap.virtual_energy_pct = round(min(telem.mVirtualEnergy, 1.0) * 100, 2)
         snap.car = snap.car or _text(telem.mVehicleName)
         snap.track = snap.track or _text(telem.mTrackName)
         if scoring is None:

@@ -17,6 +17,7 @@ def test_defaults():
     assert cfg.hotkey == "ctrl+shift+o"
     assert cfg.window.click_through
     assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
+    assert cfg.fuel_mode == "auto"
 
 
 def test_every_widget_has_a_window_size():
@@ -80,6 +81,7 @@ def test_partial_widgets_completed():
         {"opacity": 0},
         {"hotkey": "   "},
         {"placement_hotkey": ""},
+        {"fuel_mode": "kwh"},
         {"widgets": [{"id": "inconnu"}]},
         {"widgets": [{"id": "lap"}, {"id": "lap"}]},
         {"widgets": [{"id": "lap", "scale": 0}]},

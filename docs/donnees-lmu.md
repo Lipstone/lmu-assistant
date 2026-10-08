@@ -59,6 +59,7 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 | `rpm` | `mEngineRPM` | tr/min |
 | `gear` | `mGear` | -1 = R, 0 = N |
 | `fuel_l`, `fuel_capacity_l` | `mFuel`, `mFuelCapacity` | litres |
+| `virtual_energy_pct` | `TelemInfoV01.mVirtualEnergy` | fraction 0-1 × 100 ; `None` si 0 (voiture sans énergie virtuelle) |
 | `max_laps` | `ScoringInfoV01.mMaxLaps` | `None` si ≤ 0 ou ≥ 10 000 (course chronométrée) |
 | `lap_fraction` | `VehicleScoringInfoV01.mLapDist / ScoringInfoV01.mLapDist` | 0-1, borné |
 | `in_pits` | `mInPits` | |
@@ -70,7 +71,7 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 
 **Intérieur / extérieur** : `mTemperature` est en gauche / centre / droite vu du pilote, pas intérieur / extérieur. Pour les roues gauches (AVG, ARG), l'extérieur est à gauche : `(int, milieu, ext) = (T[2], T[1], T[0])`. Pour les roues droites (AVD, ARD) : `(T[0], T[1], T[2])`.
 
-Champs disponibles pour plus tard (déjà décrits dans les structures) : énergie virtuelle `mVirtualEnergy`, `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, météo (`mRaining`, `mAmbientTemp`, `mTrackTemp`, `mTrackGripLevel`), dégâts `mDentSeverity`, pédales, réglages TC/ABS, composés de pneus, secteurs, état des stands.
+Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, météo (`mRaining`, `mAmbientTemp`, `mTrackTemp`, `mTrackGripLevel`), dégâts `mDentSeverity`, pédales, réglages TC/ABS, composés de pneus, secteurs, état des stands.
 
 ## Sources
 
@@ -86,5 +87,6 @@ Champs disponibles pour plus tard (déjà décrits dans les structures) : énerg
 - `lap = mTotalLaps + 1` et `mLapNumber` cohérents avec l'affichage du jeu.
 - Sens gauche/droite de `mTemperature` (intérieur/extérieur) sur une voiture au carrossage marqué.
 - Sens de `mWear` : l'en-tête dit « fraction of maximum » ; on suppose 1,0 = neuf (convention habituelle rF2), à confirmer avec des pneus neufs puis usés.
+- `mVirtualEnergy` : fraction 0-1 (d'après la transcription TinyPedal) et 0 sur les voitures sans énergie virtuelle (F02).
 - `mMaxLaps` en course chronométrée (très grand nombre attendu) et `mInPits` pendant l'arrêt et la sortie des stands (F01).
 - Fréquence des lectures incohérentes (sans prise du verrou du jeu).

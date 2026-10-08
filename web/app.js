@@ -21,20 +21,34 @@ function fmtLap(s) {
 // Au-delà de 100, pas de décimale (garde le widget overlay étroit, ex. carburant à ajouter sur 24 h).
 const fmt = (v, digits, unit = "") => (v == null ? "–" : `${v.toFixed(Math.abs(v) >= 100 ? 0 : digits)}${unit}`);
 
-// F01 : carburant (les calculs viennent du serveur, voir backend/lmu_assistant/fuel.py)
+// F01 / F02 : carburant (litres) ou énergie virtuelle (%) ; calculs côté serveur (backend/lmu_assistant/fuel.py).
+// Mode « auto » : % d'énergie virtuelle si la voiture en a, sinon litres.
+let fuelMode = "auto";
+
 function renderFuel(d) {
-  const f = d.fuel || {};
-  $("fuel").textContent = `${d.fuel_l.toFixed(1)} L`;
-  $("fuel-bar").style.width = d.fuel_capacity_l ? `${(100 * d.fuel_l) / d.fuel_capacity_l}%` : "0";
-  $("fuel-last").textContent = fmt(f.last_lap_l, 2, " L");
-  $("fuel-avg").textContent = f.avg_lap_l == null ? "–" : `${f.avg_lap_l.toFixed(2)} L (${f.valid_laps})`;
+  const hasEnergy = d.virtual_energy_pct != null;
+  const energy = fuelMode === "energy" || (fuelMode === "auto" && hasEnergy);
+  const f = (energy ? d.energy : d.fuel) || {};
+  const unit = energy ? "%" : " L";
+  const level = energy ? d.virtual_energy_pct : d.fuel_l;
+  $("fuel-title").textContent = energy ? "Énergie virtuelle" : "Carburant";
+  $("fuel").textContent = fmt(level, 1, unit);
+  const pct = energy ? level : d.fuel_capacity_l ? (100 * d.fuel_l) / d.fuel_capacity_l : 0;
+  $("fuel-bar").style.width = `${Math.min(100, Math.max(0, pct || 0))}%`;
+  $("fuel-last").textContent = fmt(f.last_lap, 2, unit);
+  $("fuel-avg").textContent = f.avg_lap == null ? "–" : `${f.avg_lap.toFixed(2)}${unit} (${f.valid_laps})`;
   $("fuel-laps").textContent = fmt(f.laps_left, 1);
   $("fuel-finish").textContent = fmt(f.laps_to_finish, 1);
-  $("fuel-add").textContent = f.to_add_l == null ? "–" : f.to_add_l > 0 ? `+${fmt(f.to_add_l, 1, " L")}` : "assez";
+  $("fuel-add").textContent = f.to_add == null ? "–" : f.to_add > 0 ? `+${fmt(f.to_add, 1, unit)}` : "assez";
   const low = f.laps_left != null && f.laps_left < 2;
   $("fuel-laps").classList.toggle("alert", low);
   $("fuel-bar").classList.toggle("alert", low);
-  $("fuel-add").classList.toggle("good", f.to_add_l === 0);
+  $("fuel-add").classList.toggle("good", f.to_add === 0);
+  // L'autre grandeur en une ligne : litres en mode énergie, énergie en mode litres (si la voiture en a).
+  const other = energy ? true : hasEnergy;
+  $("fuel-other-label").hidden = $("fuel-other").hidden = !other;
+  $("fuel-other-label").textContent = energy ? "Carburant" : "Énergie";
+  $("fuel-other").textContent = energy ? fmt(d.fuel_l, 1, " L") : fmt(d.virtual_energy_pct, 1, "%");
 }
 
 function render(d) {
@@ -57,6 +71,7 @@ function render(d) {
 // Opacité et fond : valeur du widget si définie, sinon valeur globale.
 function applyConfig(cfg) {
   setPlacement(!!cfg.placement);
+  fuelMode = cfg.fuel_mode || "auto";
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;

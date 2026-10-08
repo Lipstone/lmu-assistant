@@ -14,6 +14,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
@@ -30,7 +31,7 @@ WIDGET_IDS = ("lap", "fuel", "car", "tyres")
 _DEFAULT_POSITIONS = {"lap": (20, 20), "fuel": (20, 170), "car": (220, 20), "tyres": (220, 150)}
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
-WIDGET_SIZES = {"lap": (180, 136), "fuel": (180, 190), "car": (180, 118), "tyres": (180, 122)}
+WIDGET_SIZES = {"lap": (180, 136), "fuel": (200, 210), "car": (180, 118), "tyres": (180, 122)}
 
 
 def window_size(widget_id: str, scale: float) -> tuple[int, int]:
@@ -81,6 +82,9 @@ class AppConfig(BaseModel):
         0.75, ge=0.0, le=1.0, description="opacité globale du fond des widgets en overlay (0 = texte seul)"
     )
     window: OverlayWindow = Field(default_factory=OverlayWindow)
+    fuel_mode: Literal["auto", "fuel", "energy"] = Field(
+        "auto", description="widget Carburant : litres, % d'énergie virtuelle, ou auto (% EV si la voiture en a)"
+    )
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(
         False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"
