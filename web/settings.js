@@ -35,6 +35,8 @@ function fill(cfg) {
   $("background-opacity-val").textContent = cfg.background_opacity;
   $("hotkey").value = cfg.hotkey;
   $("click-through").checked = cfg.window.click_through;
+  $("placement").checked = cfg.placement;
+  $("placement-hotkey").value = cfg.placement_hotkey;
   sizePreview();
 }
 
@@ -57,6 +59,8 @@ function collect() {
     opacity: num($("opacity"), config.opacity),
     background_opacity: num($("background-opacity"), config.background_opacity),
     hotkey: $("hotkey").value.trim() || config.hotkey,
+    placement: $("placement").checked,
+    placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {
       click_through: $("click-through").checked,
     },
@@ -113,3 +117,16 @@ fetch("/api/config")
   .then((r) => r.json())
   .then(fill)
   .catch((e) => message(`Serveur injoignable : ${e}`, true));
+
+// Changements faits ailleurs (fenêtres déplacées ou agrandies à la souris, raccourci du mode placement) :
+// le formulaire suit, sinon « Enregistrer » remettrait les anciennes valeurs.
+function follow() {
+  const scheme = location.protocol === "https:" ? "wss" : "ws";
+  const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+  ws.onmessage = (e) => {
+    const msg = JSON.parse(e.data);
+    if (msg.type === "config") fill(msg.data);
+  };
+  ws.onclose = () => setTimeout(follow, 2000);
+}
+follow();

@@ -82,8 +82,12 @@ class AppConfig(BaseModel):
     )
     window: OverlayWindow = Field(default_factory=OverlayWindow)
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
+    placement: bool = Field(
+        False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"
+    )
+    placement_hotkey: str = Field("ctrl+shift+p", min_length=1, max_length=64)
 
-    @field_validator("hotkey")
+    @field_validator("hotkey", "placement_hotkey")
     @classmethod
     def _clean_hotkey(cls, v: str) -> str:
         v = v.strip().lower()

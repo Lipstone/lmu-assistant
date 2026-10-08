@@ -16,6 +16,7 @@ def test_defaults():
     assert 0.1 <= cfg.opacity <= 1.0
     assert cfg.hotkey == "ctrl+shift+o"
     assert cfg.window.click_through
+    assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
 
 
 def test_every_widget_has_a_window_size():
@@ -78,6 +79,7 @@ def test_partial_widgets_completed():
         {"opacity": 2},
         {"opacity": 0},
         {"hotkey": "   "},
+        {"placement_hotkey": ""},
         {"widgets": [{"id": "inconnu"}]},
         {"widgets": [{"id": "lap"}, {"id": "lap"}]},
         {"widgets": [{"id": "lap", "scale": 0}]},

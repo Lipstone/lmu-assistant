@@ -56,6 +56,7 @@ function render(d) {
 // Fenêtre d'un seul widget : il est en haut à gauche, la fenêtre elle-même est placée par l'overlay.
 // Opacité et fond : valeur du widget si définie, sinon valeur globale.
 function applyConfig(cfg) {
+  setPlacement(!!cfg.placement);
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
@@ -63,12 +64,65 @@ function applyConfig(cfg) {
     if (OVERLAY) {
       el.style.left = ONLY ? "0" : `${w.x}px`;
       el.style.top = ONLY ? "0" : `${w.y}px`;
-      el.style.transform = `scale(${w.scale})`;
+      const gripActive = w.id === ONLY && resizing; // la poignée est en cours d'utilisation
+      if (!gripActive) el.style.transform = `scale(${w.scale})`;
+      if (w.id === ONLY && !gripActive) scale = w.scale;
       el.style.opacity = w.opacity ?? cfg.opacity;
       el.style.setProperty("--bg-alpha", w.background_opacity ?? cfg.background_opacity ?? 0.75);
     }
   }
 }
+
+// Mode placement (fenêtre d'un seul widget dans l'overlay) : la fenêtre se déplace en faisant glisser
+// le widget (classe reconnue par pywebview) et s'agrandit par la poignée en bas à droite.
+let scale = 1;
+let resizing = false;
+
+function setPlacement(on) {
+  if (!ONLY) return;
+  const el = document.querySelector(`[data-widget="${ONLY}"]`);
+  document.body.classList.toggle("placing", on);
+  el.classList.toggle("pywebview-drag-region", on);
+}
+
+function setupGrip() {
+  if (!ONLY) return;
+  const el = document.querySelector(`[data-widget="${ONLY}"]`);
+  const grip = document.createElement("div");
+  grip.className = "grip";
+  grip.title = "Glisser pour agrandir / réduire";
+  el.appendChild(grip);
+  let start = null;
+  let pending = null;
+  const send = (s, final) => window.pywebview?.api?.set_scale(s, final);
+  grip.addEventListener("pointerdown", (e) => {
+    e.preventDefault();
+    e.stopPropagation(); // sinon pywebview déplacerait la fenêtre
+    grip.setPointerCapture(e.pointerId);
+    start = { x: e.screenX, y: e.screenY, scale, w: el.offsetWidth * scale, h: el.offsetHeight * scale };
+    resizing = true;
+  });
+  grip.addEventListener("mousedown", (e) => e.stopPropagation());
+  grip.addEventListener("pointermove", (e) => {
+    if (!start) return;
+    // Le plus grand des deux agrandissements (largeur ou hauteur), par pas de 0,05.
+    const k = Math.max((start.w + e.screenX - start.x) / start.w, (start.h + e.screenY - start.y) / start.h);
+    const s = +Math.min(4, Math.max(0.25, Math.round((start.scale * k) / 0.05) * 0.05)).toFixed(2);
+    if (s === scale) return;
+    scale = s;
+    el.style.transform = `scale(${s})`;
+    if (!pending) pending = requestAnimationFrame(() => ((pending = null), send(scale, false)));
+  });
+  const end = () => {
+    if (!start) return;
+    start = null;
+    resizing = false;
+    send(scale, true);
+  };
+  grip.addEventListener("pointerup", end);
+  grip.addEventListener("pointercancel", end);
+}
+setupGrip();
 
 function loadConfig() {
   fetch("/api/config")

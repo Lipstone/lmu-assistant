@@ -42,6 +42,12 @@ body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transf
 body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
 
+/* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */
+.grip { display: none; }
+body.placing .widget { outline: 2px dashed var(--accent); outline-offset: -2px; cursor: move; user-select: none; }
+body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize;
+  background: linear-gradient(135deg, transparent 50%, var(--accent) 50%); border-bottom-right-radius: 8px; touch-action: none; }
+
 /* Page de réglages */
 .settings { max-width: 900px; padding: 16px; display: grid; gap: 16px; }
 .settings .widget table { width: 100%; border-collapse: collapse; }

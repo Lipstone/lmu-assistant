@@ -61,7 +61,8 @@ Le widget **Carburant** affiche le niveau, la conso du dernier tour et la moyenn
 - **Transparence** : « Opacité » rend tout le widget transparent (texte compris) ; « Fond » ne touche que le fond (0 = chiffres posés directement sur l'image du jeu). Les colonnes Opacité/Fond d'un widget remplacent les valeurs globales ; laisser vide pour garder la valeur globale.
 - Sur la page normale, seule la visibilité des widgets s'applique (grille automatique).
 - Raccourci global **afficher/masquer** : `ctrl+shift+o` par défaut (paquet `keyboard`, inclus dans l'exe et dans `pip install -e ".[overlay]"` sous Windows ; sans lui l'overlay marche, sans raccourci).
-- **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc les fenêtres ne se déplacent plus à la souris ; les placer depuis la page de réglages. `python overlay/overlay.py --no-click-through` permet de les déplacer à la main, mais cette position n'est pas encore enregistrée.
+- **Placement à la souris** : activer le **mode placement** (raccourci `ctrl+shift+p`, ou case « Mode placement » dans les réglages). Chaque fenêtre est alors encadrée : la faire glisser pour la déplacer, tirer la poignée en bas à droite pour l'agrandir ou la réduire. Positions et tailles sont enregistrées automatiquement ; refaire le raccourci pour revenir en jeu.
+- **Clics traversants** (Windows, activé par défaut) : hors mode placement, les clics passent au jeu à travers les fenêtres.
 - Les réglages sont dans `data/config.json` (autre fichier : `python -m lmu_assistant --config chemin.json`). API : `GET`/`PUT /api/config`.
 
 ## Enregistrer et rejouer une session
