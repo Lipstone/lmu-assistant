@@ -127,6 +127,23 @@
         <dt>Eau / huile</dt><dd id="dmg-engine">–</dd>
       </dl>
     </section>
+
+    <section class="widget" data-widget="inputs">
+      <h2>Inputs</h2>
+      <div class="inputs">
+        <canvas id="inp-trace" width="380" height="140"></canvas>
+        <div class="pedals">
+          <div class="pedal"><div class="pedal-bar"><div id="inp-thr" class="thr"></div></div><span id="inp-thr-v">0</span></div>
+          <div class="pedal"><div class="pedal-bar"><div id="inp-brk" class="brk"></div></div><span id="inp-brk-v">0</span></div>
+          <div class="pedal"><div class="pedal-bar"><div id="inp-clu" class="clu"></div></div><span id="inp-clu-v">0</span></div>
+        </div>
+      </div>
+      <div class="steer-row">
+        <div class="steer"><div id="inp-steer"></div></div>
+        <span id="inp-steer-v">0°</span>
+        <span class="aid" id="inp-abs">ABS</span><span class="aid" id="inp-tc">TC</span>
+      </div>
+    </section>
   </main>
 
   <script src="app.js"></script>

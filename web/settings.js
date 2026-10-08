@@ -1,6 +1,6 @@
 // Page de réglages de l'overlay (T06) : lit GET /api/config, enregistre via PUT.
 const $ = (id) => document.getElementById(id);
-const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts" };
+const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs" };
 let config = null;
 
 function num(input, fallback) {
@@ -44,6 +44,7 @@ function fill(cfg) {
   $("pressure-unit").value = cfg.pressure_unit;
   $("brake-overheat").value = cfg.brake_overheat_c;
   $("pit-loss").value = cfg.pit_loss_s;
+  $("inputs-trace").value = cfg.inputs_trace_s;
   $("placement-hotkey").value = cfg.placement_hotkey;
   sizePreview();
 }
@@ -75,6 +76,7 @@ function collect() {
     pressure_unit: $("pressure-unit").value,
     brake_overheat_c: num($("brake-overheat"), config.brake_overheat_c),
     pit_loss_s: num($("pit-loss"), config.pit_loss_s),
+    inputs_trace_s: num($("inputs-trace"), config.inputs_trace_s),
     laptime_avg_laps: Math.round(num($("laptime-avg-laps"), config.laptime_avg_laps)),
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {

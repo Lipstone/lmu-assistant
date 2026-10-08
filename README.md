@@ -130,6 +130,12 @@ Le widget **Dégâts** montre la voiture vue de dessus en 8 zones (avant gauche,
 
 Calculs côté serveur (`backend/lmu_assistant/damage.py`) à partir de `mDentSeverity`, `mFlat`, `mDetached`, `mLastImpactET`, `mLastImpactMagnitude`, `mOverheating`, `mEngineWaterTemp` et `mEngineOilTemp` de la mémoire partagée.
 
+## Inputs (F12)
+
+Le widget **Inputs** montre les commandes du pilote en direct : une **trace courte** de l'accélérateur (vert) et du frein (rouge) sur les dernières secondes (8 s par défaut, de 2 à 30 s dans Réglages overlay, « Widget Inputs »), les jauges **accélérateur / frein / embrayage** en %, la position du **volant** (barre centrée et angle en degrés quand le jeu donne la rotation du volant, sinon en %) et les témoins **ABS** et **TC** qui s'allument quand l'aide intervient.
+
+Valeurs brutes du pilote (`mUnfilteredThrottle`, `mUnfilteredBrake`, `mUnfilteredClutch`, `mUnfilteredSteering`, `mPhysicalSteeringWheelRange`, `mABSActive`, `mTCActive`) ; la trace est gardée par la page à partir des images reçues (10 par seconde par défaut, `--hz` pour plus de finesse).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.
