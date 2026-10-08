@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LMU Assistant : stratégie</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="./" class="brand">LMU Assistant</a>
+    <span class="nav-current">Planificateur de stratégie</span>
+    <a href="./" class="nav-link">Tableau de bord</a>
+    <a href="analyse.html">Analyse</a>
+    <a href="settings.html">Réglages overlay</a>
+  </header>
+
+  <main class="analyse">
+    <section class="widget">
+      <h2>Course et voiture</h2>
+      <form id="form" class="strategy-form">
+        <fieldset>
+          <legend>Course</legend>
+          <label><input type="radio" name="kind" value="time" checked> Durée <input type="text" id="duration" placeholder="6:00" size="6"> (h:mm)</label>
+          <label><input type="radio" name="kind" value="laps"> Tours <input type="number" id="race_laps" min="1" max="2000" step="1"></label>
+          <label>Temps au tour <input type="text" id="lap_time" placeholder="3:45.000" size="9"></label>
+          <label>Dégradation <input type="number" id="deg_s_per_lap" step="0.01" min="-1" max="5"> s par tour d'âge des pneus</label>
+        </fieldset>
+        <fieldset>
+          <legend>Carburant et énergie</legend>
+          <label>Conso <input type="number" id="fuel_per_lap" step="0.01" min="0.01"> L/tour</label>
+          <label>Réservoir <input type="number" id="tank_l" step="0.1" min="1"> L</label>
+          <label>Au départ <input type="number" id="start_fuel_l" step="0.1" min="0" placeholder="plein"> L</label>
+          <label>Énergie <input type="number" id="energy_per_lap" step="0.01" min="0.01" placeholder="sans"> %/tour</label>
+          <label>Marge <input type="number" id="margin_laps" step="0.1" min="0" max="5"> tour</label>
+        </fieldset>
+        <fieldset>
+          <legend>Arrêts</legend>
+          <label>Traversée des stands <input type="number" id="pit_lane_s" step="0.5" min="0"> s</label>
+          <label>Débit <input type="number" id="refuel_l_per_s" step="0.1" min="0.1"> L/s</label>
+          <label>Recharge énergie <input type="number" id="energy_pct_per_s" step="0.1" min="0.1"> %/s</label>
+          <label>Pneus <input type="number" id="tyre_change_s" step="0.5" min="0"> s</label>
+          <label>Vie des pneus <input type="number" id="tyre_life_laps" step="1" min="1"> tours</label>
+        </fieldset>
+        <fieldset>
+          <legend>Scénario économie</legend>
+          <label>Conso réduite de <input type="number" id="saving_pct" step="0.5" min="0" max="30"> %</label>
+          <label>contre <input type="number" id="saving_cost_s" step="0.05" min="0" max="10"> s/tour</label>
+        </fieldset>
+        <div class="actions"><button type="submit">Calculer</button> <button type="button" id="reload" class="secondary">Reprendre les mesures de la session</button> <span id="msg" class="hint"></span></div>
+      </form>
+    </section>
+
+    <section class="widget">
+      <h2>Scénarios</h2>
+      <div class="scenarios" id="scenarios"></div>
+    </section>
+
+    <section class="widget">
+      <h2 id="plan-title">Plan des relais</h2>
+      <div class="table-wrap"><table class="data" id="plan"></table></div>
+      <p class="hint">Arrêt à la fin du tour qui précède chaque relais. Quantité remise = ce qu'il faut pour finir, au plus un plein. Temps d'arrêt = traversée des stands + ravitaillement + pneus (à la suite).</p>
+    </section>
+  </main>
+
+  <script src="strategie.js"></script>
+</body>
+</html>

@@ -168,6 +168,18 @@ Section **Comparaison de tours** de la page Analyse : on choisit deux tours de l
 
 API : `GET /api/history/compare?a=<id du tour A>&b=<id du tour B>` ; calculs dans `backend/lmu_assistant/analysis.py`.
 
+## Planificateur de stratégie (F24)
+
+Page **Stratégie** (lien dans la barre du haut, `/strategie.html`) : on règle la course (durée ou nombre de tours, temps au tour, dégradation des pneus en s par tour d'âge), le carburant et l'énergie (conso par tour, réservoir, carburant au départ, énergie par tour, marge de sécurité en tours) et les arrêts (traversée des stands, débit du ravitaillement, recharge d'énergie, changement de pneus, vie des pneus). Le bouton « Reprendre les mesures de la session » remplit le temps au tour, les consommations, le réservoir, la durée de la session et la dégradation mesurés pendant la session en cours.
+
+La course est simulée tour par tour et trois **scénarios** sont comparés (le meilleur est marqué : plus de tours en course au temps, arrivée la plus tôt en course au nombre de tours) :
+
+- **Base** : on roule jusqu'au bout de chaque plein, pneus changés quand ils arrivent en fin de vie ;
+- **Économie** : consommation réduite d'un pourcentage (3 % par défaut) contre un peu de temps au tour (0,3 s par défaut), ce qui peut faire gagner un arrêt ;
+- **Pneus à chaque arrêt** : arrêts plus longs, mais moins de dégradation.
+
+Pour chacun : nombre d'arrêts, tours, temps total, temps passé au stand, trains de pneus, écart avec la base ; et le **plan des relais** du scénario choisi (tours de chaque relais, durée de l'arrêt, carburant et énergie à remettre, pneus neufs ou gardés, temps moyen). Le dernier plein ne remet que ce qu'il faut pour finir. Course chronométrée : on termine le tour en cours à la fin du temps. Calculs côté serveur (`backend/lmu_assistant/strategy.py`), API `GET /api/strategy/defaults` et `POST /api/strategy`.
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

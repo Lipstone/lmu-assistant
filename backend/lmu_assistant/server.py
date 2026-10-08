@@ -22,6 +22,7 @@ from .pitstop import PIT_LOSS_S, PitCalculator
 from .relative import compute_relative
 from .session import SessionCalculator
 from .standings import compute_standings
+from .strategy_api import make_strategy_router
 from .paths import resource_dir
 from .sources import DataSource
 
@@ -123,6 +124,7 @@ def create_app(
 
     app.include_router(make_config_router(config_store, config_changed))
     app.include_router(make_history_router(history_store))
+    app.include_router(make_strategy_router(lambda: broadcaster.latest))
     app.state.history = history_store
 
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
