@@ -78,6 +78,12 @@ Le widget **Pneus** montre les quatre roues comme vues du dessus (AVG, AVD en ha
 
 Couleur des températures selon la **plage idéale** (75 à 100 °C par défaut) : bleu en dessous, vert dedans, orange au-dessus, rouge à plus de 15 °C au-dessus. Plage et unité de pression (kPa, psi ou bar) se règlent dans Réglages overlay (« Widget Pneus »). L'usure est le `mWear` du jeu recopié tel quel, supposé 1 = neuf : à vérifier en jeu.
 
+## Freins (F06)
+
+Le widget **Freins** affiche la température de chaque frein (AVG, AVD, ARG, ARD) et son **pic** sur le tour précédent (sur le tour en cours pendant le premier tour). Couleur : bleu sous 200 °C (freins froids), vert, orange à moins de 100 °C du seuil, rouge au-delà. **Alerte surchauffe** : un bandeau rouge clignotant nomme les roues au-dessus du seuil (800 °C par défaut, réglable dans Réglages overlay, « Widget Freins ») ; il reste affiché jusqu'à ce que la température redescende de 30 °C sous le seuil, pour ne pas clignoter dans chaque freinage. Le bon seuil dépend des freins : plus haut pour les disques carbone (Hypercar, LMP2) que pour l'acier (GT3).
+
+Calculs côté serveur (`backend/lmu_assistant/brakes.py`), avec `mBrakeTemp` du jeu (déjà en °C).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

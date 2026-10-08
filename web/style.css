@@ -60,6 +60,19 @@ dd.good { color: var(--ok); }
 .tyre-info { display: flex; justify-content: space-between; margin-top: 3px; font-size: 13px; }
 .tyre-info .alert { color: var(--warn); font-weight: 600; }
 
+.brakes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-variant-numeric: tabular-nums; }
+.brake { background: #22262e; border-radius: 4px; padding: 4px 6px; display: flex; flex-direction: column; }
+.brake.right { align-items: flex-end; }
+.brake-temp { font-size: 22px; font-weight: 600; }
+.brake-temp.cold { color: #4fc3f7; }
+.brake-temp.ideal { color: var(--ok); }
+.brake-temp.warm { color: var(--warn); }
+.brake-temp.hot { color: var(--bad); }
+.brake-peak { font-size: 12px; color: var(--muted); }
+.brake-alert { margin-top: 6px; padding: 3px 6px; border-radius: 4px; background: var(--bad); color: #fff; font-weight: 600;
+  font-size: 13px; text-align: center; animation: blink 1s steps(2, start) infinite; }
+@keyframes blink { to { visibility: hidden; } }
+
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
 body.overlay { background: transparent; overflow: hidden; }
 body.overlay .topbar { display: none; }
@@ -67,7 +80,7 @@ body.overlay .widgets { display: block; position: relative; width: 100vw; height
 body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; background: rgba(15, 17, 21, var(--bg-alpha, 0.75)); padding: 8px 10px; }
 body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
-body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"] { width: 200px; }
+body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
@@ -84,7 +97,7 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings td { padding: 4px; }
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
-.settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max { width: 60px; }
+.settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat { width: 70px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .settings .actions { display: flex; gap: 12px; align-items: center; }

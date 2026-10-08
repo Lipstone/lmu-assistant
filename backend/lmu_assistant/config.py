@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
-WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres")
+WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes")
 
 # Position par défaut de chaque fenêtre sur l'écran (pixels, coin haut gauche).
 _DEFAULT_POSITIONS = {
@@ -34,6 +34,7 @@ _DEFAULT_POSITIONS = {
     "fuel": (20, 310),
     "car": (260, 20),
     "tyres": (260, 150),
+    "brakes": (260, 340),
 }
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
@@ -43,6 +44,7 @@ WIDGET_SIZES = {
     "fuel": (200, 210),
     "car": (180, 118),
     "tyres": (220, 178),
+    "brakes": (200, 204),
 }
 
 
@@ -106,6 +108,7 @@ class AppConfig(BaseModel):
     tyre_temp_min_c: float = Field(75.0, ge=0, le=200, description="widget Pneus : bas de la plage de température idéale")
     tyre_temp_max_c: float = Field(100.0, ge=0, le=200, description="widget Pneus : haut de la plage de température idéale")
     pressure_unit: Literal["kpa", "psi", "bar"] = Field("kpa", description="widget Pneus : unité des pressions")
+    brake_overheat_c: float = Field(800.0, ge=100, le=2000, description="widget Freins : seuil d'alerte surchauffe (°C)")
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(
         False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"
