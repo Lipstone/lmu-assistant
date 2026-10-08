@@ -29,6 +29,19 @@ python overlay/overlay.py
 
 `--source lmu` sélectionnera la lecture réelle du jeu dès qu'elle sera implémentée.
 
+## Accès depuis une tablette / un téléphone
+
+Le serveur écoute par défaut sur tout le réseau local. Au démarrage, il affiche les adresses à ouvrir depuis un autre appareil, par exemple :
+
+```
+LMU Assistant : http://localhost:8765  (source : mock)
+  Réseau local : http://192.168.1.20:8765  (QR code : http://localhost:8765/connect.html)
+```
+
+- Sur le PC, le lien **Connexion** de la barre du haut (`/connect.html`) affiche ces adresses et un **QR code** à scanner avec la tablette ou le téléphone (connecté au même Wi-Fi).
+- **Pare-feu Windows** : au premier lancement, Windows demande d'autoriser Python. Cocher **Réseaux privés** (pas « publics ») puis *Autoriser l'accès*. Si la fenêtre a été refusée : *Pare-feu Windows Defender > Autoriser une application* et cocher « Privé » pour Python. Le réseau Wi-Fi du PC doit aussi être en profil **privé**.
+- Pour **désactiver** l'accès depuis le réseau (page visible uniquement sur le PC) : `python -m lmu_assistant --host 127.0.0.1`.
+
 ## Organisation
 
 | Dossier | Rôle |
