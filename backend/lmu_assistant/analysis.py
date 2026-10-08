@@ -129,3 +129,58 @@ def stints(laps: list[dict]) -> list[dict]:
         age = None if summary["tyre_age_start"] is None else summary["tyre_age_start"] + len(group)
     return result
 
+
+# --- Comparaison de tours (F23) -----------------------------------------------------------------------
+
+
+def theoretical_best(laps: list[dict]) -> dict:
+    """Meilleur tour théorique : somme des meilleurs secteurs des tours valides, et tour de chaque secteur."""
+    valid = [lap for lap in laps if lap.get("valid") and lap.get("time_s") is not None]
+    best_lap = min(valid, key=lambda lap: lap["time_s"]) if valid else None
+    sectors = []
+    for k in ("s1", "s2", "s3"):
+        cands = [lap for lap in valid if lap.get(k) is not None]
+        b = min(cands, key=lambda lap: lap[k]) if cands else None
+        sectors.append({"time_s": b[k] if b else None, "lap": b["lap"] if b else None, "lap_id": b.get("id") if b else None})
+    total = sum(s["time_s"] for s in sectors) if all(s["time_s"] is not None for s in sectors) else None
+    return {
+        "sectors": sectors,
+        "time_s": _r(total),
+        "best_lap_s": best_lap["time_s"] if best_lap else None,
+        "best_lap": best_lap["lap"] if best_lap else None,
+        "gain_s": _r(best_lap["time_s"] - total) if best_lap and total is not None else None,
+    }
+
+
+def _fill(values: list[float | None]) -> list[float | None]:
+    """Complète les trous d'une trace par interpolation linéaire (pas d'extrapolation)."""
+    out = list(values)
+    known = [i for i, v in enumerate(out) if v is not None]
+    for a, b in zip(known, known[1:]):
+        for i in range(a + 1, b):
+            out[i] = out[a] + (out[b] - out[a]) * (i - a) / (b - a)
+    return out
+
+
+def compare_laps(a: dict, b: dict) -> dict:
+    """Compare le tour B au tour A : écart par secteur (B − A, positif = B plus lent), écart cumulé le long
+    du tour (à chaque point de la trace) et vitesses."""
+    out: dict = {"a": a["id"], "b": b["id"], "sectors": [], "delta": None, "speed_a": None, "speed_b": None}
+    for k in ("s1", "s2", "s3", "time_s"):
+        va, vb = a.get(k), b.get(k)
+        out["sectors"].append({"a": va, "b": vb, "diff": _r(vb - va) if va is not None and vb is not None else None})
+    ta, tb = (a.get("trace") or {}).get("t"), (b.get("trace") or {}).get("t")
+    if ta and tb and len(ta) == len(tb):
+        ta, tb = _fill(ta), _fill(tb)
+        # Le relevé i est pris dès que l'on entre dans la tranche i : on le rapporte à la position i / N.
+        n = len(ta)
+        out["delta"] = [[round(100 * i / n, 1), _r(y - x)] for i, (x, y) in enumerate(zip(ta, tb))
+                        if x is not None and y is not None]
+        out["delta"].append([100.0, _r(b["time_s"] - a["time_s"]) if a.get("time_s") and b.get("time_s") else None])
+        out["delta"] = [p for p in out["delta"] if p[1] is not None]
+    for key, lap in (("speed_a", a), ("speed_b", b)):
+        v = (lap.get("trace") or {}).get("v")
+        if v:
+            v = _fill(v)
+            out[key] = [[round(100 * i / len(v), 1), x] for i, x in enumerate(v) if x is not None]
+    return out

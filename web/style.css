@@ -204,7 +204,13 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .chart .tip { position: absolute; pointer-events: none; background: #0f1115; border: 1px solid #333; border-radius: 4px; padding: 5px 8px; font-size: 12px; white-space: nowrap; font-variant-numeric: tabular-nums; }
 .chart .tip span { float: right; margin-left: 12px; }
 .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12px; color: var(--muted); margin-top: 4px; }
-.chart-pick { margin-bottom: 8px; }
+.chart-pick { margin-bottom: 8px; display: flex; gap: 16px; flex-wrap: wrap; }
+.compare-grid { display: grid; grid-template-columns: minmax(260px, 340px) 1fr 1fr; gap: 16px; align-items: start; }
+.compare-grid figure { margin: 0; min-width: 0; }
+.compare-grid figcaption { color: var(--muted); font-size: 13px; margin-bottom: 4px; }
+@media (max-width: 1100px) { .compare-grid { grid-template-columns: 1fr; } }
+.sub { margin: 14px 0 4px; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
+.data td.slower { color: var(--bad); }
 
 /* Page Connexion (tablette / téléphone) */
 .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 16px; max-width: 760px; margin: 0 auto; }

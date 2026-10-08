@@ -35,3 +35,23 @@ def test_stint_summary_degradation_and_tyre_age():
 def test_first_stint_joined_late_has_unknown_tyre_age():
     s = stints([lap(5), lap(6)])[0]
     assert s["tyre_age_start"] is None
+
+
+def test_theoretical_best_and_compare():
+    from lmu_assistant.analysis import compare_laps, theoretical_best
+
+    laps = [lap(1, 100.0, s1=30.0, s2=40.0, s3=30.0, id=1), lap(2, 99.5, s1=30.5, s2=39.0, s3=30.0, id=2),
+            lap(3, 98.0, s1=29.0, s2=38.0, s3=31.0, valid=False, id=3)]
+    th = theoretical_best(laps)
+    assert [s["time_s"] for s in th["sectors"]] == [30.0, 39.0, 30.0] and [s["lap"] for s in th["sectors"]] == [1, 2, 1]
+    assert th["time_s"] == 99.0 and th["best_lap"] == 2 and th["gain_s"] == 0.5
+
+    ta = [i * 1.0 for i in range(100)]
+    tb = [i * 1.0 + (0.5 if i >= 50 else 0) for i in range(100)]
+    tb[10] = None  # trou dans la trace : interpolé
+    a = dict(laps[0], trace={"t": ta, "v": [200.0] * 100})
+    b = dict(laps[1], trace={"t": tb, "v": [190.0] * 100})
+    c = compare_laps(a, b)
+    assert [s["diff"] for s in c["sectors"]] == [0.5, -1.0, 0.0, -0.5]
+    assert dict(map(tuple, c["delta"]))[10.0] == 0.0 and dict(map(tuple, c["delta"]))[60.0] == 0.5
+    assert c["delta"][-1] == [100.0, -0.5] and c["speed_b"][0] == [0.0, 190.0]

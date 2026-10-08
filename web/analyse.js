@@ -108,7 +108,7 @@ function lineChart(el, series, { xFmt = (x) => x, yFmt = (y) => y, xLabel = "", 
   el.innerHTML = "";
   const pts = series.flatMap((s) => s.points);
   if (!pts.length) { el.innerHTML = '<p class="hint">Pas assez de tours.</p>'; return; }
-  const W = Math.max(320, el.clientWidth || 600), H = height, m = { l: 62, r: 12, t: 10, b: 30 };
+  const W = Math.max(320, el.clientWidth || 600), H = height, m = { l: 62, r: 24, t: 10, b: 30 };
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   let [x0, x1] = [Math.min(...xs), Math.max(...xs)];
   if (x0 === x1) x1 = x0 + 1;
@@ -239,6 +239,56 @@ function renderDegradation(cur) {
 }
 sections.push(renderDegradation);
 $("deg-stint").addEventListener("change", () => renderDegradation(current));
+
+// --- F23 : comparaison de tours ----------------------------------------------------------------------------
+const fmtDiff = (v, d = 3) => (v == null ? "–" : `${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toFixed(d)}`);
+const diffClass = (v) => (v == null || v === 0 ? "" : v < 0 ? "faster" : "slower");
+
+function renderCompare(cur) {
+  const laps = (cur?.laps || []).filter((l) => l.time_s != null);
+  const opts = laps.map((l) => `<option value="${l.id}">T${l.lap} · ${fmtLap(l.time_s)}${l.valid ? "" : " (exclu)"}</option>`).join("");
+  const valid = laps.filter((l) => l.valid);
+  const best = valid.length ? valid.reduce((a, b) => (b.time_s < a.time_s ? b : a)) : laps[0];
+  const lastOther = [...valid].reverse().find((l) => l !== best) || laps[laps.length - 1];
+  for (const [id, def] of [["cmp-a", best], ["cmp-b", lastOther]]) {
+    const sel = $(id);
+    const prev = sel.value;
+    sel.innerHTML = opts;
+    sel.value = [...sel.options].some((o) => o.value === prev) ? prev : def ? String(def.id) : "";
+  }
+  const th = cur?.theoretical;
+  $("cmp-theory").innerHTML = !th ? "" :
+    "<tr><th></th><th>Temps</th><th>Tour</th></tr>" +
+    th.sectors.map((s, i) => `<tr><td>S${i + 1}</td><td class="purple">${fmtSec(s.time_s)}</td><td>${s.lap ? "T" + s.lap : "–"}</td></tr>`).join("") +
+    `<tr><td>Théorique</td><td>${fmtLap(th.time_s)}</td><td></td></tr>` +
+    `<tr><td>Meilleur tour</td><td class="faster">${fmtLap(th.best_lap_s)}</td><td>${th.best_lap ? "T" + th.best_lap : "–"}</td></tr>` +
+    `<tr><td>À gagner</td><td>${th.gain_s == null ? "–" : th.gain_s.toFixed(3) + " s"}</td><td></td></tr>`;
+  loadCompare();
+}
+sections.push(renderCompare);
+
+async function loadCompare() {
+  const a = $("cmp-a").value, b = $("cmp-b").value;
+  if (!a || !b) {
+    $("cmp-sectors").innerHTML = "";
+    lineChart($("cmp-delta"), []);
+    lineChart($("cmp-speed"), []);
+    return;
+  }
+  const c = await getJSON(`/api/history/compare?a=${a}&b=${b}`);
+  const la = $("cmp-a").selectedOptions[0]?.textContent.split(" · ")[0], lb = $("cmp-b").selectedOptions[0]?.textContent.split(" · ")[0];
+  $("cmp-sectors").innerHTML = `<tr><th></th><th>A (${esc(la)})</th><th>B (${esc(lb)})</th><th>B − A</th></tr>` +
+    c.sectors.map((s, i) => `<tr><td>${i < 3 ? "S" + (i + 1) : "Tour"}</td><td>${i < 3 ? fmtSec(s.a) : fmtLap(s.a)}</td>` +
+      `<td>${i < 3 ? fmtSec(s.b) : fmtLap(s.b)}</td><td class="${diffClass(s.diff)}">${fmtDiff(s.diff)}</td></tr>`).join("");
+  lineChart($("cmp-delta"), c.delta ? [{ name: "B − A", color: SERIES[1], points: c.delta }] : [],
+    { xFmt: (x) => `${Math.round(x)} %`, yFmt: (y) => fmtDiff(y, 2), xLabel: "avancement dans le tour" });
+  lineChart($("cmp-speed"), [
+    { name: `A (${la})`, color: SERIES[0], points: c.speed_a || [] },
+    { name: `B (${lb})`, color: SERIES[1], points: c.speed_b || [] },
+  ], { xFmt: (x) => `${Math.round(x)} %`, yFmt: (y) => `${Math.round(y)}`, xLabel: "avancement dans le tour" });
+}
+$("cmp-a").addEventListener("change", loadCompare);
+$("cmp-b").addEventListener("change", loadCompare);
 
 $("sessions").addEventListener("change", loadSession);
 $("delete").addEventListener("click", async () => {
