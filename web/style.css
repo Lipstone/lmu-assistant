@@ -12,6 +12,8 @@ body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); col
 .topbar { display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: var(--panel); }
 .status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: var(--warn); color: #000; }
 .status.on { background: var(--ok); }
+.topbar a { color: var(--accent); text-decoration: none; margin-left: auto; }
+[hidden] { display: none !important; }
 .widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 16px; }
 .widget { background: var(--panel); border-radius: 8px; padding: 12px 14px; }
 .widget h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
@@ -25,8 +27,22 @@ dd { margin: 0; text-align: right; }
 .tyres div { background: #22262e; border-radius: 4px; padding: 6px; }
 
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
-body.overlay { background: transparent; }
+body.overlay { background: transparent; overflow: hidden; }
 body.overlay .topbar { display: none; }
-body.overlay .widgets { grid-template-columns: repeat(auto-fill, 180px); padding: 8px; gap: 8px; }
-body.overlay .widget { background: rgba(15, 17, 21, 0.75); padding: 8px 10px; }
+body.overlay .widgets { display: block; position: relative; width: 100vw; height: 100vh; padding: 0; overflow: hidden; }
+body.overlay .widget { position: absolute; left: 0; top: 0; width: 180px; transform-origin: top left; background: rgba(15, 17, 21, 0.75); padding: 8px 10px; }
 body.overlay .big { font-size: 24px; }
+
+/* Page de réglages */
+.settings { max-width: 900px; padding: 16px; display: grid; gap: 16px; }
+.settings .widget table { width: 100%; border-collapse: collapse; }
+.settings th { text-align: left; color: var(--muted); font-weight: 500; font-size: 13px; padding: 4px; }
+.settings td { padding: 4px; }
+.settings input[type="number"], .settings input[type="text"] { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
+.settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
+.settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
+.settings .actions { display: flex; gap: 12px; align-items: center; }
+.settings .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
+.settings .error { color: var(--warn); }
+.preview-wrap { overflow: auto; }
+.preview { display: block; border: 1px dashed #555; background: repeating-conic-gradient(#2a2e36 0 25%, #20232a 0 50%) 0 0 / 20px 20px; }

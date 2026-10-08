@@ -29,6 +29,14 @@ python overlay/overlay.py
 
 `--source lmu` sélectionnera la lecture réelle du jeu dès qu'elle sera implémentée.
 
+## Réglages de l'overlay
+
+- Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position (pixels dans la fenêtre overlay), échelle, opacité, position/taille de la fenêtre, clics traversants et raccourci. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay relit la fenêtre et le raccourci sous ~2 s.
+- Sur la page normale, seule la visibilité des widgets s'applique (grille automatique).
+- Raccourci global **afficher/masquer** : `ctrl+shift+o` par défaut (paquet `keyboard`, installé par `overlay/requirements.txt` sous Windows ; sans lui l'overlay marche, sans raccourci).
+- **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc la fenêtre ne se déplace plus à la souris ; la placer depuis la page de réglages, ou lancer `python overlay/overlay.py --no-click-through` pour la déplacer à la main.
+- Les réglages sont dans `data/config.json` (autre fichier : `python -m lmu_assistant --config chemin.json`). API : `GET`/`PUT /api/config`.
+
 ## Organisation
 
 | Dossier | Rôle |

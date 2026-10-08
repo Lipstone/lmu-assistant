@@ -7,6 +7,8 @@ from pathlib import Path
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
+from .config import ConfigStore
+from .config_api import make_config_router
 from .sources import DataSource
 
 WEB_DIR = Path(__file__).resolve().parents[2] / "web"
@@ -22,17 +24,20 @@ class Broadcaster:
     async def run(self) -> None:
         while True:
             self.latest = self.source.read().to_dict()
-            message = {"type": "snapshot", "data": self.latest}
-            for ws in list(self.clients):
-                try:
-                    await ws.send_json(message)
-                except Exception:
-                    self.clients.discard(ws)
+            await self.send_all({"type": "snapshot", "data": self.latest})
             await asyncio.sleep(self.period)
 
+    async def send_all(self, message: dict) -> None:
+        for ws in list(self.clients):
+            try:
+                await ws.send_json(message)
+            except Exception:
+                self.clients.discard(ws)
 
-def create_app(source: DataSource, hz: float = 10.0) -> FastAPI:
+
+def create_app(source: DataSource, hz: float = 10.0, config_path: str | Path | None = None) -> FastAPI:
     broadcaster = Broadcaster(source, hz)
+    config_store = ConfigStore(config_path)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):
@@ -56,6 +61,11 @@ def create_app(source: DataSource, hz: float = 10.0) -> FastAPI:
                 await ws.receive_text()  # garde la connexion ouverte
         except WebSocketDisconnect:
             broadcaster.clients.discard(ws)
+
+    async def config_changed(config) -> None:
+        await broadcaster.send_all({"type": "config", "data": config.model_dump()})
+
+    app.include_router(make_config_router(config_store, config_changed))
 
     app.mount("/", StaticFiles(directory=WEB_DIR, html=True), name="web")
     return app

@@ -12,9 +12,10 @@ def main() -> None:
     parser.add_argument("--host", default="0.0.0.0", help="0.0.0.0 = accessible depuis le réseau local")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--hz", type=float, default=10.0, help="fréquence d'envoi aux clients")
+    parser.add_argument("--config", default=None, help="fichier de configuration JSON (défaut : data/config.json)")
     args = parser.parse_args()
 
-    app = create_app(get_source(args.source), hz=args.hz)
+    app = create_app(get_source(args.source), hz=args.hz, config_path=args.config)
     print(f"LMU Assistant : http://localhost:{args.port}  (source : {args.source})")
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 

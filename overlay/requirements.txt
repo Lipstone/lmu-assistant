@@ -1,1 +1,3 @@
 pywebview>=5.0
+# Raccourci global afficher/masquer (optionnel : l'overlay fonctionne sans, avec un avertissement)
+keyboard>=0.13; sys_platform == "win32"
