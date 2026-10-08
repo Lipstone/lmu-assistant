@@ -1,5 +1,8 @@
 """Configuration de l'overlay : widgets affichés, positions, taille, opacité, raccourci.
 
+L'overlay ouvre une fenêtre transparente par widget : `x`/`y` d'un widget sont sa position sur l'écran,
+la taille de sa fenêtre est `WIDGET_SIZES` × `scale`.
+
 La configuration est un fichier JSON (par défaut `data/config.json` à la racine du dépôt ou à côté de l'exécutable,
 modifiable avec `--config`). Un fichier absent ou invalide donne la configuration par défaut.
 """
@@ -23,7 +26,16 @@ DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
 WIDGET_IDS = ("lap", "fuel", "car", "tyres")
 
-_DEFAULT_POSITIONS = {"lap": (8, 8), "fuel": (196, 8), "car": (8, 170), "tyres": (196, 240)}  # le carburant (F01) est plus haut
+# Position par défaut de chaque fenêtre sur l'écran (pixels, coin haut gauche).
+_DEFAULT_POSITIONS = {"lap": (20, 20), "fuel": (20, 170), "car": (220, 20), "tyres": (220, 150)}
+
+# Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
+WIDGET_SIZES = {"lap": (180, 136), "fuel": (180, 190), "car": (180, 118), "tyres": (180, 122)}
+
+
+def window_size(widget_id: str, scale: float) -> tuple[int, int]:
+    w, h = WIDGET_SIZES[widget_id]
+    return round(w * scale), round(h * scale)
 
 
 class WidgetConfig(BaseModel):
@@ -31,8 +43,8 @@ class WidgetConfig(BaseModel):
 
     id: str
     visible: bool = True
-    x: int = Field(0, ge=0, le=10000, description="position en pixels dans la fenêtre overlay")
-    y: int = Field(0, ge=0, le=10000)
+    x: int = Field(0, ge=-10000, le=10000, description="position de la fenêtre du widget sur l'écran (pixels)")
+    y: int = Field(0, ge=-10000, le=10000)
     scale: float = Field(1.0, ge=0.25, le=4.0)
     opacity: float | None = Field(None, ge=0.1, le=1.0, description="opacité du widget en overlay (None = globale)")
     background_opacity: float | None = Field(
@@ -48,12 +60,11 @@ class WidgetConfig(BaseModel):
 
 
 class OverlayWindow(BaseModel):
-    model_config = ConfigDict(extra="forbid")
+    """Réglages communs aux fenêtres overlay. Ignore les anciens champs x/y/width/height
+    (fenêtre unique d'avant le découpage en une fenêtre par widget)."""
 
-    x: int = Field(20, ge=-10000, le=10000)
-    y: int = Field(20, ge=-10000, le=10000)
-    width: int = Field(400, ge=50, le=10000)
-    height: int = Field(420, ge=50, le=10000)
+    model_config = ConfigDict(extra="ignore")
+
     click_through: bool = Field(True, description="les clics traversent l'overlay vers le jeu (Windows)")
 
 

@@ -1,7 +1,14 @@
 // Connexion au serveur local et rendu des widgets.
 const params = new URLSearchParams(location.search);
 const OVERLAY = params.get("mode") === "overlay";
+// Overlay : une fenêtre par widget, qui ouvre /?mode=overlay&widget=<id> et n'affiche que ce widget.
+// Sans `widget`, le mode overlay montre tous les widgets à leur position écran (aperçu des réglages).
+const ONLY = OVERLAY ? params.get("widget") : null;
 if (OVERLAY) document.body.classList.add("overlay");
+if (ONLY) {
+  document.body.classList.add("single");
+  document.querySelectorAll("[data-widget]").forEach((el) => (el.hidden = el.dataset.widget !== ONLY));
+}
 
 const $ = (id) => document.getElementById(id);
 
@@ -45,16 +52,17 @@ function render(d) {
   $("tyres").innerHTML = d.wheels.map((w) => `<div>${Math.round(w.temp_c[1])}</div>`).join("");
 }
 
-// Configuration (T06) : visibilité partout ; position, taille, opacité et fond en mode overlay.
+// Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
+// Fenêtre d'un seul widget : il est en haut à gauche, la fenêtre elle-même est placée par l'overlay.
 // Opacité et fond : valeur du widget si définie, sinon valeur globale.
 function applyConfig(cfg) {
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
-    el.hidden = !w.visible;
+    el.hidden = ONLY ? w.id !== ONLY : !w.visible;
     if (OVERLAY) {
-      el.style.left = `${w.x}px`;
-      el.style.top = `${w.y}px`;
+      el.style.left = ONLY ? "0" : `${w.x}px`;
+      el.style.top = ONLY ? "0" : `${w.y}px`;
       el.style.transform = `scale(${w.scale})`;
       el.style.opacity = w.opacity ?? cfg.opacity;
       el.style.setProperty("--bg-alpha", w.background_opacity ?? cfg.background_opacity ?? 0.75);

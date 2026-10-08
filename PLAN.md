@@ -27,7 +27,7 @@ Les fonctionnalités sont listées dans [FEATURES.md](FEATURES.md) et ajoutées 
  http://<pc>:8765/                   http://localhost:8765/?mode=overlay
 ```
 
-Un seul code d'affichage : les widgets sont des composants web. L'overlay n'est qu'une fenêtre transparente, sans bordure et toujours au premier plan qui charge la page en `mode=overlay` (fond transparent, widgets compacts, positions configurables).
+Un seul code d'affichage : les widgets sont des composants web. L'overlay ouvre une fenêtre transparente, sans bordure et toujours au premier plan par widget ; chacune charge la page en `mode=overlay&widget=<id>` (fond transparent, un seul widget compact) et se place sur l'écran selon la configuration.
 
 ## Exigences obligatoires
 

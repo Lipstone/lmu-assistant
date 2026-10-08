@@ -21,8 +21,8 @@ function fill(cfg) {
       (w) => `<tr data-id="${w.id}">
         <td>${NAMES[w.id] || w.id}</td>
         <td><input type="checkbox" data-k="visible" ${w.visible ? "checked" : ""}></td>
-        <td><input type="number" data-k="x" min="0" value="${w.x}"></td>
-        <td><input type="number" data-k="y" min="0" value="${w.y}"></td>
+        <td><input type="number" data-k="x" value="${w.x}"></td>
+        <td><input type="number" data-k="y" value="${w.y}"></td>
         <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05" value="${w.scale}"></td>
         <td><input type="number" data-k="opacity" min="0.1" max="1" step="0.05" placeholder="globale" value="${w.opacity ?? ""}"></td>
         <td><input type="number" data-k="background_opacity" min="0" max="1" step="0.05" placeholder="globale" value="${w.background_opacity ?? ""}"></td>
@@ -34,10 +34,6 @@ function fill(cfg) {
   $("background-opacity").value = cfg.background_opacity;
   $("background-opacity-val").textContent = cfg.background_opacity;
   $("hotkey").value = cfg.hotkey;
-  $("win-x").value = cfg.window.x;
-  $("win-y").value = cfg.window.y;
-  $("win-width").value = cfg.window.width;
-  $("win-height").value = cfg.window.height;
   $("click-through").checked = cfg.window.click_through;
   sizePreview();
 }
@@ -62,18 +58,21 @@ function collect() {
     background_opacity: num($("background-opacity"), config.background_opacity),
     hotkey: $("hotkey").value.trim() || config.hotkey,
     window: {
-      x: Math.round(num($("win-x"), config.window.x)),
-      y: Math.round(num($("win-y"), config.window.y)),
-      width: Math.round(num($("win-width"), config.window.width)),
-      height: Math.round(num($("win-height"), config.window.height)),
       click_through: $("click-through").checked,
     },
   };
 }
 
+// Aperçu : l'écran entier en mode overlay, réduit à la largeur de la page.
 function sizePreview() {
-  $("preview").width = num($("win-width"), 400);
-  $("preview").height = num($("win-height"), 420);
+  const w = num($("screen-w"), 1920);
+  const h = num($("screen-h"), 1080);
+  const k = Math.min(1, ($("preview-box").parentElement.clientWidth - 28) / w);
+  $("preview").width = w;
+  $("preview").height = h;
+  $("preview").style.transform = `scale(${k})`;
+  $("preview-box").style.width = `${w * k}px`;
+  $("preview-box").style.height = `${h * k}px`;
 }
 
 function message(text, error = false) {
@@ -106,8 +105,9 @@ async function save() {
 $("save").addEventListener("click", save);
 $("opacity").addEventListener("input", () => ($("opacity-val").textContent = $("opacity").value));
 $("background-opacity").addEventListener("input", () => ($("background-opacity-val").textContent = $("background-opacity").value));
-$("win-width").addEventListener("input", sizePreview);
-$("win-height").addEventListener("input", sizePreview);
+$("screen-w").addEventListener("input", sizePreview);
+$("screen-h").addEventListener("input", sizePreview);
+window.addEventListener("resize", sizePreview);
 
 fetch("/api/config")
   .then((r) => r.json())

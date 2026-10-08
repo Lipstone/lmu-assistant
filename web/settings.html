@@ -17,10 +17,10 @@
     <section class="widget">
       <h2>Widgets</h2>
       <table>
-        <thead><tr><th>Widget</th><th>Visible</th><th>X (px)</th><th>Y (px)</th><th>Échelle</th><th>Opacité</th><th>Fond</th></tr></thead>
+        <thead><tr><th>Widget</th><th>Visible</th><th>X écran (px)</th><th>Y écran (px)</th><th>Échelle</th><th>Opacité</th><th>Fond</th></tr></thead>
         <tbody id="widgets"></tbody>
       </table>
-      <p class="hint">Positions en pixels dans la fenêtre overlay. Sur la page normale, seule la case « Visible » s'applique.
+      <p class="hint">En overlay, chaque widget a sa propre fenêtre : X/Y = position de son coin haut gauche sur l'écran, Échelle = taille. Décocher « Visible » ferme sa fenêtre. Sur la page normale, seule la case « Visible » s'applique.
         Opacité (tout le widget) et Fond (le fond seul, 0 = texte sur l'écran du jeu) : de 0 à 1, laisser vide pour la valeur globale.</p>
     </section>
 
@@ -30,13 +30,8 @@
       <label>Fond <input type="range" id="background-opacity" min="0" max="1" step="0.05"> <span id="background-opacity-val"></span></label>
       <label>Raccourci afficher/masquer <input type="text" id="hotkey" placeholder="ctrl+shift+o"></label>
       <br>
-      <label>Fenêtre X <input type="number" id="win-x"></label>
-      <label>Y <input type="number" id="win-y"></label>
-      <label>Largeur <input type="number" id="win-width" min="50"></label>
-      <label>Hauteur <input type="number" id="win-height" min="50"></label>
-      <br>
       <label><input type="checkbox" id="click-through"> Clics traversants (les clics passent au jeu, Windows)</label>
-      <p class="hint">Les widgets se mettent à jour immédiatement. Position/taille de la fenêtre, clics traversants et raccourci sont appliqués par l'overlay en cours sous ~2 s.</p>
+      <p class="hint">Les widgets se mettent à jour immédiatement. Position, taille et affichage des fenêtres, clics traversants et raccourci sont appliqués par l'overlay en cours sous ~2 s.</p>
     </section>
 
     <div class="actions">
@@ -45,8 +40,12 @@
     </div>
 
     <section class="widget preview-wrap">
-      <h2>Aperçu (taille de la fenêtre overlay)</h2>
-      <iframe id="preview" class="preview" src="/?mode=overlay" title="Aperçu overlay"></iframe>
+      <h2>Aperçu de l'écran</h2>
+      <label>Écran <input type="number" id="screen-w" value="1920" min="320"> × <input type="number" id="screen-h" value="1080" min="200"></label>
+      <div class="preview-box" id="preview-box">
+        <iframe id="preview" class="preview" src="/?mode=overlay" title="Aperçu overlay"></iframe>
+      </div>
+      <p class="hint">Position des fenêtres sur un écran de cette taille (réduit). Enregistrer pour mettre à jour.</p>
     </section>
   </main>
 

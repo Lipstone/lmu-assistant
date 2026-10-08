@@ -5,7 +5,7 @@ Assistant « ingénieur augmenté » pour **Le Mans Ultimate** : les données si
 Tout est affichable de deux façons, à partir des mêmes données :
 
 - **Page web locale** : `http://localhost:8765`, sur le PC, une tablette ou un téléphone du réseau local.
-- **Overlay en jeu** : une fenêtre transparente, sans bordure et toujours au premier plan qui affiche les mêmes widgets (jeu en mode *fenêtré sans bordure*).
+- **Overlay en jeu** : une petite fenêtre transparente, sans bordure et toujours au premier plan **par widget**, placée où l'on veut sur l'écran, qui affiche les mêmes widgets (jeu en mode *fenêtré sans bordure*).
 
 > État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu, ou avec la lecture réelle de LMU (`lmu`, à valider en jeu, voir [docs/donnees-lmu.md](docs/donnees-lmu.md)).
 
@@ -57,11 +57,11 @@ Le widget **Carburant** affiche le niveau, la conso du dernier tour et la moyenn
 
 ## Réglages de l'overlay
 
-- Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position (pixels dans la fenêtre overlay), échelle, opacité et **transparence du fond** (globales ou par widget), position/taille de la fenêtre, clics traversants et raccourci. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay relit la fenêtre et le raccourci sous ~2 s.
+- Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.
 - **Transparence** : « Opacité » rend tout le widget transparent (texte compris) ; « Fond » ne touche que le fond (0 = chiffres posés directement sur l'image du jeu). Les colonnes Opacité/Fond d'un widget remplacent les valeurs globales ; laisser vide pour garder la valeur globale.
 - Sur la page normale, seule la visibilité des widgets s'applique (grille automatique).
 - Raccourci global **afficher/masquer** : `ctrl+shift+o` par défaut (paquet `keyboard`, inclus dans l'exe et dans `pip install -e ".[overlay]"` sous Windows ; sans lui l'overlay marche, sans raccourci).
-- **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc la fenêtre ne se déplace plus à la souris ; la placer depuis la page de réglages, ou lancer `python overlay/overlay.py --no-click-through` pour la déplacer à la main.
+- **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc les fenêtres ne se déplacent plus à la souris ; les placer depuis la page de réglages. `python overlay/overlay.py --no-click-through` permet de les déplacer à la main, mais cette position n'est pas encore enregistrée.
 - Les réglages sont dans `data/config.json` (autre fichier : `python -m lmu_assistant --config chemin.json`). API : `GET`/`PUT /api/config`.
 
 ## Enregistrer et rejouer une session

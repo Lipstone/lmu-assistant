@@ -54,7 +54,8 @@ body.overlay dl { font-size: 14px; }
 .settings .hint { color: var(--muted); font-size: 13px; margin: 6px 0 0; }
 .settings .error { color: var(--warn); }
 .preview-wrap { overflow: auto; }
-.preview { display: block; border: 1px dashed #555; background: repeating-conic-gradient(#2a2e36 0 25%, #20232a 0 50%) 0 0 / 20px 20px; }
+.preview-box { overflow: hidden; margin-top: 8px; }
+.preview { transform-origin: top left; display: block; border: 1px dashed #555; background: repeating-conic-gradient(#2a2e36 0 25%, #20232a 0 50%) 0 0 / 20px 20px; }
 
 /* Page Connexion (tablette / téléphone) */
 .connect { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; padding: 16px; max-width: 760px; margin: 0 auto; }
