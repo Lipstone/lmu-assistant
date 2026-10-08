@@ -7,7 +7,7 @@ Tout est affichable de deux façons, à partir des mêmes données :
 - **Page web locale** : `http://localhost:8765`, sur le PC, une tablette ou un téléphone du réseau local.
 - **Overlay en jeu** : une fenêtre transparente, sans bordure et toujours au premier plan qui affiche les mêmes widgets (jeu en mode *fenêtré sans bordure*).
 
-> État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu. La lecture réelle des données LMU est la prochaine étape (voir [PLAN.md](PLAN.md)).
+> État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu, ou avec la lecture réelle de LMU (`lmu`, à valider en jeu, voir [docs/donnees-lmu.md](docs/donnees-lmu.md)).
 
 ## Démarrage rapide
 
@@ -27,7 +27,7 @@ pip install -r overlay/requirements.txt
 python overlay/overlay.py
 ```
 
-`--source lmu` sélectionnera la lecture réelle du jeu dès qu'elle sera implémentée.
+`--source lmu` (par défaut) lit la mémoire partagée native du jeu sous Windows, sans plugin à installer : voir [docs/donnees-lmu.md](docs/donnees-lmu.md).
 
 ## Organisation
 
