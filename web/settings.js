@@ -39,6 +39,9 @@ function fill(cfg) {
   $("fuel-mode").value = cfg.fuel_mode;
   $("delta-reference").value = cfg.delta_reference;
   $("laptime-avg-laps").value = cfg.laptime_avg_laps;
+  $("tyre-temp-min").value = cfg.tyre_temp_min_c;
+  $("tyre-temp-max").value = cfg.tyre_temp_max_c;
+  $("pressure-unit").value = cfg.pressure_unit;
   $("placement-hotkey").value = cfg.placement_hotkey;
   sizePreview();
 }
@@ -65,6 +68,9 @@ function collect() {
     placement: $("placement").checked,
     fuel_mode: $("fuel-mode").value,
     delta_reference: $("delta-reference").value,
+    tyre_temp_min_c: num($("tyre-temp-min"), config.tyre_temp_min_c),
+    tyre_temp_max_c: num($("tyre-temp-max"), config.tyre_temp_max_c),
+    pressure_unit: $("pressure-unit").value,
     laptime_avg_laps: Math.round(num($("laptime-avg-laps"), config.laptime_avg_laps)),
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {

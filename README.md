@@ -72,6 +72,12 @@ Le widget **Temps au tour** affiche le tour en cours (rouge s'il est invalidé p
 
 Calculs côté serveur (`backend/lmu_assistant/laptimes.py`), avec le temps du tour publié par le jeu ; tout repart de zéro quand la session, la piste ou la voiture change.
 
+## Pneus (F05)
+
+Le widget **Pneus** montre les quatre roues comme vues du dessus (AVG, AVD en haut, ARG, ARD en bas). Pour chaque roue : les trois températures **extérieur / milieu / intérieur**, l'extérieur dessiné du côté extérieur de la voiture (à gauche pour les roues gauches, à droite pour les roues droites), la **pression** et l'**usure** (% de gomme restante, orange sous 30 %).
+
+Couleur des températures selon la **plage idéale** (75 à 100 °C par défaut) : bleu en dessous, vert dedans, orange au-dessus, rouge à plus de 15 °C au-dessus. Plage et unité de pression (kPa, psi ou bar) se règlent dans Réglages overlay (« Widget Pneus »). L'usure est le `mWear` du jeu recopié tel quel, supposé 1 = neuf : à vérifier en jeu.
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

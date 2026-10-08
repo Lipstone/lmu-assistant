@@ -113,6 +113,38 @@ function renderLaps(d) {
     .join("");
 }
 
+// F05 : pneus. Par roue : températures ext / milieu / int dessinées côté extérieur de la voiture
+// (roues gauches : ext à gauche ; roues droites : ext à droite), pression et usure (% de gomme restante).
+// Couleur des températures : bleu sous la plage idéale, vert dedans, orange puis rouge au-dessus.
+let tyreRange = [75, 100];
+let pressureUnit = "kpa";
+const WHEELS = ["AVG", "AVD", "ARG", "ARD"];
+const PRESSURE = { kpa: [1, 0, " kPa"], psi: [0.1450377, 1, " psi"], bar: [0.01, 2, " bar"] };
+const HOT_RED_C = 15; // rouge à 15 °C au-dessus de la plage idéale
+
+function tempClass(t) {
+  const [lo, hi] = tyreRange;
+  if (t < lo) return "cold";
+  if (t <= hi) return "ideal";
+  return t < hi + HOT_RED_C ? "warm" : "hot";
+}
+
+function renderTyres(d) {
+  const [k, digits, unit] = PRESSURE[pressureUnit] || PRESSURE.kpa;
+  $("tyres").innerHTML = d.wheels
+    .map((w, i) => {
+      const [inner, mid, outer] = w.temp_c;
+      const left = i % 2 === 0;
+      const temps = left ? [outer, mid, inner] : [inner, mid, outer];
+      const wear = Math.round(w.wear * 100);
+      return `<div class="tyre ${left ? "left" : "right"}"><span class="wheel-name">${WHEELS[i]}</span>` +
+        `<div class="temps">${temps.map((t) => `<span class="${tempClass(t)}">${Math.round(t)}</span>`).join("")}</div>` +
+        `<div class="tyre-info"><span>${(w.pressure_kpa * k).toFixed(digits)}${unit}</span>` +
+        `<span class="${wear < 30 ? "alert" : ""}">${wear}%</span></div></div>`;
+    })
+    .join("");
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -123,7 +155,7 @@ function render(d) {
   $("speed").textContent = `${Math.round(d.speed_kmh)} km/h`;
   $("gear").textContent = d.gear === 0 ? "N" : d.gear < 0 ? "R" : d.gear;
   $("rpm").textContent = Math.round(d.rpm);
-  $("tyres").innerHTML = d.wheels.map((w) => `<div>${Math.round(w.temp_c[1])}</div>`).join("");
+  renderTyres(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
@@ -133,6 +165,8 @@ function applyConfig(cfg) {
   setPlacement(!!cfg.placement);
   fuelMode = cfg.fuel_mode || "auto";
   deltaRef = cfg.delta_reference || "best";
+  tyreRange = [cfg.tyre_temp_min_c ?? 75, cfg.tyre_temp_max_c ?? 100];
+  pressureUnit = cfg.pressure_unit || "kpa";
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;

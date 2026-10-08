@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
 from .paths import data_dir
 
@@ -42,7 +42,7 @@ WIDGET_SIZES = {
     "delta": (200, 196),
     "fuel": (200, 210),
     "car": (180, 118),
-    "tyres": (180, 122),
+    "tyres": (220, 178),
 }
 
 
@@ -103,6 +103,9 @@ class AppConfig(BaseModel):
     laptime_avg_laps: int = Field(
         5, ge=2, le=20, description="widget Temps au tour : nombre de tours valides pour la moyenne et la régularité"
     )
+    tyre_temp_min_c: float = Field(75.0, ge=0, le=200, description="widget Pneus : bas de la plage de température idéale")
+    tyre_temp_max_c: float = Field(100.0, ge=0, le=200, description="widget Pneus : haut de la plage de température idéale")
+    pressure_unit: Literal["kpa", "psi", "bar"] = Field("kpa", description="widget Pneus : unité des pressions")
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(
         False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"
@@ -116,6 +119,12 @@ class AppConfig(BaseModel):
         if not v:
             raise ValueError("raccourci vide")
         return v
+
+    @model_validator(mode="after")
+    def _tyre_range(self) -> AppConfig:
+        if self.tyre_temp_min_c >= self.tyre_temp_max_c:
+            raise ValueError("plage idéale des pneus : le minimum doit être sous le maximum")
+        return self
 
     @field_validator("widgets")
     @classmethod

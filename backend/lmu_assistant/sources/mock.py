@@ -28,6 +28,7 @@ class MockSource(DataSource):
         self._lap_target = LAP_S
         self._pit = False
         self._wobble = 0.0
+        self._stint_start = 1  # tour où des pneus neufs ont été montés
         self._invalid_at: float | None = None  # instant du tour où il sera invalidé (limites de piste)
 
     def _fraction(self, current: float) -> float:
@@ -50,16 +51,24 @@ class MockSource(DataSource):
             self._invalid_at = random.uniform(30, 200) if random.random() < 0.15 else None
             self._pit = self._fuel < PIT_BELOW_L or self._energy < 2 * ENERGY_PER_LAP_PCT
             if self._pit:
+                if self._lap - self._stint_start >= 20:  # pneus changés un arrêt sur deux environ
+                    self._stint_start = self._lap
                 self._fuel = 90.0
                 self._energy = 100.0
 
         phase = current / LAP_S * 2 * math.pi
         speed = 200 + 110 * math.sin(phase * 7)
+        stint = self._lap - self._stint_start  # tours depuis les derniers pneus neufs
         wheels = [
             Wheel(
-                temp_c=(85 + i + 5 * math.sin(phase), 88 + i, 84 + i),
-                pressure_kpa=165 + i,
-                wear=max(0.0, 1.0 - 0.012 * self._lap),
+                # avant plus chaud que l'arrière, intérieur plus chaud que l'extérieur (carrossage)
+                temp_c=(
+                    round(96 - 6 * (i // 2) + 4 * math.sin(phase * 7 + i), 1),
+                    round(90 - 6 * (i // 2) + 3 * math.sin(phase * 7 + i), 1),
+                    round(83 - 6 * (i // 2) + 5 * math.sin(phase * 7 + i), 1),
+                ),
+                pressure_kpa=round(172 - 3 * (i // 2) + min(stint, 3) + math.sin(phase * 7 + i), 1),
+                wear=round(max(0.0, 1.0 - (0.014 if i < 2 else 0.011) * stint - 0.014 * current / LAP_S), 3),
                 brake_temp_c=350 + 150 * max(0.0, math.sin(phase * 7 + 1)),
             )
             for i in range(4)
