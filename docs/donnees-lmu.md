@@ -80,6 +80,8 @@ Delta (F03) : calculé par l'appli à partir de `mLapDist` (scoring, avancé à 
 
 **Dégâts** (F11) : `dents` = `mDentSeverity` (0 rien, 1 léger, 2 lourd) remis dans l'ordre AVG, AV, AVD, G, D, ARG, AR, ARD (ordre rF2 : 0 avant, 1 avant gauche, 2 gauche, 3 arrière gauche, 4 arrière, 5 arrière droit, 6 droite, 7 avant droit, comme TinyPedal) ; `parts_detached` = `TelemInfoV01.mDetached` ; `wheels[i].flat` / `detached` = `mFlat` / `mDetached` de la roue ; `last_impact_et` / `last_impact_magnitude` = `mLastImpactET` / `mLastImpactMagnitude` ; `engine_overheating` = `mOverheating` ; `water_temp_c` / `oil_temp_c` = `mEngineWaterTemp` / `mEngineOilTemp` (°C).
 
+**Secteurs** (F20) : `last_sector1_s` / `last_sector2_s` = `mLastSector1` / `mLastSector2` du joueur (temps cumulé depuis la ligne à la fin des secteurs 1 et 2 du dernier tour ; S2 = `mLastSector2 − mLastSector1`, S3 = temps du tour − `mLastSector2`).
+
 **Inputs** (F12) : `throttle`, `brake`, `clutch` = `mUnfilteredThrottle`, `mUnfilteredBrake`, `mUnfilteredClutch` (0-1) ; `steering` = `mUnfilteredSteering` (-1 gauche … 1 droite) ; `steering_range_deg` = `mPhysicalSteeringWheelRange` (rotation butée à butée, `None` hors 90-2000°) ; `abs_active`, `tc_active` = `mABSActive`, `mTCActive`.
 
 **API REST locale du jeu** (`http://127.0.0.1:6397`, interrogée toutes les 2 s dans un fil séparé, comme TinyPedal) : `aero_damage` = `wearables.body.aero` et `suspension_damage` = `wearables.suspension` (4 valeurs, 0 intacte … 1 détruite) de `GET /rest/garage/UIScreen/RepairAndRefuel` ; `repair_time_s` = `damage` de `GET /rest/strategy/pitstop-estimate` (s). Si l'API ne répond pas, ces champs restent `None`.
