@@ -18,3 +18,34 @@ jobs:
           python-version: "3.11"
       - run: pip install -e ".[dev]"
       - run: pytest -q
+
+  build-exe:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[overlay,build]"
+      - run: python packaging/build_exe.py
+      - name: Vérifie que l'exécutable démarre et sert la page
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist\LMU-Assistant.exe -ArgumentList "--no-overlay","--source","mock","--port","8799" -PassThru
+          $ok = $false
+          for ($i = 0; $i -lt 30; $i++) {
+            Start-Sleep -Seconds 1
+            try {
+              $info = Invoke-RestMethod http://127.0.0.1:8799/api/info
+              $page = Invoke-WebRequest http://127.0.0.1:8799/ -UseBasicParsing
+              if ($info.source -eq "mock" -and $page.Content -match "LMU Assistant") { $ok = $true; break }
+            } catch {}
+          }
+          Stop-Process -Id $p.Id -Force
+          if (-not $ok) { throw "L'exécutable n'a pas répondu sur le port 8799" }
+          Write-Output "OK : $($info | ConvertTo-Json -Compress)"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LMU-Assistant-windows
+          path: dist/LMU-Assistant.exe

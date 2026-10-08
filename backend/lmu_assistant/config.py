@@ -1,6 +1,6 @@
 """Configuration de l'overlay : widgets affichés, positions, taille, opacité, raccourci.
 
-La configuration est un fichier JSON (par défaut `data/config.json` à la racine du dépôt,
+La configuration est un fichier JSON (par défaut `data/config.json` à la racine du dépôt ou à côté de l'exécutable,
 modifiable avec `--config`). Un fichier absent ou invalide donne la configuration par défaut.
 """
 
@@ -14,9 +14,11 @@ from pathlib import Path
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator
 
+from .paths import data_dir
+
 log = logging.getLogger(__name__)
 
-DEFAULT_CONFIG_PATH = Path(__file__).resolve().parents[2] / "data" / "config.json"
+DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
 WIDGET_IDS = ("lap", "fuel", "car", "tyres")

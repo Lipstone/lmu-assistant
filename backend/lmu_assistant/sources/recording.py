@@ -28,6 +28,7 @@ from pathlib import Path
 from typing import Any
 
 from ..model import Snapshot
+from ..paths import data_dir, is_frozen
 from .base import DataSource
 
 FORMAT_NAME = "lmu-assistant-recording"
@@ -37,7 +38,10 @@ FLUSH_EVERY_S = 5.0  # vidage périodique : un arrêt brutal ne perd que les der
 Clock = Callable[[], float]
 
 
-def default_recording_path(source_name: str, directory: str | Path = "data/recordings") -> Path:
+def default_recording_path(source_name: str, directory: str | Path | None = None) -> Path:
+    if directory is None:
+        # Exécutable : à côté de l'exe ; sinon relatif au dossier courant.
+        directory = data_dir() / "recordings" if is_frozen() else Path("data") / "recordings"
     stamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     return Path(directory) / f"{stamp}_{source_name}.jsonl.gz"
 

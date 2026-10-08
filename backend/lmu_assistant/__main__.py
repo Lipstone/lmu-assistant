@@ -7,8 +7,8 @@ from .server import create_app
 from .sources import get_source
 
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="LMU Assistant : serveur local")
+def build_parser(description: str = "LMU Assistant : serveur local") -> argparse.ArgumentParser:
+    parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--source", choices=["mock", "lmu", "replay"], default="lmu")
     parser.add_argument("--host", default="0.0.0.0", help="0.0.0.0 = accessible depuis le réseau local")
     parser.add_argument("--port", type=int, default=8765)
@@ -20,8 +20,10 @@ def main() -> None:
     rec.add_argument("--file", help="fichier à rejouer (avec --source replay)")
     rec.add_argument("--speed", type=float, default=1.0, help="vitesse de relecture")
     rec.add_argument("--loop", action="store_true", help="rejoue en boucle")
-    args = parser.parse_args()
+    return parser
 
+
+def build_app(parser: argparse.ArgumentParser, args: argparse.Namespace):
     if args.source == "replay":
         if not args.file:
             parser.error("--source replay demande --file CHEMIN")
@@ -39,6 +41,13 @@ def main() -> None:
     print(f"LMU Assistant : http://localhost:{args.port}  (source : {args.source})")
     for url in lan_urls(args.port, args.host):
         print(f"  Réseau local : {url}  (QR code : http://localhost:{args.port}/connect.html)")
+    return app
+
+
+def main() -> None:
+    parser = build_parser()
+    args = parser.parse_args()
+    app = build_app(parser, args)
     uvicorn.run(app, host=args.host, port=args.port, log_level="warning")
 
 

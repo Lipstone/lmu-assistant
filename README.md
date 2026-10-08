@@ -9,7 +9,22 @@ Tout est affichable de deux façons, à partir des mêmes données :
 
 > État : squelette. Le serveur tourne avec une source de données **simulée** (`mock`) pour développer sans le jeu, ou avec la lecture réelle de LMU (`lmu`, à valider en jeu, voir [docs/donnees-lmu.md](docs/donnees-lmu.md)).
 
-## Démarrage rapide
+## Lancer l'application
+
+Double-cliquer sur **`LMU-Assistant.exe`** (Windows, sans installer Python). Il démarre le serveur et l'overlay ensemble ; la console affiche les adresses de la page web (PC et réseau local). Fermer l'overlay ou la console arrête tout.
+
+- Télécharger l'exe : onglet **Actions** du dépôt → dernier passage de la CI sur `main` → artefact **LMU-Assistant-windows**.
+- Options utiles : `LMU-Assistant.exe --no-overlay` (page web seulement), `--browser` (ouvre aussi la page), `--source mock` (données simulées), et toutes les options du serveur ci-dessous.
+- Les réglages et enregistrements sont dans le dossier `data/` créé à côté de l'exe.
+
+Construire l'exe soi-même (sous Windows) :
+
+```bash
+pip install -e ".[overlay,build]"
+python packaging/build_exe.py      # → dist/LMU-Assistant.exe
+```
+
+## Développement
 
 Prérequis : Python 3.11+ (Windows pour la lecture réelle du jeu, n'importe quel OS pour le mode simulé).
 
@@ -22,8 +37,11 @@ pip install -e .
 python -m lmu_assistant --source mock
 # puis ouvrir http://localhost:8765
 
-# Overlay (dans un 2e terminal, serveur lancé)
-pip install -r overlay/requirements.txt
+# Serveur + overlay en une commande (comme l'exe)
+pip install -e ".[overlay]"
+lmu-assistant --source mock
+
+# Overlay seul (dans un 2e terminal, serveur lancé)
 python overlay/overlay.py
 ```
 
@@ -33,7 +51,7 @@ python overlay/overlay.py
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position (pixels dans la fenêtre overlay), échelle, opacité, position/taille de la fenêtre, clics traversants et raccourci. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay relit la fenêtre et le raccourci sous ~2 s.
 - Sur la page normale, seule la visibilité des widgets s'applique (grille automatique).
-- Raccourci global **afficher/masquer** : `ctrl+shift+o` par défaut (paquet `keyboard`, installé par `overlay/requirements.txt` sous Windows ; sans lui l'overlay marche, sans raccourci).
+- Raccourci global **afficher/masquer** : `ctrl+shift+o` par défaut (paquet `keyboard`, inclus dans l'exe et dans `pip install -e ".[overlay]"` sous Windows ; sans lui l'overlay marche, sans raccourci).
 - **Clics traversants** (Windows, activé par défaut) : les clics passent au jeu, donc la fenêtre ne se déplace plus à la souris ; la placer depuis la page de réglages, ou lancer `python overlay/overlay.py --no-click-through` pour la déplacer à la main.
 - Les réglages sont dans `data/config.json` (autre fichier : `python -m lmu_assistant --config chemin.json`). API : `GET`/`PUT /api/config`.
 
@@ -75,7 +93,8 @@ LMU Assistant : http://localhost:8765  (source : mock)
 | `backend/lmu_assistant/sources/` | Sources de données : `mock` (simulée), `lmu` (mémoire partagée du jeu), `replay` (relecture d'un enregistrement) |
 | `samples/` | Petits enregistrements d'exemple pour les tests et démos |
 | `web/` | Page web et widgets (HTML/CSS/JS sans build) |
-| `overlay/` | Fenêtre overlay transparente qui affiche les widgets web |
+| `overlay/` | Lanceur de l'overlay seul (le code est dans `lmu_assistant/overlay.py`) |
+| `packaging/` | Construction de l'exécutable `LMU-Assistant.exe` (PyInstaller) |
 | `docs/` | Notes techniques |
 
 ## Documents

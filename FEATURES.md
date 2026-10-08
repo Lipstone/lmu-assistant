@@ -49,3 +49,4 @@ Les fonctionnalités hors course sont surtout pour la page web ; une version com
 | T06 | Config overlay | Choix et position des widgets, opacité, raccourci afficher/masquer | ✅ |
 | T07 | Enregistrement / relecture | Enregistrer une session brute et la rejouer comme source | ✅ |
 | T08 | Accès réseau local | Page accessible depuis tablette/téléphone, QR code | ✅ |
+| T09 | Exécutable Windows (obligatoire) | L'application se lance via `LMU-Assistant.exe` (serveur + overlay), construit par la CI | ✅ |

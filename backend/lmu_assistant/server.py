@@ -10,9 +10,10 @@ from fastapi.staticfiles import StaticFiles
 from .config import ConfigStore
 from .config_api import make_config_router
 from .network import router as network_router
+from .paths import resource_dir
 from .sources import DataSource
 
-WEB_DIR = Path(__file__).resolve().parents[2] / "web"
+WEB_DIR = resource_dir() / "web"
 
 
 class Broadcaster:
