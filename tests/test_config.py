@@ -22,6 +22,7 @@ def test_defaults():
     assert cfg.laptime_avg_laps == 5
     assert (cfg.tyre_temp_min_c, cfg.tyre_temp_max_c, cfg.pressure_unit) == (75.0, 100.0, "kpa")
     assert cfg.brake_overheat_c == 800.0
+    assert cfg.pit_loss_s == 60.0
 
 
 def test_tyre_settings_validated():

@@ -58,7 +58,7 @@ Chaque source produit le même `Snapshot` (voir `backend/lmu_assistant/model.py`
 |---|---|---|---|
 | 0 | Squelette | Serveur FastAPI + WebSocket, source simulée, page web, overlay | ✅ fait |
 | 1 | Lecture LMU | Source `lmu` : mémoire partagée → `Snapshot`, doc des champs | à faire |
-| 2 | Premiers widgets course | Carburant, delta, temps au tour, pneus (F01 à F05) | en cours (F01 à F08 faits) |
+| 2 | Premiers widgets course | Carburant, delta, temps au tour, pneus (F01 à F05) | en cours (F01 à F09 faits) |
 | 3 | Overlay configurable | Choix des widgets, positions, taille, opacité, raccourci afficher/masquer | à faire |
 | 4 | Historique | Enregistrement SQLite des tours et relais | à faire |
 | 5 | Hors course | Analyse des relais, stratégie, rapport de session | à faire |

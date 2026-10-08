@@ -14,6 +14,7 @@ from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
 from .laptimes import AVG_LAPS, LapTimesCalculator
 from .network import router as network_router
+from .pitstop import PIT_LOSS_S, PitCalculator
 from .relative import compute_relative
 from .standings import compute_standings
 from .paths import resource_dir
@@ -39,12 +40,14 @@ class Broadcaster:
         self.delta = DeltaCalculator(records_path)
         self.laps = LapTimesCalculator()
         self.brakes = BrakesCalculator()
+        self.pit = PitCalculator()
 
     def compute(self, snap):
         cfg = self.config_store.config if self.config_store else None
         snap = self.laps.update(self.delta.update(self.fuel.update(snap)), cfg.laptime_avg_laps if cfg else AVG_LAPS)
         snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
-        return compute_standings(compute_relative(snap))
+        snap = compute_standings(compute_relative(snap))
+        return self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
 
     async def run(self) -> None:
         while True:

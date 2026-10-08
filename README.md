@@ -96,6 +96,19 @@ Le widget **Classement** donne un classement simplifié **par classe**, la class
 
 Calculs côté serveur (`backend/lmu_assistant/standings.py`) à partir du classement du jeu (`mPlace`, `mVehicleClass`, `mTimeBehindLeader`, distance parcourue).
 
+## Fenêtre de stand (F09)
+
+Le widget **Fenêtre de stand** dit quand s'arrêter et ce que ça coûte :
+
+- **tours avant l'arrêt obligatoire** (en gros, orange sous 2 tours) : le plus petit des tours restants en carburant et en énergie virtuelle, avec ce qui limite ;
+- **rentrer au plus tard** : le dernier tour à la fin duquel on peut encore rentrer avec ce qu'il reste ;
+- **fenêtre** : du premier tour où s'arrêter permet de finir avec le nombre d'arrêts minimum (pleins complets : réservoir ou 100 % d'énergie) jusqu'au dernier tour possible ; « ouverte » en vert quand on y est, « aucun arrêt » s'il y a assez pour finir ;
+- **arrêts restants** jusqu'à l'arrivée, avec le nombre de tours d'un plein ;
+- **temps perdu au stand** : mesuré sur nos arrêts de la session (temps des tours de rentrée et de sortie moins autant de tours de notre moyenne F04, moyenne des 3 derniers arrêts), sinon la valeur par défaut des Réglages overlay (60 s, « Widget Stand ») ;
+- **sortie estimée** : notre position dans la classe si l'on s'arrêtait maintenant (les voitures de la classe derrière nous à moins de ce temps nous repassent).
+
+Calculs côté serveur (`backend/lmu_assistant/pitstop.py`) à partir des moyennes de consommation (F01, F02), des temps au tour (F04) et du classement (F07). Les estimations ne valent qu'après un tour complet suivi (moyennes de consommation) et ne comptent pas de marge de sécurité.
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

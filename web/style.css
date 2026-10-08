@@ -99,6 +99,8 @@ dd.good { color: var(--ok); }
 .standings .last { color: var(--muted); font-size: 12px; }
 .standings tr.me td { background: #2c3340; font-weight: 600; }
 .standings tr.skip td { text-align: center; color: var(--muted); line-height: 8px; font-size: 11px; }
+.pit-sub { font-size: 12px; color: var(--muted); }
+.big.alert { color: var(--warn); }
 .relative .pit, .standings .pit { font-size: 10px; padding: 0 3px; border-radius: 3px; background: var(--muted); color: #000; font-weight: 600; }
 
 /* Mode overlay : fond transparent, widgets compacts et semi-opaques */
@@ -110,6 +112,7 @@ body.overlay .big { font-size: 24px; }
 body.overlay dl { font-size: 14px; }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
 body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
+body.overlay .widget[data-widget="pit"] { width: 250px; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"] { width: 300px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
@@ -126,7 +129,7 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings td { padding: 4px; }
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
-.settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat { width: 70px; }
+.settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .settings .actions { display: flex; gap: 12px; align-items: center; }
