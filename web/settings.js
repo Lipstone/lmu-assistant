@@ -1,6 +1,6 @@
 // Page de réglages de l'overlay (T06) : lit GET /api/config, enregistre via PUT.
 const $ = (id) => document.getElementById(id);
-const NAMES = { lap: "Tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus" };
+const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus" };
 let config = null;
 
 function num(input, fallback) {
@@ -38,6 +38,7 @@ function fill(cfg) {
   $("placement").checked = cfg.placement;
   $("fuel-mode").value = cfg.fuel_mode;
   $("delta-reference").value = cfg.delta_reference;
+  $("laptime-avg-laps").value = cfg.laptime_avg_laps;
   $("placement-hotkey").value = cfg.placement_hotkey;
   sizePreview();
 }
@@ -64,6 +65,7 @@ function collect() {
     placement: $("placement").checked,
     fuel_mode: $("fuel-mode").value,
     delta_reference: $("delta-reference").value,
+    laptime_avg_laps: Math.round(num($("laptime-avg-laps"), config.laptime_avg_laps)),
     placement_hotkey: $("placement-hotkey").value.trim() || config.placement_hotkey,
     window: {
       click_through: $("click-through").checked,

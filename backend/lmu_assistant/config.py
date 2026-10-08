@@ -31,14 +31,14 @@ WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres")
 _DEFAULT_POSITIONS = {
     "lap": (20, 20),
     "delta": (860, 20),
-    "fuel": (20, 170),
-    "car": (220, 20),
-    "tyres": (220, 150),
+    "fuel": (20, 310),
+    "car": (260, 20),
+    "tyres": (260, 150),
 }
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
 WIDGET_SIZES = {
-    "lap": (180, 136),
+    "lap": (220, 276),
     "delta": (200, 196),
     "fuel": (200, 210),
     "car": (180, 118),
@@ -99,6 +99,9 @@ class AppConfig(BaseModel):
     )
     delta_reference: Literal["best", "last", "record"] = Field(
         "best", description="widget Delta : meilleur tour de la session, dernier tour ou record personnel"
+    )
+    laptime_avg_laps: int = Field(
+        5, ge=2, le=20, description="widget Temps au tour : nombre de tours valides pour la moyenne et la régularité"
     )
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)
     placement: bool = Field(

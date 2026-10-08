@@ -86,14 +86,38 @@ function renderDelta(d) {
   }
 }
 
+// F04 : temps au tour ; historique, moyenne et régularité côté serveur (backend/lmu_assistant/laptimes.py).
+// Régularité = écart-type des N derniers tours valides : vert sous 0,3 s, orange au-delà d'une seconde.
+function renderLaps(d) {
+  const info = d.laps || {};
+  $("lap").textContent = d.lap ? `${d.lap}  (P${d.position})` : "–";
+  $("current").textContent = fmtLap(d.current_lap_s);
+  $("current").classList.toggle("slower", !!d.lap_invalid);
+  $("current").title = d.lap_invalid ? "tour invalidé" : "";
+  $("last").textContent = fmtLap(d.last_lap_s);
+  $("last").classList.toggle("faster", d.last_lap_s != null && d.last_lap_s === d.best_lap_s);
+  $("best").textContent = fmtLap(d.best_lap_s);
+  $("lap-avg-label").textContent = `Moyenne (${info.avg_count || 0})`;
+  $("lap-avg").textContent = fmtLap(info.avg_s);
+  const sd = info.stdev_s;
+  $("lap-stdev").textContent = sd == null ? "–" : `±${sd.toFixed(2)} s`;
+  $("lap-stdev").classList.toggle("good", sd != null && sd < 0.3);
+  $("lap-stdev").classList.toggle("alert", sd != null && sd > 1);
+  $("laps").innerHTML = (info.recent || [])
+    .map((l) => {
+      const tag = l.pit ? "stand" : l.invalid ? "invalide" : !l.valid ? "partiel" : "";
+      const gap = l.vs_best == null ? "" : l.vs_best === 0 ? "meilleur" : `+${l.vs_best.toFixed(2)}`;
+      return `<tr class="${l.valid ? "" : "excluded"}"><td>T${l.lap}</td><td>${fmtLap(l.time_s)}</td>` +
+        `<td class="${l.vs_best === 0 ? "faster" : ""}">${tag || gap}</td></tr>`;
+    })
+    .join("");
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
   $("session").textContent = [d.session, d.track, d.car].filter(Boolean).join(" · ");
-  $("lap").textContent = d.lap ? `${d.lap}  (P${d.position})` : "–";
-  $("current").textContent = fmtLap(d.current_lap_s);
-  $("last").textContent = fmtLap(d.last_lap_s);
-  $("best").textContent = fmtLap(d.best_lap_s);
+  renderLaps(d);
   renderDelta(d);
   renderFuel(d);
   $("speed").textContent = `${Math.round(d.speed_kmh)} km/h`;

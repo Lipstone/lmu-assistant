@@ -39,6 +39,30 @@ class DeltaInfo:
 
 
 @dataclass
+class LapEntry:
+    """Un tour terminé (F04)."""
+
+    lap: int = 0
+    time_s: float | None = None
+    valid: bool = True  # compte dans la moyenne et la régularité
+    pit: bool = False  # passage aux stands pendant le tour (sortie ou rentrée)
+    invalid: bool = False  # invalidé par le jeu (limites de piste)
+    vs_best: float | None = None  # écart avec le meilleur tour valide de la session (s)
+
+
+@dataclass
+class LapTimesInfo:
+    """Temps au tour (F04), rempli par `laptimes.LapTimesCalculator`."""
+
+    recent: list[LapEntry] = field(default_factory=list)  # derniers tours, le plus récent d'abord
+    best_valid_s: float | None = None  # meilleur tour valide de la session
+    avg_s: float | None = None  # moyenne des N derniers tours valides
+    avg_count: int = 0  # nombre de tours dans la moyenne (au plus N)
+    stdev_s: float | None = None  # régularité : écart-type de ces tours (au moins 2)
+    valid_laps: int = 0  # tours valides depuis le début de la session
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -60,10 +84,12 @@ class Snapshot:
     max_laps: int | None = None  # course au nombre de tours (sinon None)
     lap_fraction: float | None = None  # avancement dans le tour en cours, 0..1
     in_pits: bool = False
+    lap_invalid: bool = False  # tour en cours invalidé par le jeu (limites de piste)
     wheels: list[Wheel] = field(default_factory=lambda: [Wheel() for _ in range(4)])  # AVG, AVD, ARG, ARD
     fuel: FuelInfo = field(default_factory=FuelInfo)
     energy: FuelInfo = field(default_factory=lambda: FuelInfo(unit="%"))
     delta: DeltaInfo = field(default_factory=DeltaInfo)
+    laps: LapTimesInfo = field(default_factory=LapTimesInfo)
 
     def to_dict(self) -> dict:
         return asdict(self)

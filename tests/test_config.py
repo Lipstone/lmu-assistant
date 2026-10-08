@@ -19,6 +19,7 @@ def test_defaults():
     assert cfg.placement is False and cfg.placement_hotkey == "ctrl+shift+p"
     assert cfg.fuel_mode == "auto"
     assert cfg.delta_reference == "best"
+    assert cfg.laptime_avg_laps == 5
 
 
 def test_every_widget_has_a_window_size():

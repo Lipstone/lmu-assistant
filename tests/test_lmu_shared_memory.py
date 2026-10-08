@@ -106,6 +106,9 @@ def test_lap_race_pits_and_lap_fraction():
     assert snap.max_laps == 30
     assert snap.lap_fraction == pytest.approx(0.25)
     assert snap.in_pits is True
+    assert snap.lap_invalid is False
+    d.telemetry.telemInfo[2].mLapInvalidated = True
+    assert parse_buffer(bytes(d)).lap_invalid is True
     d.telemetry.telemInfo[2].mVirtualEnergy = 0.6243  # fraction
     assert parse_buffer(bytes(d)).virtual_energy_pct == pytest.approx(62.43)
     d.scoring.scoringInfo.mMaxLaps = 2_147_483_647  # course chronométrée

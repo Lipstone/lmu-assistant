@@ -11,6 +11,7 @@ from .config import ConfigStore
 from .config_api import make_config_router
 from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
+from .laptimes import AVG_LAPS, LapTimesCalculator
 from .network import router as network_router
 from .paths import resource_dir
 from .sources import DataSource
@@ -19,17 +20,29 @@ WEB_DIR = resource_dir() / "web"
 
 
 class Broadcaster:
-    def __init__(self, source: DataSource, hz: float, records_path: str | Path | None = DEFAULT_RECORDS_PATH) -> None:
+    def __init__(
+        self,
+        source: DataSource,
+        hz: float,
+        records_path: str | Path | None = DEFAULT_RECORDS_PATH,
+        config_store: ConfigStore | None = None,
+    ) -> None:
         self.source = source
+        self.config_store = config_store
         self.period = 1.0 / hz
         self.clients: set[WebSocket] = set()
         self.latest: dict = {}
         self.fuel = FuelCalculator()
         self.delta = DeltaCalculator(records_path)
+        self.laps = LapTimesCalculator()
+
+    def compute(self, snap):
+        avg_laps = self.config_store.config.laptime_avg_laps if self.config_store else AVG_LAPS
+        return self.laps.update(self.delta.update(self.fuel.update(snap)), avg_laps)
 
     async def run(self) -> None:
         while True:
-            self.latest = self.delta.update(self.fuel.update(self.source.read())).to_dict()
+            self.latest = self.compute(self.source.read()).to_dict()
             await self.send_all({"type": "snapshot", "data": self.latest})
             await asyncio.sleep(self.period)
 
@@ -47,8 +60,8 @@ def create_app(
     config_path: str | Path | None = None,
     records_path: str | Path | None = DEFAULT_RECORDS_PATH,
 ) -> FastAPI:
-    broadcaster = Broadcaster(source, hz, records_path)
     config_store = ConfigStore(config_path)
+    broadcaster = Broadcaster(source, hz, records_path, config_store)
 
     @contextlib.asynccontextmanager
     async def lifespan(app: FastAPI):
