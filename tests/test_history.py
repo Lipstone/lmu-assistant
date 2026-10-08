@@ -45,7 +45,7 @@ def test_mock_laps_are_recorded(run_mock):
     assert abs(lap["s1"] + lap["s2"] + lap["s3"] - lap["time_s"]) < 0.01
     assert 3.0 < lap["fuel_used"] < 3.8 and 3.8 < lap["energy_used"] < 4.4
     assert len(lap["wear"]) == 4 and lap["track_temp"] is not None
-    assert len(lap["trace"]["t"]) == 100 and lap["trace"]["t"][50] > 100
+    assert len(lap["trace"]["t"]) == 200 and lap["trace"]["t"][100] > 100
 
 
 def test_auto_mode_ignores_mock(run_mock):
@@ -75,6 +75,9 @@ def test_history_api(tmp_path):
         body = client.get(f"/api/history/sessions/{sid}").json()
         assert body["laps"][0]["wear"] == [1, 1, 1, 1] and "trace" not in body["laps"][0]
         assert client.get(f"/api/history/laps/{lap_id}").json()["trace"] == {"t": [1], "v": [2]}
+        assert client.get(f"/api/history/compare?a={lap_id}&b={lap_id}").json()["sectors"][3]["diff"] == 0.0
+        assert client.get(f"/api/history/compare?a={lap_id}&b=999").status_code == 404
+        assert body["theoretical"]["best_lap_s"] == 140.5
         assert client.delete(f"/api/history/sessions/{sid}").status_code == 200
         assert client.get(f"/api/history/sessions/{sid}").status_code == 404
         assert "Historique des tours" in client.get("/analyse.html").text

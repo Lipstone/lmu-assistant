@@ -24,7 +24,8 @@ def make_history_router(store: HistoryStore) -> APIRouter:
     @router.get("/sessions/{session_id}")
     def session(session_id: int) -> dict:
         laps = store.laps(session_id)
-        return {"session": _session(session_id), "laps": laps, "stints": analysis.stints(laps)}
+        return {"session": _session(session_id), "laps": laps, "stints": analysis.stints(laps),
+                "theoretical": analysis.theoretical_best(laps)}
 
     @router.delete("/sessions/{session_id}")
     def delete_session(session_id: int) -> dict:
@@ -38,5 +39,13 @@ def make_history_router(store: HistoryStore) -> APIRouter:
         if lap is None:
             raise HTTPException(404, "tour inconnu")
         return lap
+
+    @router.get("/compare")
+    def compare(a: int, b: int) -> dict:
+        """Comparaison de deux tours (F23) : tour B par rapport au tour A."""
+        la, lb = store.lap(a), store.lap(b)
+        if la is None or lb is None:
+            raise HTTPException(404, "tour inconnu")
+        return analysis.compare_laps(la, lb)
 
     return router

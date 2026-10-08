@@ -45,6 +45,23 @@
       </div>
       <p class="hint" id="deg-summary"></p>
     </section>
+
+    <section class="widget" id="compare-section">
+      <h2>Comparaison de tours</h2>
+      <div class="chart-pick">
+        <label>Tour A <select id="cmp-a"></select></label>
+        <label>Tour B <select id="cmp-b"></select></label>
+      </div>
+      <div class="compare-grid">
+        <div>
+          <table class="data" id="cmp-sectors"></table>
+          <h3 class="sub">Meilleur tour théorique</h3>
+          <table class="data" id="cmp-theory"></table>
+        </div>
+        <figure><figcaption>Écart cumulé de B sur A le long du tour (s, au-dessus de 0 : B plus lent)</figcaption><div class="chart" id="cmp-delta"></div></figure>
+        <figure><figcaption>Vitesse le long du tour (km/h)</figcaption><div class="chart" id="cmp-speed"></div></figure>
+      </div>
+    </section>
   </main>
 
   <script src="analyse.js"></script>

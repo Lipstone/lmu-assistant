@@ -142,7 +142,7 @@ La page **Analyse** (lien dans la barre du haut, `http://localhost:8765/analyse.
 
 ### Historique des tours (F20)
 
-Chaque tour terminé est enregistré dans une base **SQLite** (`data/history.sqlite`, à côté de l'exe) : temps et **secteurs**, tour valide / invalidé / stand, **arrêt** (voiture immobile aux stands), ravitaillement et pneus changés, **carburant et énergie** consommés (sans ravitaillement pendant le tour), usure, températures et pressions des pneus en fin de tour, conditions (air, piste, pluie, piste mouillée, grip), position, pilote, chocs, et une trace du tour (temps et vitesse à chaque centième du tour, pour la comparaison de tours). Les tours d'une même session de jeu, piste et voiture forment une **session**.
+Chaque tour terminé est enregistré dans une base **SQLite** (`data/history.sqlite`, à côté de l'exe) : temps et **secteurs**, tour valide / invalidé / stand, **arrêt** (voiture immobile aux stands), ravitaillement et pneus changés, **carburant et énergie** consommés (sans ravitaillement pendant le tour), usure, températures et pressions des pneus en fin de tour, conditions (air, piste, pluie, piste mouillée, grip), position, pilote, chocs, et une trace du tour (temps et vitesse tous les 200es de tour, pour la comparaison de tours). Les tours d'une même session de jeu, piste et voiture forment une **session**.
 
 Sur la page Analyse : choix de la session (la plus récente d'abord ; la page suit la session en cours et ajoute les nouveaux tours d'elle-même), tableau des tours avec le meilleur tour en vert et les **meilleurs secteurs en violet**, et bouton pour supprimer une session.
 
@@ -157,6 +157,16 @@ Section **Dégradation des pneus** : pour le relais choisi (ou tous les relais s
 Widget **Relais** (page web et overlay, pour suivre le relais en cours pendant la course) : numéro du relais, tours faits, durée, moyenne et régularité, dégradation (orange au-delà de +0,15 s par tour), consommation par tour, âge des pneus et gomme restante du pneu le plus usé avec son usure par tour (orange à moins de 3 tours des 30 %). Il marche même sans enregistrement dans l'historique (données simulées).
 
 Calculs côté serveur (`backend/lmu_assistant/analysis.py`).
+
+### Comparaison de tours (F23)
+
+Section **Comparaison de tours** de la page Analyse : on choisit deux tours de la session (par défaut A = meilleur tour valide, B = dernier tour valide) et on voit :
+
+- l'écart **par secteur** et sur le tour (B − A : rouge quand B est plus lent, vert quand il est plus rapide) ;
+- le **meilleur tour théorique** : somme des meilleurs secteurs des tours valides (avec le tour de chacun) et ce qu'il reste à gagner par rapport au meilleur tour ;
+- l'**écart cumulé** de B sur A tout le long du tour (d'après les traces enregistrées, là où le temps se perd) et les deux courbes de **vitesse**.
+
+API : `GET /api/history/compare?a=<id du tour A>&b=<id du tour B>` ; calculs dans `backend/lmu_assistant/analysis.py`.
 
 ## Réglages de l'overlay
 

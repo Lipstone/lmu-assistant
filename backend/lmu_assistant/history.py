@@ -2,7 +2,7 @@
 
 `HistoryRecorder.update` reçoit chaque Snapshot après les calculs (temps au tour F04, session F10…). Pendant
 un tour, il relève le carburant, l'énergie, l'usure, l'arrêt aux stands et une trace (temps et vitesse à chaque
-centième du tour) ; quand le temps du tour est publié (F04), il écrit une ligne dans `laps` :
+200e du tour) ; quand le temps du tour est publié (F04), il écrit une ligne dans `laps` :
 
 - temps, secteurs (`mLastSector1`, `mLastSector2`), tour valide / stand / invalidé ;
 - carburant et énergie au début et à la fin, consommation (sans ravitaillement pendant le tour) ;
@@ -35,7 +35,7 @@ from .model import Snapshot, StintInfo
 from .paths import data_dir
 
 DEFAULT_HISTORY_PATH = data_dir() / "history.sqlite"
-TRACE_POINTS = 100  # trace : temps et vitesse à chaque centième du tour
+TRACE_POINTS = 200  # trace : temps et vitesse à chaque 200e du tour (~70 m au Mans)
 REFUEL_L = 0.5  # hausse du carburant (ou de 0,5 % d'énergie) = ravitaillement
 TYRE_CHANGE_WEAR = 0.02  # hausse de l'usure (gomme restante) = pneus changés
 STOPPED_KMH = 2.0
