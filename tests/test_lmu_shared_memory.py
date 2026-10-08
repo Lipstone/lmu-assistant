@@ -209,3 +209,21 @@ def test_source_without_game_is_disconnected():
         snap = src.read()
         assert not snap.connected and snap.source == "lmu"
     src.close()
+
+
+def test_parse_vehicles_for_relative_and_standings():
+    d = make_data()
+    d.scoring.scoringInfo.mLapDist = 13_626.0
+    for i, v in enumerate(d.scoring.vehScoringInfo[:3]):
+        v.mDriverName = f"Pilote {i}".encode()
+        v.mVehicleClass = b"Hypercar" if i < 2 else b"LMGT3"
+        v.mLapDist = 13_626.0 * (0.1 + i / 10)
+        v.mVehicleName = f"Equipe #{50 + i}".encode()
+        v.mTimeBehindLeader = 1.5 * i
+    snap = parse_buffer(bytes(d))
+    assert [v.position for v in snap.vehicles] == [1, 2, 3]
+    me = [v for v in snap.vehicles if v.is_player]
+    assert len(me) == 1 and me[0].id == 7 and me[0].driver == "Pilote 1"
+    assert snap.vehicles[2].car_class == "LMGT3" and snap.vehicles[2].number == "52"
+    assert snap.vehicles[1].lap_fraction == 0.2 and snap.vehicles[1].laps == 11
+    assert snap.vehicles[2].time_behind_leader_s == 3.0

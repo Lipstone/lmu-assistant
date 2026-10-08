@@ -84,6 +84,12 @@ Le widget **Freins** affiche la température de chaque frein (AVG, AVD, ARG, ARD
 
 Calculs côté serveur (`backend/lmu_assistant/brakes.py`), avec `mBrakeTemp` du jeu (déjà en °C).
 
+## Relative (F07)
+
+Le widget **Relative** montre les 3 voitures juste **devant** et les 3 juste **derrière** sur la piste (toutes classes), le joueur au milieu en surbrillance. Par ligne : position **dans sa classe** sur la couleur de la classe (rouge Hypercar, bleu LMP2, vert LMGT3 ; position au général au survol), numéro, pilote, tours d'avance ou de retard au classement et **écart en secondes** sur la piste. **Orange** (+1T) : la voiture a un tour d'avance sur nous et va nous doubler ; **bleu** (−1T) : elle a un tour de retard, c'est nous qui la doublons. Les voitures d'une autre classe sont légèrement grisées, celles aux stands marquées STAND.
+
+Calculs côté serveur (`backend/lmu_assistant/relative.py`) à partir du classement du jeu : écart sur la piste (avancement dans le tour, ramené à moins d'un demi-tour devant ou derrière) × notre meilleur tour (sinon dernier tour, sinon estimation du jeu).
+
 ## Réglages de l'overlay
 
 - Page **Réglages overlay** (lien dans la barre du haut, ou `http://localhost:8765/settings.html`) : widgets affichés, position de chaque fenêtre sur l'écran (pixels, coin haut gauche ; valeurs négatives pour un écran à gauche de l'écran principal), échelle (taille de la fenêtre), opacité et **transparence du fond** (globales ou par widget), clics traversants et raccourci. Un aperçu montre la place des fenêtres sur l'écran. « Enregistrer » applique tout de suite aux pages ouvertes ; l'overlay déplace, redimensionne, ouvre ou masque ses fenêtres sous ~2 s.

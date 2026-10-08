@@ -74,6 +74,8 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 
 Delta (F03) : calculé par l'appli à partir de `mLapDist` (scoring, avancé à l'instant de la télémétrie avec la vitesse) et du temps du tour, pour avoir aussi le dernier tour et le record personnel comme référence. Le `mDeltaBest` du jeu n'est pas utilisé.
 
+**Toutes les voitures** (`vehicles`, F07 et suivantes) : une entrée par `VehicleScoringInfoV01` parmi `mNumVehicles`, triée par `mPlace`. `driver` = `mDriverName`, `car_class` = `mVehicleClass`, `laps` = `mTotalLaps`, `lap_fraction` = `mLapDist / ScoringInfoV01.mLapDist`, `last_lap_s` / `best_lap_s` / `estimated_lap_s` = `mLastLapTime` / `mBestLapTime` / `mEstimatedLapTime`, `time_behind_leader_s` / `laps_behind_leader` = `mTimeBehindLeader` / `mLapsBehindLeader`, `in_pits` = `mInPits`, `pitstops` = `mNumPitstops`, `is_player` = même `mID` que le joueur. `number` = le nombre après `#` dans `mVehicleName` (vide s'il n'y en a pas).
+
 Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, météo (`mRaining`, `mAmbientTemp`, `mTrackTemp`, `mTrackGripLevel`), dégâts `mDentSeverity`, pédales, réglages TC/ABS, composés de pneus, secteurs, état des stands.
 
 ## Sources
@@ -92,4 +94,5 @@ Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDelt
 - Sens de `mWear` : l'en-tête dit « fraction of maximum » ; on suppose 1,0 = neuf (convention habituelle rF2), à confirmer avec des pneus neufs puis usés.
 - `mVirtualEnergy` : fraction 0-1 (d'après la transcription TinyPedal) et 0 sur les voitures sans énergie virtuelle (F02).
 - `mMaxLaps` en course chronométrée (très grand nombre attendu) et `mInPits` pendant l'arrêt et la sortie des stands (F01).
+- Libellés de `mVehicleClass` (Hypercar, LMP2, LMGT3 attendus) et présence du numéro `#7` dans `mVehicleName` (F07).
 - Fréquence des lectures incohérentes (sans prise du verrou du jeu).

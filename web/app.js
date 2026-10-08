@@ -176,6 +176,36 @@ function renderBrakes(d) {
   $("brake-alert").title = `au-delà de ${Math.round(thr)} °C`;
 }
 
+// F07 / F08 : couleur de chaque classe (repère visuel, comme dans le jeu).
+function classColor(name) {
+  const n = (name || "").toLowerCase();
+  if (n.includes("hyper")) return "#e53935";
+  if (n.includes("lmp2")) return "#1e88e5";
+  if (n.includes("lmp3")) return "#8e24aa";
+  if (n.includes("gt")) return "#43a047";
+  return "#757575";
+}
+
+const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+
+// F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
+// Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
+function renderRelative(d) {
+  $("relative").innerHTML = (d.relative || [])
+    .map((r) => {
+      const cls = [r.is_player ? "me" : "", r.laps_diff > 0 ? "lap-up" : r.laps_diff < 0 ? "lap-down" : "",
+        r.same_class ? "" : "other-class"].join(" ");
+      const laps = r.laps_diff ? `${r.laps_diff > 0 ? "+" : "−"}${Math.abs(r.laps_diff)}T` : "";
+      const gap = r.is_player ? "" : r.gap_s == null ? "–" : Math.abs(r.gap_s).toFixed(1);
+      return `<tr class="${cls}"><td><span class="class-pos" style="background:${classColor(r.car_class)}" ` +
+        `title="${esc(r.car_class)} · P${r.position} au général">P${r.class_position}</span></td>` +
+        `<td class="num">${r.number ? "#" + esc(r.number) : ""}</td>` +
+        `<td class="driver">${esc(r.driver)}${r.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
+        `<td class="laps-diff">${laps}</td><td class="gap">${gap}</td></tr>`;
+    })
+    .join("");
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -188,6 +218,7 @@ function render(d) {
   $("rpm").textContent = Math.round(d.rpm);
   renderTyres(d);
   renderBrakes(d);
+  renderRelative(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.
