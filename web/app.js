@@ -232,6 +232,28 @@ function renderStandings(d) {
     .join("");
 }
 
+// F09 : fenêtre de stand ; calculs côté serveur (backend/lmu_assistant/pitstop.py) à partir des moyennes de
+// consommation (F01, F02) et des temps au tour (F04). Orange à moins de 2 tours de l'arrêt obligatoire.
+function renderPit(d) {
+  const p = d.pit || {};
+  const urgent = p.laps_left != null && p.laps_left < 2;
+  $("pit-laps").textContent = p.laps_left == null ? "–" : `${p.laps_left.toFixed(1)} tours`;
+  $("pit-laps").classList.toggle("alert", urgent);
+  $("pit-limit").textContent = p.limited_by ? `avant l'arrêt obligatoire (${p.limited_by})` : "en attente d'un tour complet";
+  $("pit-last").textContent = p.last_lap == null ? "–" : p.last_lap <= d.lap ? `ce tour` : `fin T${p.last_lap}`;
+  $("pit-last").classList.toggle("alert", urgent);
+  let win = "–";
+  if (p.stops_left === 0) win = "aucun arrêt";
+  else if (p.window_open_lap != null && p.last_lap != null)
+    win = p.window_open_lap <= d.lap ? `ouverte → T${p.last_lap}` : `T${p.window_open_lap} → T${p.last_lap}`;
+  $("pit-window").textContent = win;
+  $("pit-window").classList.toggle("good", p.window_open_lap != null && p.window_open_lap <= d.lap);
+  $("pit-stops").textContent = p.stops_left == null ? "–" : `${p.stops_left}` + (p.laps_per_stint ? ` · ${p.laps_per_stint.toFixed(1)} t/plein` : "");
+  $("pit-loss").textContent = p.loss_s == null ? "–" : `${p.loss_s.toFixed(1)} s ${p.loss_measured ? "mesuré" : "défaut"}`;
+  $("pit-loss").title = p.loss_measured ? `moyenne des derniers arrêts (${p.loss_samples} mesuré${p.loss_samples > 1 ? "s" : ""})` : "valeur des réglages";
+  $("pit-rejoin").textContent = p.rejoin_class_position == null ? "–" : `P${p.rejoin_class_position} classe`;
+}
+
 function render(d) {
   $("status").textContent = d.connected ? `connecté (${d.source})` : "jeu non détecté";
   $("status").classList.toggle("on", d.connected);
@@ -246,6 +268,7 @@ function render(d) {
   renderBrakes(d);
   renderRelative(d);
   renderStandings(d);
+  renderPit(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité et fond en mode overlay.

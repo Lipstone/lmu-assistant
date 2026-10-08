@@ -143,6 +143,22 @@ class ClassStandings:
 
 
 @dataclass
+class PitInfo:
+    """Fenêtre de stand (F09), remplie par `pitstop.PitCalculator`."""
+
+    laps_left: float | None = None  # tours possibles avant de devoir rentrer
+    limited_by: str = ""  # « carburant » ou « énergie » : ce qui impose l'arrêt
+    last_lap: int | None = None  # dernier tour à la fin duquel rentrer au stand
+    window_open_lap: int | None = None  # premier tour où s'arrêter garde le nombre d'arrêts minimum
+    stops_left: int | None = None  # arrêts restants jusqu'à l'arrivée (pleins complets)
+    laps_per_stint: float | None = None  # tours possibles avec un plein complet
+    loss_s: float | None = None  # temps perdu au stand (mesuré, sinon valeur par défaut)
+    loss_measured: bool = False
+    loss_samples: int = 0  # arrêts mesurés dans la session
+    rejoin_class_position: int | None = None  # position estimée dans la classe en sortant si l'on s'arrêtait maintenant
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -174,6 +190,7 @@ class Snapshot:
     vehicles: list[Vehicle] = field(default_factory=list)  # toutes les voitures de la session
     relative: list[RelativeEntry] = field(default_factory=list)  # F07 : voitures proches, la plus en avant d'abord
     standings: list[ClassStandings] = field(default_factory=list)  # F08 : classement simplifié par classe
+    pit: PitInfo = field(default_factory=PitInfo)  # F09 : fenêtre de stand
 
     def to_dict(self) -> dict:
         return asdict(self)

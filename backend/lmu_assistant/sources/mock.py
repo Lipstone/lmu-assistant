@@ -12,6 +12,7 @@ FUEL_PER_LAP_L = 3.4
 ENERGY_PER_LAP_PCT = 4.1  # énergie virtuelle (Hypercar)
 PIT_BELOW_L = 8.0  # passage au stand (plein) quand il reste moins que ça au passage de ligne
 PIT_S = 25.0  # durée passée « dans les stands » au début du tour suivant
+PIT_LOSS_S = 35.0  # temps perdu par l'arrêt (tour de sortie plus long, F09)
 
 # Plateau simulé (F07, F08) : numéro, pilote, classe, temps au tour moyen (s), avance au départ (tour).
 PLAYER = ("00", "Vous", "Hypercar")
@@ -71,6 +72,7 @@ class MockSource(DataSource):
             self._pit = self._fuel < PIT_BELOW_L or self._energy < 2 * ENERGY_PER_LAP_PCT
             if self._pit:
                 self._stops += 1
+                self._lap_target += PIT_LOSS_S
                 if self._lap - self._stint_start >= 20:  # pneus changés un arrêt sur deux environ
                     self._stint_start = self._lap
                 self._fuel = 90.0
