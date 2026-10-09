@@ -147,6 +147,32 @@ Le widget **Météo** (overlay et page principale) résume en une ligne ce qui a
 
 Calculs côté serveur (`backend/lmu_assistant/weather.py`). Non vérifié en jeu : le moment exact de chaque point de la prévision (pris aux fractions 0, 25, 50, 75 et 100 % de la session d'après leur nom dans l'API).
 
+## Shift light (F14)
+
+Le widget **Shift light** allume 10 LED (vert, jaune, rouge) en montant vers le **régime de passage**, puis toutes en **bleu clignotant** quand il faut passer le rapport ; au rupteur elles passent au rouge. Il affiche aussi le rapport, le régime et le régime de passage (« ↑ 8 850 »). Sur le dernier rapport, pas de bleu (rien à passer).
+
+- **GT3** : régimes du tableau « LMU GT3 optimal shift point » (mesures des accélérations 100-250 km/h au Mans et à Monza pour chaque feu du shift light du jeu). On passe au feu marqué « OPTIMAL » dans le tableau, ou entre les deux feux quand deux sont marqués :
+
+  | Voiture | Passage | Feu du jeu |
+  |---|---|---|
+  | Aston Martin Vantage | 6 950 tr/min | bleu (le tableau indique ~8 200, sûrement une faute de frappe) |
+  | BMW M4 | 7 000 | entre le 1er et le 2e feu |
+  | Corvette Z06 | 7 650 | entre le 3e feu et le bleu |
+  | Ferrari 296 | 7 300 | jaune |
+  | Ford Mustang | 7 950 | bleu |
+  | Lamborghini Huracán | 8 150 | entre le 3e feu et le bleu |
+  | Lexus RC F | 6 950 | bleu |
+  | McLaren 720S | 7 550 | entre le 2e et le 3e feu |
+  | Mercedes-AMG | 7 050 | entre le jaune bas et le jaune |
+  | Porsche 911 | 8 850 | entre le 2e et le 3e feu |
+
+  La voiture est reconnue par son modèle dans la télémétrie (`mVehicleModel`), sinon par son nom, en GT3 seulement (pas la Ferrari 499P ni la Porsche 963). Le même régime vaut pour tous les rapports (le tableau ne donne pas de régime par rapport).
+- **Autres voitures** : passage à 98 % du régime max donné par le jeu (réglable de 80 à 100 % dans Réglages overlay) ; sans régime max, le plus haut régime vu avec la voiture.
+
+- **Anticipation** (150 ms par défaut, de 0 à 500 ms dans Réglages overlay) : la chaîne d'affichage (lecture du jeu, envoi, rendu) et le temps de réaction retardent le passage. Les LED et le bleu suivent donc le régime prévu dans 150 ms à la vitesse de montée actuelle : le bleu s'allume avant le régime cible (plus tôt en 1re qu'en 5e, où le moteur monte moins vite), pour que le rapport passe au bon régime. À augmenter si les passages tombent encore après le régime cible.
+
+Réglages overlay : « régimes optimaux du tableau des GT3 » (activé par défaut), le % du régime max et l'anticipation. Calculs côté serveur (`backend/lmu_assistant/shift.py`, régimes dans `shift_points.py`). Non vérifié en jeu : le texte exact de `mVehicleModel` pour chaque GT3.
+
 ## Analyse hors course
 
 La page **Analyse** (lien dans la barre du haut, `http://localhost:8765/analyse.html`) rassemble ce qui sert après la course ou entre deux relais, à partir de l'historique enregistré pendant que l'on roule.

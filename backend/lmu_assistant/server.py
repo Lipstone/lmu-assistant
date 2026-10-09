@@ -27,6 +27,7 @@ from .pitstop import PIT_LOSS_S, PitCalculator
 from .relative import compute_relative
 from .session import SessionCalculator
 from .weather import WeatherCalculator
+from .shift import LEAD_MS, SHIFT_RPM_PCT, ShiftCalculator
 from .standings import compute_standings
 from .strategy_api import make_strategy_router
 from .paths import resource_dir
@@ -57,6 +58,7 @@ WIDGET_KEYS = {
     "inputs": ("throttle", "brake", "clutch", "steering", "steering_range_deg", "abs_active", "tc_active"),
     "stint": ("stint",),
     "weather": ("weather",),
+    "shift": ("shift",),
 }
 
 
@@ -114,6 +116,7 @@ class Broadcaster:
         self.pit = PitCalculator()
         self.session = SessionCalculator()
         self.weather = WeatherCalculator()
+        self.shift = ShiftCalculator()
         self.damage = DamageCalculator()
         self.opponents = OpponentsCalculator()
         self.history = history
@@ -125,6 +128,8 @@ class Broadcaster:
         snap = compute_standings(compute_relative(self.opponents.update(snap)))
         snap = self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
         snap = self.damage.update(self.weather.update(self.session.update(snap)))
+        snap = self.shift.update(snap, cfg.shift_rpm_pct if cfg else SHIFT_RPM_PCT, cfg.shift_use_table if cfg else True,
+                                 cfg.shift_lead_ms if cfg else LEAD_MS)
         if self.history is not None:
             try:
                 self.history.update(snap)

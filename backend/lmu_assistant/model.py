@@ -292,17 +292,41 @@ class WeatherInfo:
 
 
 @dataclass
+class ShiftInfo:
+    """Shift light (F14), rempli par `shift.ShiftCalculator` : régime de passage du rapport et allumage des
+    LED. Régime du tableau des GT3 quand la voiture y est, sinon un % du régime max donné par le jeu."""
+
+    rpm: float = 0.0
+    gear: int = 0
+    predicted_rpm: float = 0.0  # régime prévu après l'anticipation (latence + réaction), sert aux LED
+    max_rpm: float | None = None  # régime max (limiteur) donné par le jeu, sinon le plus haut vu
+    shift_rpm: float | None = None  # régime où passer le rapport supérieur
+    start_rpm: float | None = None  # première LED
+    level: float = 0.0  # 0 aucune LED … 1 toutes allumées (régime de passage atteint)
+    shift_now: bool = False  # passer maintenant (LED bleues)
+    over_rev: bool = False  # au-delà du régime max (rupteur)
+    top_gear: bool = False  # dernier rapport : rien à passer
+    source: str = ""  # "table" : tableau des GT3 ; "max" : % du régime max ; "" : pas de régime connu
+    car_label: str = ""  # voiture reconnue dans le tableau
+    note: str = ""  # explication courte du régime choisi
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
     session: str = ""
     track: str = ""
     car: str = ""
+    car_model: str = ""  # modèle de la voiture (« Corvette Z06 GT3.R »…), vide si inconnu
+    car_class: str = ""  # classe de la voiture du joueur (Hypercar, LMP2, LMGT3…)
     lap: int = 0
     position: int = 0
     speed_kmh: float = 0.0
     rpm: float = 0.0
     gear: int = 0
+    max_rpm: float = 0.0  # régime max (limiteur) donné par le jeu, 0 inconnu
+    max_gears: int = 0  # nombre de rapports avant, 0 inconnu
     fuel_l: float = 0.0
     fuel_capacity_l: float = 0.0
     virtual_energy_pct: float | None = None  # énergie virtuelle restante (F02), None si la voiture n'en a pas
@@ -365,6 +389,7 @@ class Snapshot:
     damage: DamageInfo = field(default_factory=DamageInfo)  # F11 : dégâts
     stint: StintInfo = field(default_factory=StintInfo)  # F21, F22 : relais en cours
     weather: WeatherInfo = field(default_factory=WeatherInfo)  # F13 : météo et prévision
+    shift: ShiftInfo = field(default_factory=ShiftInfo)  # F14 : shift light
 
     def to_dict(self) -> dict:
         return asdict(self)

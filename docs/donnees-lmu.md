@@ -58,6 +58,9 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 | `speed_kmh` | norme de `mLocalVel` | m/s × 3,6 |
 | `rpm` | `mEngineRPM` | tr/min |
 | `gear` | `mGear` | -1 = R, 0 = N |
+| `max_rpm`, `max_gears` | `mEngineMaxRPM`, `mMaxGears` | tr/min ; nombre de rapports (shift light, F14) |
+| `car_model` | `TelemInfoV01.mVehicleModel` | texte (modèle de la voiture, sert à reconnaître les GT3 du shift light) |
+| `car_class` | `VehicleScoringInfoV01.mVehicleClass` du joueur | texte |
 | `fuel_l`, `fuel_capacity_l` | `mFuel`, `mFuelCapacity` | litres |
 | `virtual_energy_pct` | `TelemInfoV01.mVirtualEnergy` | fraction 0-1 × 100 ; `None` si 0 (voiture sans énergie virtuelle) |
 | `max_laps` | `ScoringInfoV01.mMaxLaps` | `None` si ≤ 0 ou ≥ 10 000 (course chronométrée) |

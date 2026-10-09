@@ -180,6 +180,25 @@ dd.good { color: var(--ok); }
 .wx-note { margin-top: 6px; font-size: 11px; color: var(--muted); }
 body:not(.overlay) .widget[data-widget="weather"] { grid-column: span 2; }
 
+/* F14 : shift light */
+.sl-leds { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; margin: 4px 0 6px; }
+.sl-leds .led { width: 100%; max-width: 22px; aspect-ratio: 1; border-radius: 50%; justify-self: center; background: #2a2e36;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.08); }
+.sl-leds .led.on.g { background: #2ecc40; box-shadow: 0 0 8px #2ecc40; }
+.sl-leds .led.on.y { background: #ffd600; box-shadow: 0 0 8px #ffd600; }
+.sl-leds .led.on.r { background: #ff3b30; box-shadow: 0 0 8px #ff3b30; }
+/* Passage et rupteur : toutes les LED, allumées ou non (sélecteurs plus forts que .led.on.r) */
+.sl-leds.shift .led, .sl-leds.shift .led.on.g, .sl-leds.shift .led.on.y, .sl-leds.shift .led.on.r { background: #2f80ff; box-shadow: 0 0 12px #2f80ff; animation: sl-blink 0.16s steps(1) infinite alternate; }
+.sl-leds.over .led, .sl-leds.over .led.on.g, .sl-leds.over .led.on.y, .sl-leds.over .led.on.r { background: #ff3b30; box-shadow: 0 0 12px #ff3b30; }
+@keyframes sl-blink { to { opacity: 0.25; } }
+.sl-row { display: flex; align-items: baseline; gap: 12px; font-variant-numeric: tabular-nums; }
+.sl-gear { font-size: 26px; font-weight: 700; min-width: 20px; }
+.sl-rpm { font-size: 18px; }
+.sl-target { margin-left: auto; color: var(--muted); }
+.sl-note { margin-top: 4px; font-size: 11px; color: var(--muted); }
+body.overlay .widget[data-widget="shift"] { width: 400px; }
+body.overlay .sl-note { display: none; }
+
 /* Mode overlay : fenêtre transparente, widgets compacts au style sombre.
    --bg-alpha = opacité du fond du widget, --text-alpha = opacité du texte et des jauges (réglages, par widget). */
 html.overlay, html.overlay body, body.overlay { background: transparent; }
