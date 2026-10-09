@@ -23,6 +23,7 @@ from .network import router as network_router
 from .pitstop import PIT_LOSS_S, PitCalculator
 from .relative import compute_relative
 from .session import SessionCalculator
+from .weather import WeatherCalculator
 from .standings import compute_standings
 from .strategy_api import make_strategy_router
 from .paths import resource_dir
@@ -53,6 +54,7 @@ class Broadcaster:
         self.brakes = BrakesCalculator()
         self.pit = PitCalculator()
         self.session = SessionCalculator()
+        self.weather = WeatherCalculator()
         self.damage = DamageCalculator()
         self.opponents = OpponentsCalculator()
         self.history = history
@@ -63,7 +65,7 @@ class Broadcaster:
         snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
         snap = compute_standings(compute_relative(self.opponents.update(snap)))
         snap = self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
-        snap = self.damage.update(self.session.update(snap))
+        snap = self.damage.update(self.weather.update(self.session.update(snap)))
         if self.history is not None:
             try:
                 self.history.update(snap)

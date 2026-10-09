@@ -213,6 +213,22 @@
         <dt id="stint-wear-label">Usure</dt><dd id="stint-wear">–</dd>
       </dl>
     </section>
+
+    <section class="widget" data-widget="weather">
+      <h2>Météo</h2>
+      <div class="wx-head" id="wx-head">–</div>
+      <!-- Prévision du jeu : un point au départ, à 25 %, 50 %, 75 % et à la fin de la session -->
+      <div class="wx-slots" id="wx-slots"></div>
+      <div class="wx-none" id="wx-none" hidden>Prévision du jeu indisponible</div>
+      <dl>
+        <dt>Pluie</dt><dd id="wx-rain">–</dd>
+        <dt>Piste mouillée</dt><dd id="wx-wet">–</dd>
+        <dt>Air / piste</dt><dd id="wx-temps">–</dd>
+        <dt>Piste dans 30 min</dt><dd id="wx-track30">–</dd>
+      </dl>
+      <div class="wx-eta" id="wx-eta" hidden></div>
+      <div class="wx-note">≈ estimé par l'appli d'après les 10 dernières minutes</div>
+    </section>
   </main>
 
   <script src="app.js"></script>

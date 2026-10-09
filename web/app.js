@@ -453,11 +453,52 @@ function renderStint(d) {
   $("stint-wear").classList.toggle("alert", s.laps_to_wear_limit != null && s.laps_to_wear_limit < 3);
 }
 
+// F13 : météo et prévision ; calculs côté serveur (backend/lmu_assistant/weather.py). Les points de prévision viennent
+// du jeu ; les valeurs précédées de « ≈ » sont estimées par l'appli (tendance des 10 dernières minutes). En overlay,
+// seuls les points à venir sont affichés ; sur la page, les points passés sont grisés.
+const SKY_ICONS = ["☀️", "🌤️", "⛅", "🌥️", "☁️", "🌦️", "🌦️", "🌧️", "🌧️", "🌧️", "⛈️"];
+// Tendance sur 10 min : chiffrée sur la page, simple flèche en overlay (chiffre au survol) ; rien si stable.
+const trendText = (v, unit) => (v == null || Math.abs(v) < 0.5 ? "" : OVERLAY ? (v > 0 ? " ↗" : " ↘") :
+  ` ≈ ${v > 0 ? "+" : "−"}${Math.abs(v).toFixed(1)}${unit}/10 min`);
+const trendTitle = (v, unit) => (v == null ? "" : `≈ ${v > 0 ? "+" : v < 0 ? "−" : "±"}${Math.abs(v).toFixed(1)}${unit} sur 10 min (estimé)`);
+// En overlay, libellés courts : « 28 min », « fin »
+const slotLabel = (l) => (OVERLAY ? l.replace(/^dans /, "").replace(/^à la /, "").replace(/^au /, "") : l);
+
+function renderWeather(d) {
+  const w = d.weather || {};
+  const head = $("wx-head");
+  head.textContent = w.headline || "–";
+  head.className = `wx-head ${w.level || ""}`;
+  const slots = (w.slots || []).filter((s) => !(OVERLAY && s.past));
+  const html = slots.map((s) => `<div class="wx-slot${s.past ? " past" : ""}${s.rain_chance_pct >= 50 || s.sky >= 5 ? " rain" : s.rain_chance_pct >= 20 ? " maybe" : ""}" title="${s.sky_label}">` +
+    `<span class="when">${slotLabel(s.label)}</span><span class="icon">${SKY_ICONS[s.sky] ?? "?"}</span>` +
+    `<span>${s.air_temp_c == null ? "–" : Math.round(s.air_temp_c) + "°"}</span><span class="chance">${Math.round(s.rain_chance_pct)} %</span></div>`).join("");
+  const box = $("wx-slots");
+  if (box.dataset.html !== html) {
+    box.innerHTML = html;
+    box.dataset.html = html;
+  }
+  box.hidden = !slots.length;
+  $("wx-none").hidden = !!w.from_game;
+  $("wx-rain").textContent = w.rain_pct == null ? "–" : (w.rain_pct ? `${w.rain_pct} %` : "non") + trendText(w.rain_trend_pct, " pt");
+  $("wx-rain").title = trendTitle(w.rain_trend_pct, " pt");
+  $("wx-rain").classList.toggle("alert", !!w.rain_pct);
+  $("wx-wet").textContent = w.wetness_pct == null ? "–" : `${w.wetness_pct} %` + trendText(w.wetness_trend_pct, " pt");
+  $("wx-wet").title = trendTitle(w.wetness_trend_pct, " pt");
+  $("wx-wet").classList.toggle("alert", (w.wetness_pct || 0) >= 10);
+  $("wx-temps").textContent = w.air_temp_c == null ? "–" : `${Math.round(w.air_temp_c)} / ${Math.round(w.track_temp_c ?? 0)} °C`;
+  $("wx-track30").textContent = w.track_temp_in_30min_c == null ? "–" :
+    `≈ ${Math.round(w.track_temp_in_30min_c)} °C` + trendText(w.track_temp_trend_c, " °C").replace(" ≈", " ·");
+  $("wx-track30").title = trendTitle(w.track_temp_trend_c, " °C");
+  $("wx-eta").hidden = !w.eta_label;
+  $("wx-eta").textContent = w.eta_label ? `≈ ${w.eta_label.replace("≈ ", "")}` : "";
+}
+
 // Fenêtre d'un seul widget : seul son rendu est utile (les autres sont masqués).
 const RENDERERS = {
   lap: renderLaps, delta: renderDelta, fuel: renderFuel, car: renderCar, tyres: renderTyres, brakes: renderBrakes,
   relative: renderRelative, standings: renderStandings, pit: renderPit, session: renderSession, damage: renderDamage,
-  inputs: renderInputs, stint: renderStint,
+  inputs: renderInputs, stint: renderStint, weather: renderWeather,
 };
 
 function renderCar(d) {
@@ -487,6 +528,7 @@ function render(d) {
   renderDamage(d);
   renderInputs(d);
   renderStint(d);
+  renderWeather(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité du fond et du texte en mode overlay.

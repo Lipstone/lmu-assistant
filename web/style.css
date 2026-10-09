@@ -157,6 +157,24 @@ dd.good { color: var(--ok); }
 .aid { font-size: 11px; font-weight: 600; padding: 0 4px; border-radius: 3px; background: #333; color: var(--muted); }
 .aid.on { background: #fdd835; color: #000; }
 
+/* F13 : météo */
+.wx-head { font-size: 17px; font-weight: 600; line-height: 1.25; }
+.wx-head.warn { color: var(--warn); }
+.wx-head.rain { color: var(--accent); }
+.wx-slots { display: grid; grid-auto-flow: column; grid-auto-columns: 1fr; gap: 4px; margin-top: 8px; }
+.wx-slot { display: flex; flex-direction: column; align-items: center; gap: 1px; background: #22262e; border-radius: 4px;
+  padding: 3px 2px; font-size: 13px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.wx-slot .when { font-size: 10.5px; color: var(--muted); }
+.wx-slot .icon { font-size: 20px; line-height: 1.2; }
+.wx-slot .chance { color: var(--muted); }
+.wx-slot.maybe .chance { color: var(--warn); }
+.wx-slot.rain .chance { color: var(--accent); font-weight: 600; }
+.wx-slot.past { opacity: 0.45; }
+.wx-none { margin-top: 6px; font-size: 12px; color: var(--muted); }
+.wx-eta { margin-top: 4px; font-size: 13px; color: var(--warn); }
+.wx-note { margin-top: 6px; font-size: 11px; color: var(--muted); }
+body:not(.overlay) .widget[data-widget="weather"] { grid-column: span 2; }
+
 /* Mode overlay : fenêtre transparente, widgets compacts au style sombre.
    --bg-alpha = opacité du fond du widget, --text-alpha = opacité du texte et des jauges (réglages, par widget). */
 html.overlay, html.overlay body, body.overlay { background: transparent; }
@@ -193,6 +211,9 @@ body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres
 body.overlay .widget[data-widget="pit"] { width: 250px; }
 body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
 body.overlay .widget[data-widget="stint"] { width: 240px; }
+body.overlay .widget[data-widget="weather"] { width: 260px; }
+body.overlay .wx-slot { background: rgba(255, 255, 255, 0.06); }
+body.overlay .wx-note { display: none; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"], body.overlay .widget[data-widget="inputs"] { width: 300px; }
 /* Colonnes optionnelles (dégâts, conso) : le widget s'élargit (2 colonnes sur la page), la fenêtre overlay suit sa taille */
 body:not(.overlay) .widget.opt-cols { grid-column: span 2; }

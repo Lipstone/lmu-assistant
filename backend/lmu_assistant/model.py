@@ -247,6 +247,51 @@ class StintInfo:
 
 
 @dataclass
+class ForecastNode:
+    """Un point de la prévision météo du jeu (API REST, /rest/sessions/weather), valeurs brutes."""
+
+    at: float = 0.0  # moment de la session, en fraction de sa durée (0 départ, 0,25, 0,5, 0,75, 1 fin)
+    sky: int = 0  # 0 dégagé … 4 couvert, 5 à 9 de la bruine à la forte pluie, 10 orage
+    air_temp_c: float | None = None
+    rain_chance_pct: float = 0.0  # 0..100
+
+
+@dataclass
+class WeatherSlot:
+    """Un point de la prévision, prêt à afficher (widget Météo)."""
+
+    label: str = ""  # « dans 12 min », « fin », « à 50 % »…
+    in_s: float | None = None  # temps avant ce point (None si la session n'a pas de durée)
+    past: bool = False  # point déjà dépassé
+    sky: int = 0
+    sky_label: str = ""
+    air_temp_c: float | None = None
+    rain_chance_pct: float = 0.0
+
+
+@dataclass
+class WeatherInfo:
+    """Météo et prévision (widget Météo), remplie par `weather.WeatherCalculator`.
+
+    La prévision (`slots`) vient du jeu ; les tendances et `eta_label` sont estimées par l'appli
+    à partir des relevés des dernières minutes."""
+
+    from_game: bool = False  # prévision du jeu disponible
+    headline: str = ""  # résumé : « Pluie probable dans 14 min », « Pluie en cours »…
+    level: str = ""  # "" calme, "warn" pluie possible, "rain" pluie en cours ou probable
+    slots: list[WeatherSlot] = field(default_factory=list)
+    rain_pct: float | None = None  # pluie maintenant, 0..100
+    rain_trend_pct: float | None = None  # estimé : évolution de la pluie sur 10 min (points de %)
+    wetness_pct: float | None = None  # piste mouillée maintenant, 0..100
+    wetness_trend_pct: float | None = None  # estimé : évolution de la piste mouillée sur 10 min (points de %)
+    air_temp_c: float | None = None
+    track_temp_c: float | None = None
+    track_temp_trend_c: float | None = None  # estimé : évolution de la température piste sur 10 min
+    track_temp_in_30min_c: float | None = None  # estimé : température piste dans 30 min si la tendance continue
+    eta_label: str = ""  # estimé : « piste sèche dans ≈ 12 min », « piste mouillée à 30 % dans ≈ 5 min »
+
+
+@dataclass
 class Snapshot:
     connected: bool = False
     source: str = ""
@@ -287,6 +332,7 @@ class Snapshot:
     cloud_coverage: int | None = None  # 0 dégagé … 7 couvert et pluie fine
     track_grip: int | None = None  # 0 vert, 1 faible, 2 moyen, 3 élevé, 4 saturé
     time_of_day_s: float | None = None
+    weather_forecast: list[ForecastNode] = field(default_factory=list)  # prévision du jeu pour cette session (API REST)
     # Dégâts (F11), valeurs brutes de la source
     dents: list[int] = field(default_factory=lambda: [0] * 8)  # même ordre que DamageInfo.body
     parts_detached: bool = False
@@ -318,6 +364,7 @@ class Snapshot:
     session_info: SessionInfo = field(default_factory=SessionInfo)  # F10 : session et piste
     damage: DamageInfo = field(default_factory=DamageInfo)  # F11 : dégâts
     stint: StintInfo = field(default_factory=StintInfo)  # F21, F22 : relais en cours
+    weather: WeatherInfo = field(default_factory=WeatherInfo)  # F13 : météo et prévision
 
     def to_dict(self) -> dict:
         return asdict(self)
