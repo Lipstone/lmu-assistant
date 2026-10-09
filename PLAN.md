@@ -40,7 +40,7 @@ Un seul code d'affichage : les widgets sont des composants web. L'overlay ouvre 
 | Backend | Python 3.11+, FastAPI, uvicorn | Lecture mémoire partagée simple avec `mmap` + `ctypes`, serveur WebSocket léger |
 | Front | HTML/CSS/JS sans framework ni build | Démarrage immédiat ; on passera à un framework si les widgets se multiplient |
 | Overlay | Qt : PySide6 / QtWebEngine (pywebview abandonné : pas de vraie transparence sous Windows) | Réutilise les widgets web ; alternative : source navigateur OBS pour le streaming |
-| Exécutable | PyInstaller (un seul fichier, console affichant les adresses) | Lancement en double-clic, sans Python installé |
+| Exécutable | PyInstaller (un seul fichier, sans console, interface ingénieur dans une fenêtre Qt) | Lancement en double-clic, sans Python installé |
 | Stockage | SQLite | Historique des tours et relais pour l'analyse hors course, zéro installation |
 
 ## Données du jeu

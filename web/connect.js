@@ -19,7 +19,9 @@ fetch("api/info")
     list.innerHTML = "";
     if (!urls.length) {
       list.innerHTML =
-        "<li>Aucune adresse réseau local détectée (PC hors réseau, ou serveur lancé avec <code>--host 127.0.0.1</code>).</li>";
+        info.lan_access === false
+          ? '<li>Accès réseau local désactivé : le cocher dans les <a href="settings.html">réglages</a> puis relancer l\'application.</li>'
+          : "<li>Aucune adresse réseau local détectée (PC hors réseau).</li>";
       qr.hidden = true;
       return;
     }

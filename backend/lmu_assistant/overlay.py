@@ -291,20 +291,25 @@ class Overlay:
                 self.apply(cfg)
 
 
-def run(url: str, overrides: dict | None = None, quit_after: float | None = None) -> int:
-    """Ouvre une fenêtre par widget sur `url` (page en mode overlay) ; bloque jusqu'à la
-    fermeture (thread principal). `quit_after` : ferme au bout de N s (vérification de l'exécutable).
-    Renvoie le nombre de fenêtres ouvertes."""
+def run(url: str, overrides: dict | None = None, quit_after: float | None = None,
+        main_url: str | None = None, widgets: bool = True) -> int:
+    """Ouvre une fenêtre par widget sur `url` (page en mode overlay) et, avec `main_url`, la fenêtre de
+    l'interface ingénieur ; bloque jusqu'à la fermeture (thread principal). `widgets=False` : fenêtre
+    principale seulement. `quit_after` : ferme au bout de N s (vérification de l'exécutable).
+    Renvoie le nombre de fenêtres de widgets ouvertes."""
     from . import overlay_qt  # PySide6 : dépendance optionnelle `overlay`
 
     overrides = overrides or {}
     parts = urlsplit(url)
     config_url = f"{parts.scheme}://{parts.netloc}/api/config"
-    initial = fetch_config(config_url)
     sep = "&" if parts.query else "?"
-    overlay = Overlay({}, config_url, overrides, initial)
+    overlay, states = None, {}
+    if widgets:
+        initial = fetch_config(config_url)
+        overlay = Overlay({}, config_url, overrides, initial)
+        states = plan(initial or {}, overrides)
     return overlay_qt.run(
-        overlay, lambda wid: f"{url}{sep}widget={wid}", window_title, plan(initial or {}, overrides), quit_after
+        overlay, lambda wid: f"{url}{sep}widget={wid}", window_title, states, quit_after, main_url=main_url
     )
 
 

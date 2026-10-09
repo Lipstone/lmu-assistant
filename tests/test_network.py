@@ -86,6 +86,7 @@ def test_api_info_shape(client):
         "source": "mock",
         "port": 8765,
         "lan_urls": ["http://192.168.1.20:8765", "http://10.0.0.5:8765"],
+        "lan_access": True,
     }
 
 
