@@ -20,7 +20,7 @@ import sys
 import time
 from typing import Any
 
-from ..model import Snapshot, Vehicle, Wheel
+from ..model import ForecastNode, Snapshot, Vehicle, Wheel
 from .base import DataSource
 
 MAP_NAME = "LMU_Data"
@@ -684,6 +684,41 @@ def parse_rest(repair_and_refuel: dict | None, pitstop_estimate: dict | None) ->
     return out
 
 
+FORECAST_NODES = (("START", 0.0), ("NODE_25", 0.25), ("NODE_50", 0.5), ("NODE_75", 0.75), ("FINISH", 1.0))
+WEATHER_EVERY_S = 15.0  # la prévision change rarement
+
+
+def parse_weather(data: dict | None) -> dict[str, list[ForecastNode]]:
+    """Réponse de /rest/sessions/weather → prévision par type de session (PRACTICE, QUALIFY, RACE) :
+    5 points (départ, 25 %, 50 %, 75 %, fin), chacun avec WNV_SKY (0-10), WNV_TEMPERATURE (°C) et
+    WNV_RAIN_CHANCE (%). Une session illisible est ignorée."""
+    out: dict[str, list[ForecastNode]] = {}
+    for session, nodes in (data or {}).items():
+        if not isinstance(nodes, dict):
+            continue
+        try:
+            points = []
+            for name, at in FORECAST_NODES:
+                node = nodes[name]
+                sky = int(node["WNV_SKY"]["currentValue"])
+                temp = float(node["WNV_TEMPERATURE"]["currentValue"])
+                rain = float(node["WNV_RAIN_CHANCE"]["currentValue"])
+                if not (0 <= sky <= 10 and math.isfinite(temp) and -60 < temp < 80 and math.isfinite(rain)):
+                    raise ValueError
+                points.append(ForecastNode(at=at, sky=sky, air_temp_c=round(temp, 1),
+                                           rain_chance_pct=min(max(rain, 0.0), 100.0)))
+        except (KeyError, TypeError, ValueError):
+            continue
+        out[str(session).upper()] = points
+    return out
+
+
+def forecast_for(forecasts: dict[str, list[ForecastNode]], session: str) -> list[ForecastNode]:
+    """Prévision de la session en cours (nom donné par `session_name`)."""
+    kind = "RACE" if session.startswith(("Course", "Warm-up")) else "QUALIFY" if session.startswith("Qualif") else "PRACTICE"
+    return list(forecasts.get(kind, []))
+
+
 class RestPoller:
     """Interroge l'API REST locale du jeu dans un fil séparé (la lecture de la mémoire partagée ne doit
     jamais attendre le réseau). `latest` = derniers champs lus, vide si l'API ne répond pas."""
@@ -692,6 +727,8 @@ class RestPoller:
         self.base_url = base_url
         self.every_s = every_s
         self.latest: dict = {}
+        self.forecasts: dict[str, list[ForecastNode]] = {}
+        self._weather_at = 0.0
         self._stop = None
         self._thread = None
 
@@ -709,6 +746,10 @@ class RestPoller:
     def poll_once(self) -> None:
         self.latest = parse_rest(self._get("/rest/garage/UIScreen/RepairAndRefuel"),
                                  self._get("/rest/strategy/pitstop-estimate"))
+        now = time.monotonic()
+        if now >= self._weather_at:
+            self._weather_at = now + WEATHER_EVERY_S
+            self.forecasts = parse_weather(self._get("/rest/sessions/weather"))
 
     def start(self) -> None:
         import threading
@@ -730,6 +771,8 @@ class RestPoller:
             self._stop.set()
         self._thread = None
         self.latest = {}
+        self.forecasts = {}
+        self._weather_at = 0.0
 
 
 # --- Source Windows ----------------------------------------------------------
@@ -797,6 +840,7 @@ class LmuSharedMemorySource(DataSource):
             snap = to_snapshot(data)
             for k, v in self.rest.latest.items():
                 setattr(snap, k, v)
+            snap.weather_forecast = forecast_for(self.rest.forecasts, snap.session)
             return snap
         except (OSError, ValueError):
             self.close()

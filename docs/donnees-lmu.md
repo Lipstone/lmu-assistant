@@ -88,6 +88,8 @@ Delta (F03) : calculé par l'appli à partir de `mLapDist` (scoring, avancé à 
 
 **API REST locale du jeu** (`http://127.0.0.1:6397`, interrogée toutes les 2 s dans un fil séparé, comme TinyPedal) : `aero_damage` = `wearables.body.aero` et `suspension_damage` = `wearables.suspension` (4 valeurs, 0 intacte … 1 détruite) de `GET /rest/garage/UIScreen/RepairAndRefuel` ; `repair_time_s` = `damage` de `GET /rest/strategy/pitstop-estimate` (s). Si l'API ne répond pas, ces champs restent `None`.
 
+**Prévision météo** (F13) : `GET /rest/sessions/weather` (toutes les 15 s) donne pour `PRACTICE`, `QUALIFY` et `RACE` cinq points `START`, `NODE_25`, `NODE_50`, `NODE_75`, `FINISH`, chacun avec `WNV_SKY.currentValue` (ciel 0-10 : 0 dégagé, 1 quelques nuages, 2 partiellement nuageux, 3 très nuageux, 4 couvert, 5 bruine, 6 pluie fine, 7 couvert et pluie fine, 8 pluie, 9 forte pluie, 10 orage), `WNV_TEMPERATURE.currentValue` (air, °C) et `WNV_RAIN_CHANCE.currentValue` (risque de pluie, %), lu comme TinyPedal (`process/weather.py`). `weather_forecast` = les points de la session en cours (`mSession` : essais et journée test → `PRACTICE`, qualification → `QUALIFY`, warm-up et course → `RACE`), placés aux fractions 0 / 0,25 / 0,5 / 0,75 / 1 de la session d'après leur nom (TinyPedal les place, lui, à 0 / 0,2 / 0,4 / 0,6 / 0,8 : à vérifier en jeu).
+
 Champs disponibles pour plus tard (déjà décrits dans les structures) : `mDeltaBest`, écarts `mTimeGapCarAhead/Behind`, réglages TC/ABS, composés de pneus, secteurs, état des stands.
 
 ## Sources

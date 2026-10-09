@@ -4,7 +4,7 @@ import math
 import random
 import time
 
-from ..model import Snapshot, Vehicle, Wheel
+from ..model import ForecastNode, Snapshot, Vehicle, Wheel
 from .base import DataSource
 
 LAP_S = 225.0  # ~3 min 45 s
@@ -40,6 +40,8 @@ FIELD_PIT_EVERY = 12  # tours entre deux arrêts des autres voitures
 RACE_S = 6 * 3600.0  # course de 6 h
 RAIN_START_S = 900.0  # météo (F10) : averses périodiques
 RAIN_PERIOD_S = 5400.0
+# Prévision météo du jeu (F13) : départ, 25 %, 50 %, 75 %, fin de la course (ciel, °C air, risque de pluie %)
+FORECAST = ((0.0, 1, 22.0, 0.0), (0.25, 3, 24.0, 25.0), (0.5, 6, 23.0, 60.0), (0.75, 2, 21.0, 10.0), (1.0, 1, 19.0, 0.0))
 YELLOW_EVERY_S = 900.0  # un jaune local d'une minute toutes les 15 min
 YELLOW_S = 60.0
 FIRST_HIT_S = 1200.0  # dégâts simulés (F11)
@@ -217,6 +219,7 @@ class MockSource(DataSource):
             cloud_coverage=7 if rain > 0.3 else 6 if rain > 0 else 3 if self._wetness > 0.05 else 1,
             track_grip=2 if self._wetness > 0.2 else 3,
             time_of_day_s=(15 * 3600 + t) % 86400,
+            weather_forecast=[ForecastNode(at=a, sky=k, air_temp_c=c, rain_chance_pct=r) for a, k, c, r in FORECAST],
         )
 
     @staticmethod

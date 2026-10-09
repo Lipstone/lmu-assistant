@@ -136,6 +136,16 @@ Le widget **Inputs** montre les commandes du pilote en direct : une **trace cour
 
 Valeurs brutes du pilote (`mUnfilteredThrottle`, `mUnfilteredBrake`, `mUnfilteredClutch`, `mUnfilteredSteering`, `mPhysicalSteeringWheelRange`, `mABSActive`, `mTCActive`) ; la trace est gardée par la page à partir des images reçues (30 par seconde par défaut, réglable).
 
+## Météo et prévision (F13)
+
+Le widget **Météo** (overlay et page principale) résume en une ligne ce qui arrive : « Pluie en cours (30 %) · éclaircie prévue dans 25 min », « Pluie probable dans 17 min (70 %) », « Risque de pluie à la fin (25 %) », « Piste encore mouillée » ou « Pas de pluie prévue ».
+
+- **Prévision du jeu** : LMU fixe pour chaque session 5 points de météo (départ, 25 %, 50 %, 75 % et fin de la session) avec le ciel, la température de l'air et le risque de pluie ; l'appli les lit dans l'API locale du jeu et les place dans le temps (« dans 17 min ») d'après la durée de la session (en % pour une course au nombre de tours). En overlay seuls les points à venir sont affichés ; sur la page, les points passés sont grisés. Sans réponse de l'API, le widget l'indique et garde les estimations.
+- **Mesuré maintenant** (jeu) : pluie, piste mouillée, températures air et piste.
+- **Estimé par l'appli** (marqué « ≈ ») : évolution de la pluie, de la piste mouillée et de la température piste sur les 10 dernières minutes, température piste dans 30 min si la tendance continue, et temps avant une piste sèche (sous 5 %) ou mouillée à 30 % au rythme actuel.
+
+Calculs côté serveur (`backend/lmu_assistant/weather.py`). Non vérifié en jeu : le moment exact de chaque point de la prévision (pris aux fractions 0, 25, 50, 75 et 100 % de la session d'après leur nom dans l'API).
+
 ## Analyse hors course
 
 La page **Analyse** (lien dans la barre du haut, `http://localhost:8765/analyse.html`) rassemble ce qui sert après la course ou entre deux relais, à partir de l'historique enregistré pendant que l'on roule.
