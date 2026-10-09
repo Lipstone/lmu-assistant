@@ -58,7 +58,7 @@ WIDGET_SIZES = {
     "relative": (300, 196),
     "standings": (300, 350),
     "pit": (250, 190),
-    "session": (230, 252),
+    "session": (250, 252),
     "damage": (230, 300),
     "inputs": (300, 132),
     "stint": (240, 200),
