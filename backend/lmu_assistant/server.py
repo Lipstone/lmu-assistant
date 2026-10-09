@@ -2,9 +2,12 @@
 
 import asyncio
 import contextlib
+import json
 import logging
+import time
 from pathlib import Path
 
+import anyio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
@@ -33,6 +36,62 @@ WEB_DIR = resource_dir() / "web"
 log = logging.getLogger(__name__)
 DEFAULT_HZ = 30.0
 
+# Données brutes que les pages n'affichent pas (servent aux calculs du serveur, restent dans /api/snapshot) :
+# jamais envoyées par le WebSocket, ce sont les plus lourdes (une entrée par voiture).
+NOT_SENT = {"vehicles", "weather_forecast"}
+# Toujours envoyé : état de la connexion au jeu, en-tête de la page et heure d'envoi (ms, horloge du PC).
+COMMON_KEYS = ("connected", "source", "session", "track", "car", "ts")
+# Fenêtre d'overlay d'un seul widget (/ws?widget=<id>) : seulement les champs que son rendu lit (web/app.js).
+WIDGET_KEYS = {
+    "lap": ("lap", "position", "laps", "current_lap_s", "lap_invalid", "last_lap_s", "best_lap_s"),
+    "delta": ("delta",),
+    "fuel": ("fuel", "energy", "fuel_l", "fuel_capacity_l", "virtual_energy_pct"),
+    "car": ("speed_kmh", "gear", "rpm"),
+    "tyres": ("wheels",),
+    "brakes": ("brakes", "wheels"),
+    "relative": ("relative",),
+    "standings": ("standings",),
+    "pit": ("pit", "lap"),
+    "session": ("session_info",),
+    "damage": ("damage",),
+    "inputs": ("throttle", "brake", "clutch", "steering", "steering_range_deg", "abs_active", "tc_active"),
+    "stint": ("stint",),
+    "weather": ("weather",),
+}
+
+
+class Client:
+    """Un WebSocket ouvert. Les images (snapshot) ne s'empilent jamais : si la page n'a pas fini de recevoir
+    la précédente, la nouvelle la remplace (on n'envoie que la plus récente, la latence reste celle d'une image).
+    Les autres messages (config) sont tous envoyés, dans l'ordre."""
+
+    def __init__(self, ws: WebSocket, keys: tuple[str, ...] | None = None, snapshots: bool = True) -> None:
+        self.ws = ws
+        self.keys = keys  # None : tous les champs (sauf NOT_SENT)
+        self.snapshots = snapshots
+        self.snapshot: str | None = None
+        self.messages: list[str] = []
+        self.ready = asyncio.Event()
+
+    def push_snapshot(self, text: str) -> None:
+        if self.snapshots:
+            self.snapshot = text
+            self.ready.set()
+
+    def push(self, text: str) -> None:
+        self.messages.append(text)
+        self.ready.set()
+
+    async def run(self) -> None:
+        while True:
+            await self.ready.wait()
+            self.ready.clear()
+            while self.messages:
+                await self.ws.send_text(self.messages.pop(0))
+            text, self.snapshot = self.snapshot, None
+            if text is not None:
+                await self.ws.send_text(text)
+
 
 class Broadcaster:
     def __init__(
@@ -46,7 +105,7 @@ class Broadcaster:
         self.source = source
         self.config_store = config_store
         self.hz = hz  # None : fréquence des réglages (refresh_hz), modifiable en direct
-        self.clients: set[WebSocket] = set()
+        self.clients: set[Client] = set()
         self.latest: dict = {}
         self.fuel = FuelCalculator()
         self.delta = DeltaCalculator(records_path)
@@ -83,17 +142,28 @@ class Broadcaster:
         next_t = loop.time()
         while True:
             self.latest = self.compute(self.source.read()).to_dict()
-            await self.send_all({"type": "snapshot", "data": self.latest})
+            self.latest["ts"] = round(time.time() * 1000)
+            self.publish(self.latest)
             # Cadence régulière : le temps de calcul et d'envoi est déduit de l'attente.
             next_t = max(next_t + self.period, loop.time())
             await asyncio.sleep(next_t - loop.time())
 
+    def publish(self, data: dict) -> None:
+        """Donne l'image à chaque client ; le JSON est fait une fois par jeu de champs, pas par client."""
+        texts: dict = {}
+        for client in list(self.clients):
+            if not client.snapshots:
+                continue
+            if client.keys not in texts:
+                part = ({k: v for k, v in data.items() if k not in NOT_SENT} if client.keys is None
+                        else {k: data[k] for k in client.keys if k in data})
+                texts[client.keys] = json.dumps({"type": "snapshot", "data": part}, separators=(",", ":"))
+            client.push_snapshot(texts[client.keys])
+
     async def send_all(self, message: dict) -> None:
-        for ws in list(self.clients):
-            try:
-                await ws.send_json(message)
-            except Exception:
-                self.clients.discard(ws)
+        text = json.dumps(message, separators=(",", ":"))
+        for client in list(self.clients):
+            client.push(text)
 
 
 def create_app(
@@ -126,13 +196,28 @@ def create_app(
 
     @app.websocket("/ws")
     async def ws_endpoint(ws: WebSocket) -> None:
+        """`?widget=<id>` : seulement les champs de ce widget (fenêtre d'overlay) ;
+        `?snapshots=0` : seulement les messages de configuration (page des réglages)."""
         await ws.accept()
-        broadcaster.clients.add(ws)
+        widget = ws.query_params.get("widget")
+        keys = COMMON_KEYS + WIDGET_KEYS[widget] if widget in WIDGET_KEYS else None
+        client = Client(ws, keys, ws.query_params.get("snapshots") != "0")
+        broadcaster.clients.add(client)
         try:
-            while True:
-                await ws.receive_text()  # garde la connexion ouverte
-        except WebSocketDisconnect:
-            broadcaster.clients.discard(ws)
+            # Envoi et réception en parallèle ; le premier qui s'arrête (page fermée, envoi impossible) arrête l'autre.
+            async with anyio.create_task_group() as tg:
+                async def send() -> None:
+                    with contextlib.suppress(Exception):
+                        await client.run()
+                    tg.cancel_scope.cancel()
+
+                tg.start_soon(send)
+                with contextlib.suppress(WebSocketDisconnect):
+                    while True:
+                        await ws.receive_text()  # garde la connexion ouverte
+                tg.cancel_scope.cancel()
+        finally:
+            broadcaster.clients.discard(client)
 
     async def config_changed(config) -> None:
         await broadcaster.send_all({"type": "config", "data": config.model_dump()})

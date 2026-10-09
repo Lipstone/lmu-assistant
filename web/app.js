@@ -12,6 +12,13 @@ if (ONLY) {
 
 const $ = (id) => document.getElementById(id);
 
+// Remplace le contenu d'un élément seulement s'il a changé (reconstruire un tableau 30 fois par seconde coûte cher).
+function setHTML(el, html) {
+  if (el._html === html) return;
+  el._html = html;
+  el.innerHTML = html;
+}
+
 function fmtLap(s) {
   if (s == null) return "–";
   const m = Math.floor(s / 60);
@@ -103,14 +110,14 @@ function renderLaps(d) {
   $("lap-stdev").textContent = sd == null ? "–" : `±${sd.toFixed(2)} s`;
   $("lap-stdev").classList.toggle("good", sd != null && sd < 0.3);
   $("lap-stdev").classList.toggle("alert", sd != null && sd > 1);
-  $("laps").innerHTML = (info.recent || [])
+  setHTML($("laps"), (info.recent || [])
     .map((l) => {
       const tag = l.pit ? "stand" : l.invalid ? "invalide" : !l.valid ? "partiel" : "";
       const gap = l.vs_best == null ? "" : l.vs_best === 0 ? "meilleur" : `+${l.vs_best.toFixed(2)}`;
       return `<tr class="${l.valid ? "" : "excluded"}"><td>T${l.lap}</td><td>${fmtLap(l.time_s)}</td>` +
         `<td class="${l.vs_best === 0 ? "faster" : ""}">${tag || gap}</td></tr>`;
     })
-    .join("");
+    .join(""));
 }
 
 // F05 : pneus. Par roue : températures ext / milieu / int dessinées côté extérieur de la voiture
@@ -131,7 +138,7 @@ function tempClass(t) {
 
 function renderTyres(d) {
   const [k, digits, unit] = PRESSURE[pressureUnit] || PRESSURE.kpa;
-  $("tyres").innerHTML = d.wheels
+  setHTML($("tyres"), d.wheels
     .map((w, i) => {
       const [inner, mid, outer] = w.temp_c;
       const left = i % 2 === 0;
@@ -142,7 +149,7 @@ function renderTyres(d) {
         `<div class="tyre-info"><span>${(w.pressure_kpa * k).toFixed(digits)}${unit}</span>` +
         `<span class="${wear < 30 ? "alert" : ""}">${wear}%</span></div></div>`;
     })
-    .join("");
+    .join(""));
 }
 
 // F06 : freins ; pics par tour et alerte surchauffe (avec hystérésis) côté serveur (backend/lmu_assistant/brakes.py).
@@ -161,7 +168,7 @@ function renderBrakes(d) {
   const thr = b.threshold_c ?? 800;
   const over = b.overheat || [];
   const peaks = b.peak_last_lap_c || b.peak_lap_c || [];
-  $("brakes").innerHTML = d.wheels
+  setHTML($("brakes"), d.wheels
     .map((w, i) => {
       const t = w.brake_temp_c;
       return `<div class="brake ${i % 2 ? "right" : "left"}"><span class="wheel-name">${WHEELS[i]}</span>` +
@@ -169,7 +176,7 @@ function renderBrakes(d) {
         `<span class="brake-peak" title="${b.peak_last_lap_c ? "pic du tour précédent" : "pic du tour en cours"}">` +
         `pic ${peaks[i] == null ? "–" : Math.round(peaks[i])}</span></div>`;
     })
-    .join("");
+    .join(""));
   const hot = WHEELS.filter((_, i) => over[i]);
   $("brake-alert").hidden = !hot.length;
   $("brake-alert").textContent = hot.length ? `Surchauffe ${hot.join(" ")}` : "";
@@ -246,7 +253,7 @@ const optCount = (id) => Object.keys(CELLS).filter((k) => columns[id][k]).length
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
 function renderRelative(d) {
-  $("relative").innerHTML = (d.relative || [])
+  setHTML($("relative"), (d.relative || [])
     .map((r) => {
       const cls = [r.is_player ? "me" : "", r.laps_diff > 0 ? "lap-up" : r.laps_diff < 0 ? "lap-down" : "",
         r.same_class ? "" : "other-class"].join(" ");
@@ -258,7 +265,7 @@ function renderRelative(d) {
         `<td class="driver">${esc(r.driver)}${r.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
         `<td class="laps-diff">${laps}</td>${optCells("relative", r)}<td class="gap">${gap}</td></tr>`;
     })
-    .join("");
+    .join(""));
 }
 
 // F08 : classement par classe ; sélection des lignes et écarts côté serveur (backend/lmu_assistant/standings.py).
@@ -268,7 +275,7 @@ const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45
 
 function renderStandings(d) {
   const span = 4 + optCount("standings");
-  $("standings").innerHTML = (d.standings || [])
+  setHTML($("standings"), (d.standings || [])
     .map((c) => {
       const head = `<tr class="class-head"><td colspan="${span}"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
         `${esc(c.car_class || "?")} <span class="muted">(${c.cars})</span></td></tr>`;
@@ -284,7 +291,7 @@ function renderStandings(d) {
         })
         .join("");
     })
-    .join("");
+    .join(""));
 }
 
 // F09 : fenêtre de stand ; calculs côté serveur (backend/lmu_assistant/pitstop.py) à partir des moyennes de
@@ -650,14 +657,40 @@ function loadConfig() {
     .catch(() => {});
 }
 
+// Images reçues : seule la plus récente est affichée, à la prochaine image de l'écran. Si la page prend du retard
+// (machine chargée, beaucoup de fenêtres), les images en trop sont sautées au lieu de s'accumuler : l'affichage
+// reste à jour au lieu d'avoir plusieurs secondes de retard.
+let latestSnapshot = null;
+let drawPending = false;
+
+function draw() {
+  drawPending = false;
+  const raw = latestSnapshot;
+  latestSnapshot = null;
+  if (raw) render(JSON.parse(raw).data);
+}
+
+function scheduleDraw() {
+  if (drawPending) return;
+  drawPending = true;
+  requestAnimationFrame(draw);
+  setTimeout(() => drawPending && draw(), 100); // fenêtre où l'écran ne se rafraîchit pas (rAF suspendu)
+}
+
 function connect() {
   // location.host = adresse utilisée par le navigateur (localhost ou IP du PC depuis une tablette).
+  // Fenêtre d'un seul widget : le serveur n'envoie que les champs de ce widget.
   const scheme = location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+  const ws = new WebSocket(`${scheme}://${location.host}/ws${ONLY ? `?widget=${encodeURIComponent(ONLY)}` : ""}`);
   ws.onmessage = (e) => {
+    // Le type est en tête du message : pas besoin de décoder une image qui sera peut-être sautée.
+    if (e.data.startsWith('{"type":"snapshot"')) {
+      latestSnapshot = e.data;
+      scheduleDraw();
+      return;
+    }
     const msg = JSON.parse(e.data);
-    if (msg.type === "snapshot") render(msg.data);
-    else if (msg.type === "config") applyConfig(msg.data);
+    if (msg.type === "config") applyConfig(msg.data);
   };
   ws.onopen = loadConfig; // (re)charge la config à chaque (re)connexion
   ws.onclose = () => {
