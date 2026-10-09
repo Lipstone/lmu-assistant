@@ -213,7 +213,8 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
 .settings td.opa { white-space: nowrap; }
-.settings td.cols { white-space: nowrap; font-size: 13px; }
+.settings td.cols { font-size: 13px; }
+.settings td.cols label { display: block; white-space: nowrap; }
 .settings td.opa input[type="range"] { width: 80px; vertical-align: middle; }
 .settings td.opa.inherit input[type="range"] { opacity: 0.4; }
 .settings td.opa.inherit .reset { visibility: hidden; }
