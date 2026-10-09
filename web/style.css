@@ -195,10 +195,8 @@ body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="d
 body.overlay .widget[data-widget="stint"] { width: 240px; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"], body.overlay .widget[data-widget="inputs"] { width: 300px; }
 /* Colonnes optionnelles (dégâts, conso) : le widget s'élargit (2 colonnes sur la page), la fenêtre overlay suit sa taille */
-body:not(.overlay) .widget:is(.col-dmg, .col-fuel) { grid-column: span 2; }
-body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-dmg { width: 340px; }
-body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-fuel { width: 350px; }
-body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-dmg.col-fuel { width: 390px; }
+body:not(.overlay) .widget.opt-cols { grid-column: span 2; }
+body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).opt-cols { width: calc(300px + var(--opt-cols) * 46px); }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */
@@ -215,7 +213,8 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
 .settings td.opa { white-space: nowrap; }
-.settings td.cols { white-space: nowrap; font-size: 13px; }
+.settings td.cols { font-size: 13px; }
+.settings td.cols label { display: block; white-space: nowrap; }
 .settings td.opa input[type="range"] { width: 80px; vertical-align: middle; }
 .settings td.opa.inherit input[type="range"] { opacity: 0.4; }
 .settings td.opa.inherit .reset { visibility: hidden; }

@@ -190,7 +190,11 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 
 // Colonnes optionnelles du relative et du classement (Réglages overlay, par widget, désactivées par défaut) :
 // dégâts globaux et consommation par tour de chaque voiture (backend/lmu_assistant/opponents.py).
-const columns = { relative: { damage: false, consumption: false }, standings: { damage: false, consumption: false } };
+// Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour.
+const columns = {
+  relative: { damage: false, remaining: false, consumption: false },
+  standings: { damage: false, remaining: false, consumption: false },
+};
 
 function damageCell(e) {
   if (e.damage_pct == null) return '<td class="opt dmg" title="dégâts non transmis par le jeu">–</td>';
@@ -218,9 +222,22 @@ function consumptionCell(e) {
   return `<td class="opt fuel ${laps != null && laps < 2 ? "warn" : ""}" title="${title}">${perLap.toFixed(1)}${unit}</td>`;
 }
 
+// Restant : % d'énergie virtuelle si la voiture en a (sauf widget Carburant réglé en litres), sinon litres.
+function remainingCell(e) {
+  const energy = e.energy_pct != null && fuelMode !== "fuel";
+  const left = energy ? e.energy_pct : e.fuel_l;
+  if (left == null) return '<td class="opt left" title="carburant non transmis par le jeu">–</td>';
+  const perLap = energy ? e.energy_per_lap : e.fuel_per_lap;
+  const laps = perLap ? left / perLap : null;
+  const title = `${energy ? "énergie virtuelle" : "carburant"} restant` + (laps == null ? "" : ` · ~${laps.toFixed(1)} tours`);
+  return `<td class="opt left ${laps != null && laps < 2 ? "warn" : ""}" title="${title}">` +
+    `${left.toFixed(left >= 100 ? 0 : 1)}${energy ? "%" : "L"}</td>`;
+}
+
 const optCells = (id, e) =>
-  (columns[id].damage ? damageCell(e) : "") + (columns[id].consumption ? consumptionCell(e) : "");
-const optCount = (id) => +columns[id].damage + +columns[id].consumption;
+  (columns[id].damage ? damageCell(e) : "") + (columns[id].remaining ? remainingCell(e) : "") +
+  (columns[id].consumption ? consumptionCell(e) : "");
+const optCount = (id) => +columns[id].damage + +columns[id].remaining + +columns[id].consumption;
 
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
@@ -481,9 +498,10 @@ function applyConfig(cfg) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
     if (columns[w.id]) {
-      columns[w.id] = { damage: !!w.show_damage, consumption: !!w.show_consumption };
-      el.classList.toggle("col-dmg", columns[w.id].damage); // fenêtre overlay plus large (style.css)
-      el.classList.toggle("col-fuel", columns[w.id].consumption);
+      columns[w.id] = { damage: !!w.show_damage, remaining: !!w.show_remaining, consumption: !!w.show_consumption };
+      // fenêtre overlay plus large d'autant de colonnes (style.css)
+      el.style.setProperty("--opt-cols", optCount(w.id));
+      el.classList.toggle("opt-cols", optCount(w.id) > 0);
     }
     el.hidden = ONLY ? w.id !== ONLY : !w.visible;
     if (OVERLAY) {
