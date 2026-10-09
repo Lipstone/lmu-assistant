@@ -470,6 +470,8 @@ def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
     """Classement de toutes les voitures (F07, F08), trié par position."""
     info = data.scoring.scoringInfo
     n = max(0, min(info.mNumVehicles, MAX_VEHICLES))
+    tele = data.telemetry
+    telem = {t.mID: t for t in tele.telemInfo[:min(max(tele.activeVehicles, 0), MAX_VEHICLES)]}
     result = []
     for v in data.scoring.vehScoringInfo[:n]:
         name = _text(v.mVehicleName)
@@ -485,8 +487,25 @@ def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
             laps_behind_leader=max(0, v.mLapsBehindLeader), in_pits=bool(v.mInPits), pitstops=max(0, v.mNumPitstops),
             is_player=v.mID == player_id,
         ))
+        t = telem.get(v.mID)
+        if t is not None:
+            _vehicle_telemetry(result[-1], t)
     result.sort(key=lambda v: v.position or 10_000)
     return result
+
+
+def _vehicle_telemetry(car: Vehicle, t: TelemInfo) -> None:
+    """Dégâts et carburant d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
+    de toutes les voitures ; carburant à 0 sans réservoir connu = valeur non transmise (laissée à None)."""
+    dents = list(t.mDentSeverity)
+    car.dents = [min(max(int(dents[i]), 0), 2) for i in DENT_ORDER]
+    car.parts_detached = bool(t.mDetached)
+    car.wheels_off = sum(1 for w in t.mWheels if w.mFlat or w.mDetached)
+    fuel = _finite(t.mFuel, 0, 1000)
+    if fuel is not None and (fuel > 0 or t.mFuelCapacity > 0):
+        car.fuel_l = round(fuel, 3)
+    if 0 < t.mVirtualEnergy <= 1.5:
+        car.energy_pct = round(min(t.mVirtualEnergy, 1.0) * 100, 3)
 
 
 def find_player(data: ObjectOut) -> tuple[VehicleScoring | None, TelemInfo | None]:

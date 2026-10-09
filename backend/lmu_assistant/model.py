@@ -94,10 +94,33 @@ class Vehicle:
     in_pits: bool = False
     pitstops: int = 0
     is_player: bool = False
+    # Télémétrie de la voiture (dégâts et consommation des autres voitures), None si le jeu ne la donne pas
+    dents: list[int] | None = None  # même ordre que DamageInfo.body
+    parts_detached: bool = False
+    wheels_off: int = 0  # roues crevées ou arrachées
+    fuel_l: float | None = None
+    energy_pct: float | None = None  # énergie virtuelle restante, None si la voiture n'en a pas
+    # Calculés par `opponents.OpponentsCalculator`
+    damage_pct: float | None = None  # état global de la carrosserie, 100 = intacte
+    fuel_per_lap: float | None = None  # litres par tour (moyenne des derniers tours sans arrêt)
+    energy_per_lap: float | None = None  # % d'énergie virtuelle par tour
 
 
 @dataclass
-class RelativeEntry:
+class OpponentFields:
+    """Colonnes optionnelles des classements (relative, classement par classe) : dégâts et consommation."""
+
+    damage_pct: float | None = None  # état global de la carrosserie, 100 = intacte
+    wheels_off: int = 0
+    parts_detached: bool = False
+    fuel_per_lap: float | None = None
+    energy_per_lap: float | None = None
+    fuel_l: float | None = None
+    energy_pct: float | None = None
+
+
+@dataclass
+class RelativeEntry(OpponentFields):
     """Une voiture proche sur la piste (F07)."""
 
     id: int = 0
@@ -115,7 +138,7 @@ class RelativeEntry:
 
 
 @dataclass
-class StandingEntry:
+class StandingEntry(OpponentFields):
     """Une ligne du classement par classe (F08)."""
 
     id: int = 0

@@ -14,6 +14,7 @@ juste devant lui, lui-même et celle juste derrière ; `skipped_before` marque u
 from __future__ import annotations
 
 from .model import ClassStandings, StandingEntry, Snapshot, Vehicle
+from .opponents import opponent_fields
 
 TOP = 3  # voitures gardées en tête de chaque classe
 
@@ -61,7 +62,7 @@ def compute_standings(snap: Snapshot, top: int = TOP) -> Snapshot:
                 gap_leader_s=to_leader[0], laps_leader=to_leader[1],
                 interval_s=to_ahead[0], laps_interval=to_ahead[1],
                 last_lap_s=v.last_lap_s, best_lap_s=v.best_lap_s, in_pits=v.in_pits, pitstops=v.pitstops,
-                is_player=v.is_player, skipped_before=i > prev + 1,
+                is_player=v.is_player, skipped_before=i > prev + 1, **opponent_fields(v),
             ))
             prev = i
         snap.standings.append(ClassStandings(car_class=car_class, cars=len(cars), entries=entries))

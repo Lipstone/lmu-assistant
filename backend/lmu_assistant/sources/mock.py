@@ -30,6 +30,11 @@ FIELD = [
     ("91", "R. Lietz", "LMGT3", 251.2, -0.016),
     ("54", "D. Rigon", "LMGT3", 252.6, -0.020),
 ]
+FIELD_CONSUMPTION = {"Hypercar": (3.4, 4.1), "LMP2": (3.9, 0.0), "LMGT3": (3.1, 3.7)}  # L et % EV par tour
+FIELD_DAMAGE = {  # dégâts des autres voitures : instant du choc (s), zones (AVG, AV, AVD, G, D, ARG, AR, ARD)
+    "8": (600.0, [1, 1, 0, 1, 0, 0, 0, 0]),
+    "31": (1500.0, [0, 0, 0, 0, 1, 0, 2, 2]),
+}
 FIELD_PIT_EVERY = 12  # tours entre deux arrêts des autres voitures
 
 RACE_S = 6 * 3600.0  # course de 6 h
@@ -129,10 +134,14 @@ class MockSource(DataSource):
         fraction = round(min(self._fraction(current), 1.0), 4)
         in_pits = self._pit and current < PIT_S
         vehicles = self._field(now - self._start)
+        damage = self._damage(now - self._start)
+        fuel_l = round(self._fuel - FUEL_PER_LAP_L * current / LAP_S, 2)
+        energy_pct = round(self._energy - ENERGY_PER_LAP_PCT * current / LAP_S, 2)
         vehicles.append(Vehicle(
             id=0, driver=PLAYER[1], car="Hypercar #00", number=PLAYER[0], car_class=PLAYER[2],
             laps=self._lap - 1, lap_fraction=fraction, last_lap_s=self._last, best_lap_s=self._best,
             estimated_lap_s=LAP_S, in_pits=in_pits, pitstops=self._stops, is_player=True,
+            dents=list(damage["dents"]), fuel_l=fuel_l, energy_pct=energy_pct,
         ))
         _classify(vehicles)
         player = vehicles[-1]
@@ -147,9 +156,9 @@ class MockSource(DataSource):
             speed_kmh=round(speed, 1),
             rpm=round(4000 + speed * 25),
             gear=max(1, min(7, int(speed / 45))),
-            fuel_l=round(self._fuel - FUEL_PER_LAP_L * current / LAP_S, 2),
+            fuel_l=fuel_l,
             fuel_capacity_l=100.0,
-            virtual_energy_pct=round(self._energy - ENERGY_PER_LAP_PCT * current / LAP_S, 2),
+            virtual_energy_pct=energy_pct,
             last_lap_s=self._last,
             last_sector1_s=self._s1,
             last_sector2_s=self._s2,
@@ -162,7 +171,7 @@ class MockSource(DataSource):
             wheels=wheels,
             vehicles=sorted(vehicles, key=lambda v: v.position),
             **self._session(now - self._start, fraction),
-            **self._damage(now - self._start),
+            **damage,
             **inputs,
         )
 
@@ -219,6 +228,12 @@ class MockSource(DataSource):
             laps = math.floor(progress)
             first_pit = i % FIELD_PIT_EVERY + 1
             stops = 0 if laps < first_pit else (laps - first_pit) // FIELD_PIT_EVERY + 1
+            # carburant et énergie (colonnes conso des classements) : plein à chaque arrêt
+            last_fill = 0.0 if not stops else first_pit + (stops - 1) * FIELD_PIT_EVERY
+            since = max(0.0, progress - last_fill)
+            fuel_rate, energy_rate = FIELD_CONSUMPTION[car_class]
+            fuel_rate *= 1 + 0.02 * ((i % 5) - 2)  # chaque voiture consomme un peu différemment
+            energy_rate = energy_rate and energy_rate * (1 + 0.015 * ((i % 4) - 1.5))
             cars.append(Vehicle(
                 id=i, driver=driver, car=f"{car_class} #{number}", number=number, car_class=car_class,
                 laps=laps, lap_fraction=round(progress - laps, 4),
@@ -227,6 +242,9 @@ class MockSource(DataSource):
                 estimated_lap_s=lap_s,
                 in_pits=laps >= first_pit and (laps - first_pit) % FIELD_PIT_EVERY == 0 and progress - laps < 0.02,
                 pitstops=stops,
+                dents=list(FIELD_DAMAGE[number][1]) if number in FIELD_DAMAGE and t >= FIELD_DAMAGE[number][0] else [0] * 8,
+                fuel_l=round(max(0.0, 95.0 - fuel_rate * since), 3),
+                energy_pct=round(max(0.0, 100.0 - energy_rate * since), 3) if energy_rate else None,
             ))
         return cars
 

@@ -188,6 +188,40 @@ function classColor(name) {
 
 const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 
+// Colonnes optionnelles du relative et du classement (Réglages overlay, par widget, désactivées par défaut) :
+// dégâts globaux et consommation par tour de chaque voiture (backend/lmu_assistant/opponents.py).
+const columns = { relative: { damage: false, consumption: false }, standings: { damage: false, consumption: false } };
+
+function damageCell(e) {
+  if (e.damage_pct == null) return '<td class="opt dmg" title="dégâts non transmis par le jeu">–</td>';
+  const p = Math.round(e.damage_pct);
+  const notes = [`carrosserie ${p} %`];
+  if (e.wheels_off) notes.push(`${e.wheels_off} roue${e.wheels_off > 1 ? "s" : ""} crevée(s) ou arrachée(s)`);
+  if (e.parts_detached) notes.push("pièces arrachées");
+  const cls = e.wheels_off || p < 75 ? "bad" : p < 100 || e.parts_detached ? "warn" : "intact";
+  return `<td class="opt dmg ${cls}" title="${notes.join(" · ")}">${p}${e.wheels_off ? "!" : ""}</td>`;
+}
+
+// Énergie virtuelle (%) si la voiture en a, sauf si le widget Carburant est réglé en litres.
+function consumptionCell(e) {
+  const energy = e.energy_per_lap != null && fuelMode !== "fuel";
+  const perLap = energy ? e.energy_per_lap : e.fuel_per_lap;
+  const left = energy ? e.energy_pct : e.fuel_l;
+  if (perLap == null) {
+    const why = left == null ? "carburant non transmis par le jeu" : "en attente d'un tour complet sans arrêt";
+    return `<td class="opt fuel" title="${why}">–</td>`;
+  }
+  const unit = energy ? "%" : "L";
+  const laps = left != null && perLap > 0 ? left / perLap : null;
+  const title = `consommation estimée par tour · reste ${left == null ? "–" : left.toFixed(1) + " " + unit}` +
+    (laps == null ? "" : ` (~${laps.toFixed(1)} tours)`);
+  return `<td class="opt fuel ${laps != null && laps < 2 ? "warn" : ""}" title="${title}">${perLap.toFixed(1)}${unit}</td>`;
+}
+
+const optCells = (id, e) =>
+  (columns[id].damage ? damageCell(e) : "") + (columns[id].consumption ? consumptionCell(e) : "");
+const optCount = (id) => +columns[id].damage + +columns[id].consumption;
+
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
 function renderRelative(d) {
@@ -201,7 +235,7 @@ function renderRelative(d) {
         `title="${esc(r.car_class)} · P${r.position} au général">P${r.class_position}</span></td>` +
         `<td class="num">${r.number ? "#" + esc(r.number) : ""}</td>` +
         `<td class="driver">${esc(r.driver)}${r.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
-        `<td class="laps-diff">${laps}</td><td class="gap">${gap}</td></tr>`;
+        `<td class="laps-diff">${laps}</td>${optCells("relative", r)}<td class="gap">${gap}</td></tr>`;
     })
     .join("");
 }
@@ -212,19 +246,20 @@ const fmtGap = (s, laps) => (laps ? `+${laps}T` : s == null ? "–" : `+${s.toFi
 const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45.6
 
 function renderStandings(d) {
+  const span = 5 + optCount("standings");
   $("standings").innerHTML = (d.standings || [])
     .map((c) => {
-      const head = `<tr class="class-head"><td colspan="5"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
+      const head = `<tr class="class-head"><td colspan="${span}"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
         `${esc(c.car_class || "?")} <span class="muted">(${c.cars})</span></td></tr>`;
       return head + c.entries
         .map((e) => {
-          const sep = e.skipped_before ? '<tr class="skip"><td colspan="5">⋯</td></tr>' : "";
+          const sep = e.skipped_before ? `<tr class="skip"><td colspan="${span}">⋯</td></tr>` : "";
           const leader = e.class_position === 1;
           return sep + `<tr class="${e.is_player ? "me" : ""}"><td class="cpos">P${e.class_position}</td>` +
             `<td class="num">${e.number ? "#" + esc(e.number) : ""}</td>` +
             `<td class="driver">${esc(e.driver)}${e.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
             `<td class="gap" title="${leader ? "" : "à la voiture devant : " + fmtGap(e.interval_s, e.laps_interval)}">` +
-            `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>` +
+            `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>${optCells("standings", e)}` +
             `<td class="last" title="dernier tour">${fmtShortLap(e.last_lap_s)}</td></tr>`;
         })
         .join("");
@@ -283,19 +318,29 @@ function renderSession(d) {
   $("sess-tod").textContent = s.time_of_day_s == null ? "–" : fmtClock(s.time_of_day_s).slice(0, -3);
 }
 
-// F11 : dégâts ; calculs côté serveur (backend/lmu_assistant/damage.py). Carrosserie en 8 zones vue de dessus
-// (gris = rien, orange = léger, rouge = lourd), état global au centre ; aéro, suspension et réparation
+// F11 : dégâts ; calculs côté serveur (backend/lmu_assistant/damage.py). Voiture vue de dessus en SVG
+// (web/index.html) : 8 zones de carrosserie (gris = rien, orange = léger, rouge = lourd), état global au centre,
+// roues (crevée, arrachée, suspension touchée), lame avant et aileron (aéro) ; aéro, suspension et réparation
 // viennent de l'API REST du jeu (« – » si elle ne répond pas).
-const BODY_ZONES = ["AVG", "AV", "AVD", "G", "D", "ARG", "AR", "ARD"];
 const fmtPctState = (p) => (p == null ? "–" : `${Math.round(p)} %`);
+const level = (p, warn = 90, bad = 70) => (p == null || p >= warn ? "" : p >= bad ? "s1" : "s2");
 
 function renderDamage(d) {
   const g = d.damage || {};
   const body = g.body || [];
-  const cell = (i) => `<div class="zone z${body[i] || 0}" title="${BODY_ZONES[i]}"></div>`;
-  $("dmg-body").innerHTML = cell(0) + cell(1) + cell(2) + cell(3) +
-    `<div class="zone-center ${g.body_pct < 100 ? "hit" : ""}">${Math.round(g.body_pct ?? 100)} %</div>` +
-    cell(4) + cell(5) + cell(6) + cell(7);
+  const car = $("dmg-car");
+  car.querySelectorAll("[data-zone]").forEach((z) => z.setAttribute("class", `zone z${body[z.dataset.zone] || 0}`));
+  const susp = g.suspension_pct;
+  car.querySelectorAll("[data-wheel]").forEach((w) => {
+    const i = w.dataset.wheel;
+    const state = (g.wheels || [])[i];
+    const cls = state === "arrachée" ? "off" : state ? "s1" : level(susp && susp[i]);
+    w.setAttribute("class", `wheel ${cls}`);
+  });
+  car.querySelectorAll(".aero").forEach((a) => a.setAttribute("class", `aero ${level(g.aero_pct)}`));
+  const pct = Math.round(g.body_pct ?? 100);
+  $("dmg-pct").textContent = `${pct}%`;
+  $("dmg-pct").setAttribute("class", `pct ${pct < 75 ? "heavy" : pct < 100 ? "hit" : ""}`);
   const alerts = [];
   (g.wheels || []).forEach((w, i) => w && alerts.push(`${WHEELS[i]} ${w}`));
   if (g.parts_detached) alerts.push("pièces arrachées");
@@ -304,7 +349,6 @@ function renderDamage(d) {
   $("dmg-alert").textContent = alerts.join(" · ");
   $("dmg-aero").textContent = fmtPctState(g.aero_pct);
   $("dmg-aero").classList.toggle("alert", g.aero_pct != null && g.aero_pct < 90);
-  const susp = g.suspension_pct;
   const worst = susp ? susp.reduce((m, p, i) => (p != null && p < susp[m] ? i : m), 0) : null;
   $("dmg-susp").textContent = !susp ? "–" : susp[worst] >= 100 ? "OK" : `${WHEELS[worst]} ${Math.round(susp[worst])} %`;
   $("dmg-susp").title = susp ? susp.map((p, i) => `${WHEELS[i]} ${fmtPctState(p)}`).join(" · ") : "";
@@ -436,6 +480,11 @@ function applyConfig(cfg) {
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
+    if (columns[w.id]) {
+      columns[w.id] = { damage: !!w.show_damage, consumption: !!w.show_consumption };
+      el.classList.toggle("col-dmg", columns[w.id].damage); // fenêtre overlay plus large (style.css)
+      el.classList.toggle("col-fuel", columns[w.id].consumption);
+    }
     el.hidden = ONLY ? w.id !== ONLY : !w.visible;
     if (OVERLAY) {
       el.style.left = ONLY ? "0" : `${w.x}px`;

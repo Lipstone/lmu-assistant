@@ -44,7 +44,8 @@ _DEFAULT_POSITIONS = {
     "stint": (290, 540),
 }
 
-# Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris.
+# Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris. L'overlay ajuste
+# ensuite chaque fenêtre à la taille réelle du widget (colonnes optionnelles du relative et du classement).
 WIDGET_SIZES = {
     "lap": (220, 276),
     "delta": (200, 196),
@@ -56,7 +57,7 @@ WIDGET_SIZES = {
     "standings": (300, 350),
     "pit": (250, 190),
     "session": (230, 252),
-    "damage": (230, 250),
+    "damage": (230, 300),
     "inputs": (300, 132),
     "stint": (240, 200),
 }
@@ -80,6 +81,12 @@ class WidgetConfig(BaseModel):
     )
     text_opacity: float | None = Field(
         None, ge=0.1, le=1.0, description="opacité du texte et des jauges du widget en overlay (None = globale)"
+    )
+    show_damage: bool = Field(
+        False, description="widgets Relative et Classement : colonne des dégâts globaux de chaque voiture"
+    )
+    show_consumption: bool = Field(
+        False, description="widgets Relative et Classement : colonne de la consommation par tour de chaque voiture"
     )
 
     @model_validator(mode="before")
