@@ -195,10 +195,8 @@ body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="d
 body.overlay .widget[data-widget="stint"] { width: 240px; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"], body.overlay .widget[data-widget="inputs"] { width: 300px; }
 /* Colonnes optionnelles (dégâts, conso) : le widget s'élargit (2 colonnes sur la page), la fenêtre overlay suit sa taille */
-body:not(.overlay) .widget:is(.col-dmg, .col-fuel) { grid-column: span 2; }
-body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-dmg { width: 340px; }
-body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-fuel { width: 350px; }
-body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-dmg.col-fuel { width: 390px; }
+body:not(.overlay) .widget.opt-cols { grid-column: span 2; }
+body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).opt-cols { width: calc(300px + var(--opt-cols) * 46px); }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */

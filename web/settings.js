@@ -4,7 +4,7 @@ const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergi
 let config = null;
 // Colonnes optionnelles des classements (dégâts, consommation des autres voitures), désactivées par défaut.
 const COLUMN_WIDGETS = ["relative", "standings"];
-const COLUMNS = [["show_damage", "Dégâts"], ["show_consumption", "Conso"]];
+const COLUMNS = [["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"]];
 
 function num(input, fallback) {
   const v = parseFloat(input.value);

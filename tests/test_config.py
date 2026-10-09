@@ -193,12 +193,12 @@ def test_settings_page_served(client):
 
 def test_ranking_columns_off_by_default_and_saved(tmp_path):
     cfg = AppConfig()
-    assert not any(w.show_damage or w.show_consumption for w in cfg.widgets)
+    assert not any(w.show_damage or w.show_remaining or w.show_consumption for w in cfg.widgets)
     data = cfg.model_dump()
     rel = next(w for w in data["widgets"] if w["id"] == "relative")
-    rel.update(show_damage=True, show_consumption=True)
+    rel.update(show_damage=True, show_remaining=True, show_consumption=True)
     store = ConfigStore(tmp_path / "config.json")
     store.save(AppConfig.model_validate(data))
     loaded = {w.id: w for w in ConfigStore(tmp_path / "config.json").config.widgets}
-    assert loaded["relative"].show_damage and loaded["relative"].show_consumption
+    assert loaded["relative"].show_damage and loaded["relative"].show_consumption and loaded["relative"].show_remaining
     assert not loaded["standings"].show_damage

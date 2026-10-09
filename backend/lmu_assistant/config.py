@@ -85,6 +85,9 @@ class WidgetConfig(BaseModel):
     show_damage: bool = Field(
         False, description="widgets Relative et Classement : colonne des dégâts globaux de chaque voiture"
     )
+    show_remaining: bool = Field(
+        False, description="widgets Relative et Classement : colonne du carburant ou de l'énergie restant dans chaque voiture"
+    )
     show_consumption: bool = Field(
         False, description="widgets Relative et Classement : colonne de la consommation par tour de chaque voiture"
     )
