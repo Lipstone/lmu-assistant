@@ -130,17 +130,26 @@
               C82,104 85,108 85,114 L85,138 C85,147 80,153 70,155 L30,155 C20,153 15,147 15,138 L15,114
               C15,108 18,104 20,100 L20,58 C18,55 16,52 16,48 L16,30 C16,24 18,19 23,14 C28,9 38,7 50,7 Z"/>
           </clipPath>
+          <clipPath id="dmg-z0"><rect x="-14" y="0" width="52" height="58"/></clipPath>
+          <clipPath id="dmg-z1"><rect x="38" y="0" width="24" height="58"/></clipPath>
+          <clipPath id="dmg-z2"><rect x="62" y="0" width="52" height="58"/></clipPath>
+          <clipPath id="dmg-z3"><rect x="-14" y="58" width="52" height="46"/></clipPath>
+          <clipPath id="dmg-z4"><rect x="62" y="58" width="52" height="46"/></clipPath>
+          <clipPath id="dmg-z5"><rect x="-14" y="104" width="52" height="66"/></clipPath>
+          <clipPath id="dmg-z6"><rect x="38" y="104" width="24" height="66"/></clipPath>
+          <clipPath id="dmg-z7"><rect x="62" y="104" width="52" height="66"/></clipPath>
         </defs>
+        <use href="#dmg-shape" class="body"/>
+        <!-- dégâts : bande colorée le long du bord de chaque zone (intérieur de la carrosserie seulement) -->
         <g clip-path="url(#dmg-clip)">
-          <rect class="zone" data-zone="0" x="0" y="0" width="38" height="58"><title>Avant gauche</title></rect>
-          <rect class="zone" data-zone="1" x="38" y="0" width="24" height="58"><title>Avant</title></rect>
-          <rect class="zone" data-zone="2" x="62" y="0" width="38" height="58"><title>Avant droit</title></rect>
-          <rect class="zone" data-zone="3" x="0" y="58" width="38" height="46"><title>Gauche</title></rect>
-          <rect class="zone base" x="38" y="58" width="24" height="46"/>
-          <rect class="zone" data-zone="4" x="62" y="58" width="38" height="46"><title>Droite</title></rect>
-          <rect class="zone" data-zone="5" x="0" y="104" width="38" height="66"><title>Arrière gauche</title></rect>
-          <rect class="zone" data-zone="6" x="38" y="104" width="24" height="66"><title>Arrière</title></rect>
-          <rect class="zone" data-zone="7" x="62" y="104" width="38" height="66"><title>Arrière droit</title></rect>
+          <use href="#dmg-shape" class="edge" data-zone="0" clip-path="url(#dmg-z0)"><title>Avant gauche</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="1" clip-path="url(#dmg-z1)"><title>Avant</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="2" clip-path="url(#dmg-z2)"><title>Avant droit</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="3" clip-path="url(#dmg-z3)"><title>Gauche</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="4" clip-path="url(#dmg-z4)"><title>Droite</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="5" clip-path="url(#dmg-z5)"><title>Arrière gauche</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="6" clip-path="url(#dmg-z6)"><title>Arrière</title></use>
+          <use href="#dmg-shape" class="edge" data-zone="7" clip-path="url(#dmg-z7)"><title>Arrière droit</title></use>
         </g>
         <use href="#dmg-shape" class="outline"/>
         <!-- détails : capot, phares ronds, rétroviseurs, grilles du moteur arrière -->
