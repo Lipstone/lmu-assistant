@@ -501,11 +501,33 @@ function renderWeather(d) {
   $("wx-eta").textContent = w.eta_label ? `≈ ${w.eta_label.replace("≈ ", "")}` : "";
 }
 
+// F14 : shift light ; régime de passage calculé côté serveur (backend/lmu_assistant/shift.py) : tableau des GT3
+// quand la voiture y est, sinon un % du régime max du jeu. Les LED s'allument du vert au rouge jusqu'au régime de
+// passage, puis toutes en bleu (clignotantes) ; au rupteur, rouge clignotant.
+const SL_LEDS = 10;
+const SL_COLORS = ["g", "g", "g", "g", "y", "y", "y", "r", "r", "r"];
+const fmtRpm = (v) => Math.round(v).toLocaleString("fr-FR");
+
+function renderShift(d) {
+  const s = d.shift || {};
+  const box = $("sl-leds");
+  if (box.children.length !== SL_LEDS) box.innerHTML = '<span class="led"></span>'.repeat(SL_LEDS);
+  const lit = Math.round((s.level || 0) * SL_LEDS);
+  [...box.children].forEach((led, i) => { led.className = `led${i < lit ? " on " + SL_COLORS[i] : ""}`; });
+  box.className = `sl-leds${s.shift_now ? " shift" : ""}${s.over_rev ? " over" : ""}`;
+  $("sl-gear").textContent = s.gear === 0 ? "N" : s.gear < 0 ? "R" : s.gear ?? "–";
+  $("sl-rpm").textContent = s.rpm ? fmtRpm(s.rpm) : "–";
+  $("sl-target").textContent = s.shift_rpm ? `↑ ${fmtRpm(s.shift_rpm)}` : "–";
+  $("sl-target").title = s.top_gear ? "dernier rapport" : "régime de passage";
+  $("sl-note").textContent = s.source === "table" ? `${s.car_label} : tableau GT3${s.note ? " · " + s.note : ""}`
+    : s.source === "max" ? `Régime de passage : ${s.note}` : "Régime max inconnu";
+}
+
 // Fenêtre d'un seul widget : seul son rendu est utile (les autres sont masqués).
 const RENDERERS = {
   lap: renderLaps, delta: renderDelta, fuel: renderFuel, car: renderCar, tyres: renderTyres, brakes: renderBrakes,
   relative: renderRelative, standings: renderStandings, pit: renderPit, session: renderSession, damage: renderDamage,
-  inputs: renderInputs, stint: renderStint, weather: renderWeather,
+  inputs: renderInputs, stint: renderStint, weather: renderWeather, shift: renderShift,
 };
 
 function renderCar(d) {
@@ -536,6 +558,7 @@ function render(d) {
   renderInputs(d);
   renderStint(d);
   renderWeather(d);
+  renderShift(d);
 }
 
 // Configuration (T06) : visibilité partout ; position (écran), taille, opacité du fond et du texte en mode overlay.

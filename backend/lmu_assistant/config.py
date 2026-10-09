@@ -25,7 +25,7 @@ log = logging.getLogger(__name__)
 DEFAULT_CONFIG_PATH = data_dir() / "config.json"
 
 # Identifiants des widgets = attribut `data-widget` de web/index.html, dans l'ordre d'affichage.
-WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes", "relative", "standings", "pit", "session", "damage", "inputs", "stint", "weather")
+WIDGET_IDS = ("lap", "delta", "fuel", "car", "tyres", "brakes", "relative", "standings", "pit", "session", "damage", "inputs", "stint", "weather", "shift")
 
 # Position par défaut de chaque fenêtre sur l'écran (pixels, coin haut gauche).
 _DEFAULT_POSITIONS = {
@@ -43,6 +43,7 @@ _DEFAULT_POSITIONS = {
     "inputs": (760, 860),
     "stint": (290, 540),
     "weather": (1340, 20),
+    "shift": (760, 120),
 }
 
 # Taille de la fenêtre d'un widget à l'échelle 1 (largeur, hauteur en pixels), contenu compris. L'overlay ajuste
@@ -62,6 +63,7 @@ WIDGET_SIZES = {
     "inputs": (300, 132),
     "stint": (240, 200),
     "weather": (260, 230),
+    "shift": (400, 100),
 }
 
 
@@ -173,6 +175,12 @@ class AppConfig(BaseModel):
     brake_overheat_c: float = Field(800.0, ge=100, le=2000, description="widget Freins : seuil d'alerte surchauffe (°C)")
     pit_loss_s: float = Field(
         60.0, ge=0, le=600, description="widget Stand : temps perdu au stand tant qu'aucun arrêt n'a été mesuré (s)"
+    )
+    shift_use_table: bool = Field(
+        True, description="widget Shift light : régimes du tableau des GT3 quand la voiture y est"
+    )
+    shift_rpm_pct: float = Field(
+        98.0, ge=80, le=100, description="widget Shift light : autres voitures, passage à ce % du régime max"
     )
     refresh_hz: int = Field(30, ge=5, le=60, description="rafraîchissement des données envoyées aux widgets (par seconde)")
     inputs_trace_s: float = Field(8.0, ge=2, le=30, description="widget Inputs : durée de la trace (s)")

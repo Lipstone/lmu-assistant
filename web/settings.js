@@ -1,6 +1,6 @@
 // Page de réglages de l'overlay (T06) : lit GET /api/config, enregistre via PUT.
 const $ = (id) => document.getElementById(id);
-const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs", stint: "Relais", weather: "Météo" };
+const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs", stint: "Relais", weather: "Météo", shift: "Shift light" };
 let config = null;
 // Colonnes optionnelles des classements (dégâts, carburant, consommation, tours), désactivées par défaut sauf le
 // dernier tour du Classement.
@@ -97,6 +97,8 @@ function fill(cfg) {
   setValue($("pressure-unit"), cfg.pressure_unit);
   setValue($("brake-overheat"), cfg.brake_overheat_c);
   setValue($("pit-loss"), cfg.pit_loss_s);
+  setValue($("shift-use-table"), cfg.shift_use_table);
+  setValue($("shift-rpm-pct"), cfg.shift_rpm_pct);
   setValue($("inputs-trace"), cfg.inputs_trace_s);
   setValue($("refresh-hz"), cfg.refresh_hz);
   setValue($("placement-hotkey"), cfg.placement_hotkey);
@@ -130,6 +132,8 @@ function collect() {
     pressure_unit: $("pressure-unit").value,
     brake_overheat_c: num($("brake-overheat"), config.brake_overheat_c),
     pit_loss_s: num($("pit-loss"), config.pit_loss_s),
+    shift_use_table: $("shift-use-table").checked,
+    shift_rpm_pct: num($("shift-rpm-pct"), config.shift_rpm_pct),
     inputs_trace_s: num($("inputs-trace"), config.inputs_trace_s),
     refresh_hz: Math.round(num($("refresh-hz"), config.refresh_hz)),
     laptime_avg_laps: Math.round(num($("laptime-avg-laps"), config.laptime_avg_laps)),

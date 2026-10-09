@@ -21,6 +21,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F11 | Dégâts | Voiture vue de dessus (SVG) : dégâts carrosserie (8 zones, 0 % = intacte), roues (crevaison, arrachée) et suspensions dessinées à part, aéro (lame, aileron) ; aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
 | F12 | Inputs | Pédales et volant en direct (trace courte réglable), témoins ABS / TC | ✅ |
 | F13 | Météo et prévision | Prévision du jeu (5 points : ciel, air, risque de pluie) placée dans le temps, résumé « pluie dans X min », tendances estimées (pluie, piste mouillée, température piste) et temps avant piste sèche / mouillée | ✅ |
+| F14 | Shift light | 10 LED jusqu'au régime de passage, bleu pour passer ; GT3 : régimes optimaux du tableau « LMU GT3 optimal shift point », autres voitures : % du régime max | ✅ |
 
 ## Hors course (ingénieur augmenté)
 

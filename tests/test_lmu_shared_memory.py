@@ -59,6 +59,9 @@ def make_data() -> ObjectOut:
     t.mLocalVel.x, t.mLocalVel.y, t.mLocalVel.z = 3.0, 0.0, -50.0  # ~50,09 m/s
     t.mEngineRPM = 7432.6
     t.mGear = 5
+    t.mEngineMaxRPM = 8999.6
+    t.mMaxGears = 6
+    t.mVehicleModel = b"Porsche 911 GT3 R LMGT3"
     t.mFuel = 42.346
     t.mFuelCapacity = 90.0
     t.mElapsedTime = 1000.5
@@ -84,6 +87,8 @@ def test_parse_player_snapshot():
     assert snap.lap == 12
     assert snap.rpm == 7433  # télémétrie du joueur retrouvée par mID, pas par index
     assert snap.gear == 5
+    assert snap.max_rpm == 9000 and snap.max_gears == 6  # shift light (F14)
+    assert snap.car_model == "Porsche 911 GT3 R LMGT3"
     assert snap.speed_kmh == pytest.approx(180.3, abs=0.1)
     assert snap.fuel_l == pytest.approx(42.35, abs=0.006)
     assert snap.fuel_capacity_l == 90.0

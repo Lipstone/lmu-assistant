@@ -569,6 +569,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
     snap.vehicles = vehicles(data, scoring.mID if scoring is not None else None)
     if scoring is not None:
         snap.car = _text(scoring.mVehicleName)
+        snap.car_class = _text(scoring.mVehicleClass)
         snap.lap = scoring.mTotalLaps + 1  # tour en cours
         snap.position = scoring.mPlace
         snap.last_lap_s = _lap_time(scoring.mLastLapTime)
@@ -586,6 +587,9 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.speed_kmh = round(math.sqrt(v.x * v.x + v.y * v.y + v.z * v.z) * 3.6, 1)
         snap.rpm = round(telem.mEngineRPM)
         snap.gear = telem.mGear
+        snap.max_rpm = round(max(telem.mEngineMaxRPM, 0.0))
+        snap.max_gears = telem.mMaxGears
+        snap.car_model = _text(telem.mVehicleModel)
         snap.fuel_l = round(telem.mFuel, 2)
         snap.fuel_capacity_l = round(telem.mFuelCapacity, 1)
         if telem.mVirtualEnergy > 0:  # fraction 0-1 ; 0 pour les voitures sans énergie virtuelle
