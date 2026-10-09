@@ -182,6 +182,10 @@ class AppConfig(BaseModel):
     shift_rpm_pct: float = Field(
         98.0, ge=80, le=100, description="widget Shift light : autres voitures, passage à ce % du régime max"
     )
+    shift_lead_ms: float = Field(
+        150.0, ge=0, le=500,
+        description="widget Shift light : anticipation (latence d'affichage + réaction), le bleu s'allume d'autant plus tôt",
+    )
     refresh_hz: int = Field(30, ge=5, le=60, description="rafraîchissement des données envoyées aux widgets (par seconde)")
     inputs_trace_s: float = Field(8.0, ge=2, le=30, description="widget Inputs : durée de la trace (s)")
     hotkey: str = Field("ctrl+shift+o", min_length=1, max_length=64)

@@ -169,7 +169,9 @@ Le widget **Shift light** allume 10 LED (vert, jaune, rouge) en montant vers le 
   La voiture est reconnue par son modèle dans la télémétrie (`mVehicleModel`), sinon par son nom, en GT3 seulement (pas la Ferrari 499P ni la Porsche 963). Le même régime vaut pour tous les rapports (le tableau ne donne pas de régime par rapport).
 - **Autres voitures** : passage à 98 % du régime max donné par le jeu (réglable de 80 à 100 % dans Réglages overlay) ; sans régime max, le plus haut régime vu avec la voiture.
 
-Réglages overlay : « régimes optimaux du tableau des GT3 » (activé par défaut) et le % du régime max. Calculs côté serveur (`backend/lmu_assistant/shift.py`, régimes dans `shift_points.py`). Non vérifié en jeu : le texte exact de `mVehicleModel` pour chaque GT3.
+- **Anticipation** (150 ms par défaut, de 0 à 500 ms dans Réglages overlay) : la chaîne d'affichage (lecture du jeu, envoi, rendu) et le temps de réaction retardent le passage. Les LED et le bleu suivent donc le régime prévu dans 150 ms à la vitesse de montée actuelle : le bleu s'allume avant le régime cible (plus tôt en 1re qu'en 5e, où le moteur monte moins vite), pour que le rapport passe au bon régime. À augmenter si les passages tombent encore après le régime cible.
+
+Réglages overlay : « régimes optimaux du tableau des GT3 » (activé par défaut), le % du régime max et l'anticipation. Calculs côté serveur (`backend/lmu_assistant/shift.py`, régimes dans `shift_points.py`). Non vérifié en jeu : le texte exact de `mVehicleModel` pour chaque GT3.
 
 ## Analyse hors course
 

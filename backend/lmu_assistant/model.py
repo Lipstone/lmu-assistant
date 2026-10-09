@@ -298,6 +298,7 @@ class ShiftInfo:
 
     rpm: float = 0.0
     gear: int = 0
+    predicted_rpm: float = 0.0  # régime prévu après l'anticipation (latence + réaction), sert aux LED
     max_rpm: float | None = None  # régime max (limiteur) donné par le jeu, sinon le plus haut vu
     shift_rpm: float | None = None  # régime où passer le rapport supérieur
     start_rpm: float | None = None  # première LED

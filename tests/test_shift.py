@@ -71,3 +71,37 @@ def test_top_gear_and_over_rev():
 def test_neutral_no_leds():
     s = ShiftCalculator().update(snap(gear=0, rpm=9000.0)).shift
     assert s.level == 0 and not s.shift_now
+
+
+class Clock:
+    def __init__(self):
+        self.t = 100.0
+
+    def __call__(self):
+        return self.t
+
+
+def test_lead_lights_blue_before_target():
+    clock = Clock()
+    calc = ShiftCalculator(clock=clock)
+    # Montée régulière de 3 000 tr/min par seconde : 8 500 → 8 800 en 0,1 s
+    s = None
+    for rpm in (8200.0, 8300.0, 8400.0, 8500.0, 8600.0, 8700.0, 8800.0):
+        s = calc.update(snap(rpm=rpm), lead_ms=150.0).shift
+        clock.t += 1 / 30
+    # 8 800 + ~3 000 × 0,15 ≈ 9 250 prévu ≥ 8 850 : bleu avant le régime cible
+    assert s.rpm == 8800 and s.predicted_rpm > 8850 and s.shift_now
+    s0 = ShiftCalculator(clock=Clock()).update(snap(rpm=8800.0), lead_ms=150.0).shift
+    assert not s0.shift_now  # sans historique, pas d'anticipation
+
+
+def test_no_lead_after_gear_change_or_when_slowing():
+    clock = Clock()
+    calc = ShiftCalculator(clock=clock)
+    calc.update(snap(rpm=8700.0, gear=3))
+    clock.t += 1 / 30
+    s = calc.update(snap(rpm=8800.0, gear=4)).shift  # rapport changé : pas de vitesse de montée
+    assert s.predicted_rpm == 8800 and not s.shift_now
+    clock.t += 1 / 30
+    s = calc.update(snap(rpm=8700.0, gear=4)).shift  # en décélération
+    assert s.predicted_rpm == 8700
