@@ -36,6 +36,7 @@ FIELD_DAMAGE = {  # dégâts des autres voitures : instant du choc (s), zones (A
     "31": (1500.0, [0, 0, 0, 0, 1, 0, 2, 2]),
 }
 FIELD_PIT_EVERY = 12  # tours entre deux arrêts des autres voitures
+FIELD_PENALTIES = {"50": 900, "31": 1800}  # pénalité reçue (s) par voiture (colonne Pénalités des classements)
 
 RACE_S = 6 * 3600.0  # course de 6 h
 RAIN_START_S = 900.0  # météo (F10) : averses périodiques
@@ -143,7 +144,7 @@ class MockSource(DataSource):
             id=0, driver=PLAYER[1], car="Hypercar #00", number=PLAYER[0], car_class=PLAYER[2],
             laps=self._lap - 1, lap_fraction=fraction, last_lap_s=self._last, best_lap_s=self._best,
             estimated_lap_s=LAP_S, in_pits=in_pits, pitstops=self._stops, is_player=True,
-            dents=list(damage["dents"]), fuel_l=fuel_l, energy_pct=energy_pct,
+            dents=list(damage["dents"]), fuel_l=fuel_l, energy_pct=energy_pct, tyre_wear=[w.wear for w in wheels],
         ))
         _classify(vehicles)
         player = vehicles[-1]
@@ -241,6 +242,9 @@ class MockSource(DataSource):
             fuel_rate, energy_rate = FIELD_CONSUMPTION[car_class]
             fuel_rate *= 1 + 0.02 * ((i % 5) - 2)  # chaque voiture consomme un peu différemment
             energy_rate = energy_rate and energy_rate * (1 + 0.015 * ((i % 4) - 1.5))
+            # pneus changés un arrêt sur deux (colonne Relais pneus), un peu plus usés à l'arrière
+            tyre_stop = stops - stops % 2
+            worn = progress - (first_pit + (tyre_stop - 1) * FIELD_PIT_EVERY if tyre_stop else 0.0)
             cars.append(Vehicle(
                 id=i, driver=driver, car=f"{car_class} #{number}", number=number, car_class=car_class,
                 laps=laps, lap_fraction=round(progress - laps, 4),
@@ -252,6 +256,8 @@ class MockSource(DataSource):
                 dents=list(FIELD_DAMAGE[number][1]) if number in FIELD_DAMAGE and t >= FIELD_DAMAGE[number][0] else [0] * 8,
                 fuel_l=round(max(0.0, 95.0 - fuel_rate * since), 3),
                 energy_pct=round(max(0.0, 100.0 - energy_rate * since), 3) if energy_rate else None,
+                penalties=int(number in FIELD_PENALTIES and t >= FIELD_PENALTIES[number]),
+                tyre_wear=[round(max(0.0, 1 - k * 0.006 * worn), 4) for k in (1, 1, 1.2, 1.2)],
             ))
         return cars
 

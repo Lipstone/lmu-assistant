@@ -200,10 +200,10 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 
 // Colonnes optionnelles du relative et du classement (Réglages overlay, par widget, désactivées par défaut) :
 // dégâts globaux et consommation par tour de chaque voiture (backend/lmu_assistant/opponents.py).
-// Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour, meilleur tour,
-// dernier tour.
+// Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour, pénalités,
+// relais sur le train de pneus, meilleur tour, dernier tour.
 const COLUMN_KEYS = { damage: "show_damage", remaining: "show_remaining", consumption: "show_consumption",
-  best: "show_best_lap", last: "show_last_lap" };
+  penalties: "show_penalties", tyres: "show_tyre_stints", best: "show_best_lap", last: "show_last_lap" };
 const columns = { relative: { last: false }, standings: { last: true } };
 
 function damageCell(e) {
@@ -245,8 +245,17 @@ function remainingCell(e) {
 }
 
 const lapCell = (cls, title, s) => `<td class="opt lap ${cls}" title="${title}">${fmtShortLap(s)}</td>`;
+// Relais sur le train de pneus actuel, estimé côté serveur (changement repéré quand l'usure remonte).
+function tyresCell(e) {
+  if (e.tyre_stints == null) return '<td class="opt tyres" title="usure des pneus non transmise par le jeu">–</td>';
+  const n = e.tyre_stints;
+  return `<td class="opt tyres ${n > 1 ? "warn" : "intact"}" title="${n === 1 ? "1er" : n + "e"} relais sur ce train de pneus (estimé)">${n}</td>`;
+}
+
 const CELLS = {
   damage: damageCell, remaining: remainingCell, consumption: consumptionCell,
+  penalties: (e) => `<td class="opt pen ${e.penalties ? "bad" : "intact"}" title="pénalités en cours">${e.penalties ?? 0}</td>`,
+  tyres: tyresCell,
   best: (e) => lapCell("best", "meilleur tour", e.best_lap_s),
   last: (e) => lapCell("last", "dernier tour", e.last_lap_s),
 };

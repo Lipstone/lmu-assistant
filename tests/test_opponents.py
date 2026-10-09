@@ -83,3 +83,24 @@ def test_mock_field_reports_damage_and_consumption(monkeypatch):
     assert 3.0 < by_number["7"].fuel_per_lap < 3.8 and 3.8 < by_number["7"].energy_per_lap < 4.4
     assert by_number["22"].fuel_per_lap is not None and by_number["22"].energy_per_lap is None  # LMP2 sans EV
     assert by_number["00"].fuel_per_lap is not None
+
+
+def test_tyre_stints_count_stops_since_tyre_change():
+    calc = OpponentsCalculator()
+    worn = [0.9] * 4
+    assert calc.update(snap(car(5, tyre_wear=worn))).vehicles[0].tyre_stints == 1
+    # arrêt sans changer les pneus : 2e relais sur le même train
+    calc.update(snap(car(12, in_pits=True, pitstops=1, tyre_wear=[0.8] * 4)))
+    assert calc.update(snap(car(12, pitstops=1, tyre_wear=[0.8] * 4))).vehicles[0].tyre_stints == 2
+    # arrêt avec pneus neufs (l'usure remonte) : compté à la sortie des stands
+    calc.update(snap(car(20, in_pits=True, pitstops=2, tyre_wear=[0.7] * 4)))
+    calc.update(snap(car(20, in_pits=True, pitstops=2, tyre_wear=[1.0] * 4)))
+    assert calc.update(snap(car(20, pitstops=2, tyre_wear=[1.0] * 4))).vehicles[0].tyre_stints == 1
+    assert calc.update(snap(car(21, pitstops=2))).vehicles[0].tyre_stints is None  # usure non transmise
+
+
+def test_penalties_and_tyre_wear_from_shared_memory_reach_standings():
+    v = Vehicle(id=1, laps=3, position=1, car_class="GT3", penalties=2, tyre_wear=[0.95] * 4)
+    s = compute_standings(compute_relative(OpponentsCalculator().update(snap(v))))
+    e = s.standings[0].entries[0]
+    assert e.penalties == 2 and e.tyre_stints == 1

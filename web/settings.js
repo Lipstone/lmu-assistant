@@ -6,7 +6,7 @@ let config = null;
 // dernier tour du Classement.
 const COLUMN_WIDGETS = ["relative", "standings"];
 const COLUMNS = [["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
-  ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
+  ["show_penalties", "Pénalités"], ["show_tyre_stints", "Relais pneus"], ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
 
 function num(input, fallback) {
   const v = parseFloat(input.value);

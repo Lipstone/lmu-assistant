@@ -95,6 +95,10 @@ class WidgetConfig(BaseModel):
     show_consumption: bool = Field(
         False, description="widgets Relative et Classement : colonne de la consommation par tour de chaque voiture"
     )
+    show_penalties: bool = Field(False, description="widgets Relative et Classement : colonne des pénalités de chaque voiture")
+    show_tyre_stints: bool = Field(
+        False, description="widgets Relative et Classement : colonne du nombre de relais sur le train de pneus actuel"
+    )
     show_best_lap: bool = Field(False, description="widgets Relative et Classement : colonne du meilleur tour de chaque voiture")
     show_last_lap: bool = Field(
         False,

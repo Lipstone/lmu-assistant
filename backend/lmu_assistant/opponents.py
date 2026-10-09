@@ -10,13 +10,20 @@ pour chaque voiture de `snapshot.vehicles` :
 - **consommation par tour** (`fuel_per_lap` en litres, `energy_per_lap` en % d'énergie virtuelle) : le jeu ne
   la donne pas directement, elle est **estimée** à partir du carburant / de l'énergie restants relevés à chaque
   passage de ligne : moyenne des `AVG_LAPS` derniers tours sans passage au stand (un tour avec arrêt, un plein ou
-  une valeur qui ne baisse pas est ignoré). `None` tant qu'aucun tour complet n'a été mesuré.
+  une valeur qui ne baisse pas est ignoré). `None` tant qu'aucun tour complet n'a été mesuré ;
+- **relais sur le train de pneus** (`tyre_stints`) : le jeu ne le donne pas, il est **estimé** : 1 + nombre
+  d'arrêts depuis le dernier changement de pneus, repéré quand l'usure d'un pneu remonte (comme pour le joueur dans
+  history.py). Une voiture vue pour la première fois en cours de course compte à partir de ce moment. `None` sans
+  télémétrie des pneus.
+
+Les pénalités (`penalties`) viennent directement du classement du jeu.
 """
 
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 
+from .history import TYRE_CHANGE_WEAR
 from .model import OpponentFields, Snapshot, Vehicle
 
 AVG_LAPS = 3  # tours utilisés pour la moyenne de consommation
@@ -40,6 +47,9 @@ class _Tracker:
     pitted: bool = False  # passage au stand pendant le tour en cours
     fuel_laps: list[float] = field(default_factory=list)
     energy_laps: list[float] = field(default_factory=list)
+    wear: list[float] | None = None  # usure des pneus au relevé précédent
+    tyres_stops: int | None = None  # nombre d'arrêts au moment du dernier changement de pneus
+    tyres_pending: bool = False  # pneus changés pendant l'arrêt en cours : compté à la sortie des stands
 
 
 def _used(before: float | None, after: float | None, history: list[float]) -> None:
@@ -72,11 +82,26 @@ class OpponentsCalculator:
             self._key = key
         for v in snap.vehicles:
             v.damage_pct = damage_pct(v.dents)
-            self._consumption(v)
+            t = self._cars.setdefault(v.id, _Tracker())
+            self._tyres(v, t)
+            self._consumption(v, t)
         return snap
 
-    def _consumption(self, v: Vehicle) -> None:
-        t = self._cars.setdefault(v.id, _Tracker())
+    @staticmethod
+    def _tyres(v: Vehicle, t: _Tracker) -> None:
+        if v.tyre_wear is None:
+            v.tyre_stints = None
+            return
+        if t.tyres_stops is None:
+            t.tyres_stops = v.pitstops
+        elif t.wear is not None and any(w > p + TYRE_CHANGE_WEAR for w, p in zip(v.tyre_wear, t.wear)):
+            t.tyres_pending = True
+        if t.tyres_pending and not v.in_pits:
+            t.tyres_stops, t.tyres_pending = v.pitstops, False
+        t.wear = list(v.tyre_wear)
+        v.tyre_stints = 1 + max(0, v.pitstops - t.tyres_stops)
+
+    def _consumption(self, v: Vehicle, t: _Tracker) -> None:
         first = t.laps < 0
         t.pitted = t.pitted or v.in_pits or v.pitstops != t.pitstops
         if v.laps != t.laps:

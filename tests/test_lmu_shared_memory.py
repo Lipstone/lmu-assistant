@@ -298,6 +298,17 @@ def test_vehicles_damage_and_fuel_from_telemetry():
     assert by_id[7].fuel_l == 42.346
 
 
+def test_vehicles_penalties_and_tyre_wear():
+    d = make_data()
+    d.scoring.vehScoringInfo[0].mNumPenalties = 2
+    for i, w in enumerate(d.telemetry.telemInfo[0].mWheels):  # voiture mID 9
+        w.mWear = 0.9 - i / 100
+    snap = parse_buffer(bytes(d))
+    by_id = {v.id: v for v in snap.vehicles}
+    assert by_id[d.scoring.vehScoringInfo[0].mID].penalties == 2
+    assert by_id[9].tyre_wear == [0.9, 0.89, 0.88, 0.87]
+
+
 def test_vehicle_without_telemetry_has_no_damage_or_fuel():
     d = make_data()
     d.telemetry.activeVehicles = 2  # la télémétrie de mID 7 (index 2) n'est plus active
