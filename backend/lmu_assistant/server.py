@@ -16,6 +16,7 @@ from .delta import DEFAULT_RECORDS_PATH, DeltaCalculator
 from .fuel import FuelCalculator
 from .history import DEFAULT_HISTORY_PATH, HistoryRecorder, HistoryStore
 from .history_api import make_history_router
+from .opponents import OpponentsCalculator
 from .notes import NoteStore, make_notes_router
 from .laptimes import AVG_LAPS, LapTimesCalculator
 from .network import router as network_router
@@ -53,13 +54,14 @@ class Broadcaster:
         self.pit = PitCalculator()
         self.session = SessionCalculator()
         self.damage = DamageCalculator()
+        self.opponents = OpponentsCalculator()
         self.history = history
 
     def compute(self, snap):
         cfg = self.config_store.config if self.config_store else None
         snap = self.laps.update(self.delta.update(self.fuel.update(snap)), cfg.laptime_avg_laps if cfg else AVG_LAPS)
         snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
-        snap = compute_standings(compute_relative(snap))
+        snap = compute_standings(compute_relative(self.opponents.update(snap)))
         snap = self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)
         snap = self.damage.update(self.session.update(snap))
         if self.history is not None:

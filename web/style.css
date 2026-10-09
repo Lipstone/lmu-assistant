@@ -101,6 +101,10 @@ dd.good { color: var(--ok); }
 .standings tr.skip td { text-align: center; color: var(--muted); line-height: 8px; font-size: 11px; }
 .pit-sub { font-size: 12px; color: var(--muted); }
 .big.alert { color: var(--warn); }
+.relative .opt, .standings .opt { text-align: right; font-size: 12px; padding-left: 6px; }
+.relative .opt.intact, .standings .opt.intact { color: var(--muted); }
+.relative .opt.warn, .standings .opt.warn { color: var(--warn); }
+.relative .opt.bad, .standings .opt.bad { color: var(--bad); font-weight: 600; }
 .relative .pit, .standings .pit { font-size: 10px; padding: 0 3px; border-radius: 3px; background: var(--muted); color: #000; font-weight: 600; }
 
 .flag { margin-top: 6px; padding: 3px 6px; border-radius: 4px; font-weight: 600; font-size: 13px; text-align: center; background: #333; }
@@ -111,12 +115,21 @@ dd.good { color: var(--ok); }
 .flag.red { background: var(--bad); color: #fff; }
 .flag.checkered { background: repeating-conic-gradient(#fff 0 25%, #000 0 50%) 0 0 / 12px 12px; color: #000; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 
-.car-damage { display: grid; grid-template-columns: 1fr 2fr 1fr; grid-template-rows: 22px 34px 22px; gap: 3px; width: 140px; margin: 2px auto 0; }
-.car-damage .zone { border-radius: 3px; background: #3a3f48; }
-.car-damage .zone.z1 { background: var(--warn); }
-.car-damage .zone.z2 { background: var(--bad); }
-.car-damage .zone-center { display: flex; align-items: center; justify-content: center; font-weight: 600; font-variant-numeric: tabular-nums; }
-.car-damage .zone-center.hit { color: var(--warn); }
+/* Widget Dégâts : voiture vue de dessus en SVG. Gris = rien, orange = léger, rouge = lourd ;
+   roue en pointillés = arrachée ; aéro (lame avant, aileron) orange sous 90 %, rouge sous 70 %. */
+.car-svg { display: block; width: 76px; height: 129px; margin: 2px auto 0; overflow: visible; --body: #3a3f48; --wheel: #5b616c; }
+.car-svg .zone { fill: var(--body); stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; }
+.car-svg .z1 { fill: var(--warn); }
+.car-svg .z2 { fill: var(--bad); }
+.car-svg .outline { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1.2; }
+.car-svg .cockpit { fill: rgba(0, 0, 0, 0.45); stroke: rgba(255, 255, 255, 0.25); stroke-width: 0.8; }
+.car-svg .pct { fill: var(--text); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.car-svg .pct.hit { fill: var(--warn); }
+.car-svg .pct.heavy { fill: var(--bad); }
+.car-svg .wheel, .car-svg .aero { fill: var(--wheel); }
+.car-svg .s1 { fill: var(--warn); }
+.car-svg .s2 { fill: var(--bad); }
+.car-svg .wheel.off { fill: none; stroke: var(--bad); stroke-width: 1.4; stroke-dasharray: 3 2; }
 
 .inputs { display: flex; gap: 8px; align-items: stretch; }
 .inputs canvas { flex: 1; min-width: 0; width: 100%; height: 70px; background: #22262e; border-radius: 4px; }
@@ -159,9 +172,8 @@ body.overlay dt { color: rgba(232, 234, 237, calc(0.95 - var(--bg-alpha) * 0.35)
 body.overlay dd { font-weight: 500; }
 body.overlay .bar, body.overlay .delta-bar, body.overlay .pedal-bar, body.overlay .steer { background: rgba(255, 255, 255, 0.12); }
 body.overlay .tyre, body.overlay .brake, body.overlay .inputs canvas { background: rgba(255, 255, 255, 0.06); }
-body.overlay .car-damage .zone { background: rgba(255, 255, 255, 0.12); }
-body.overlay .car-damage .zone.z1 { background: var(--warn); }
-body.overlay .car-damage .zone.z2 { background: var(--bad); }
+body.overlay .car-svg { --body: rgba(255, 255, 255, 0.16); --wheel: rgba(255, 255, 255, 0.38); }
+body.overlay .car-svg .pct { paint-order: stroke; stroke: var(--halo); stroke-width: 2px; }
 body.overlay .aid { background: rgba(255, 255, 255, 0.1); }
 body.overlay .aid.on { background: #fdd835; }
 body.overlay .relative td { border-top-color: rgba(255, 255, 255, 0.07); }
@@ -173,6 +185,11 @@ body.overlay .widget[data-widget="pit"] { width: 250px; }
 body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
 body.overlay .widget[data-widget="stint"] { width: 240px; }
 body.overlay .widget[data-widget="relative"], body.overlay .widget[data-widget="standings"], body.overlay .widget[data-widget="inputs"] { width: 300px; }
+/* Colonnes optionnelles (dégâts, conso) : le widget s'élargit (2 colonnes sur la page), la fenêtre overlay suit sa taille */
+body:not(.overlay) .widget:is(.col-dmg, .col-fuel) { grid-column: span 2; }
+body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-dmg { width: 340px; }
+body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-fuel { width: 350px; }
+body.overlay .widget:is([data-widget="relative"], [data-widget="standings"]).col-dmg.col-fuel { width: 390px; }
 body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs plus longues */
 
 /* Mode placement (fenêtre d'un widget) : cadre, curseur de déplacement, poignée d'agrandissement */
@@ -189,6 +206,7 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
 .settings td.opa { white-space: nowrap; }
+.settings td.cols { white-space: nowrap; font-size: 13px; }
 .settings td.opa input[type="range"] { width: 80px; vertical-align: middle; }
 .settings td.opa.inherit input[type="range"] { opacity: 0.4; }
 .settings td.opa.inherit .reset { visibility: hidden; }

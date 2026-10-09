@@ -2,6 +2,9 @@
 const $ = (id) => document.getElementById(id);
 const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs", stint: "Relais" };
 let config = null;
+// Colonnes optionnelles des classements (dégâts, consommation des autres voitures), désactivées par défaut.
+const COLUMN_WIDGETS = ["relative", "standings"];
+const COLUMNS = [["show_damage", "Dégâts"], ["show_consumption", "Conso"]];
 
 function num(input, fallback) {
   const v = parseFloat(input.value);
@@ -59,6 +62,8 @@ function fill(cfg) {
           <td><input type="number" data-k="y"></td>
           <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05"></td>
           ${OPACITIES.map(opacityCell).join("")}
+          <td class="cols">${COLUMN_WIDGETS.includes(w.id) ? COLUMNS.map(([k, label]) =>
+            `<label><input type="checkbox" data-k="${k}"> ${label}</label>`).join(" ") : ""}</td>
         </tr>`
       )
       .join("");
@@ -66,6 +71,10 @@ function fill(cfg) {
   for (const w of cfg.widgets) {
     const tr = $("widgets").querySelector(`tr[data-id="${w.id}"]`);
     for (const k of ["visible", "x", "y", "scale"]) setValue(tr.querySelector(`[data-k="${k}"]`), w[k]);
+    for (const [k] of COLUMNS) {
+      const box = tr.querySelector(`[data-k="${k}"]`);
+      if (box) setValue(box, !!w[k]);
+    }
     // Transparence en cours d'envoi : la config reçue entre-temps ne doit pas défaire le réglage en cours.
     if (!livePending) own[w.id] = { background_opacity: w.background_opacity, text_opacity: w.text_opacity };
   }
@@ -102,6 +111,7 @@ function collect() {
       y: Math.round(num(get("y"), old.y)),
       scale: num(get("scale"), old.scale),
       ...opacities(tr.dataset.id),
+      ...Object.fromEntries(COLUMNS.map(([k]) => [k, get(k) ? get(k).checked : !!old[k]])),
     };
   });
   return {

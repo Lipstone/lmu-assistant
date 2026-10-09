@@ -14,11 +14,11 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F04 | Temps au tour | Dernier, meilleur, moyenne des N derniers, régularité | ✅ |
 | F05 | Pneus | Températures (int/milieu/ext), pressions, usure par roue | ✅ |
 | F06 | Freins | Températures par roue, alerte surchauffe | ✅ |
-| F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard | ✅ |
-| F08 | Classement | Classement simplifié par classe, écarts, dernier tour | ✅ |
+| F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard ; colonnes optionnelles dégâts globaux et conso par tour de chaque voiture | ✅ |
+| F08 | Classement | Classement simplifié par classe, écarts, dernier tour ; colonnes optionnelles dégâts globaux et conso par tour de chaque voiture | ✅ |
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ✅ |
 | F10 | Session et piste | Temps restant, drapeaux (jaune local, FCY, bleu…), météo, température piste/air et son évolution, grip | ✅ |
-| F11 | Dégâts | État carrosserie (8 zones), aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
+| F11 | Dégâts | Voiture vue de dessus (SVG) : état carrosserie (8 zones), roues, aéro (lame, aileron) ; aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
 | F12 | Inputs | Pédales et volant en direct (trace courte réglable), témoins ABS / TC | ✅ |
 
 ## Hors course (ingénieur augmenté)

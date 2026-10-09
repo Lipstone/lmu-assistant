@@ -121,7 +121,36 @@
 
     <section class="widget" data-widget="damage">
       <h2>Dégâts</h2>
-      <div class="car-damage" id="dmg-body"></div>
+      <!-- Voiture vue de dessus (avant en haut) : 8 zones de carrosserie, roues, aileron et lame avant (aéro) -->
+      <svg class="car-svg" id="dmg-car" viewBox="0 0 100 170" role="img" aria-label="Dégâts de la voiture">
+        <defs>
+          <clipPath id="dmg-clip">
+            <path id="dmg-shape" d="M50,6 C56,6 60,9 62,16 L70,22 C76,24 78,30 78,38 L78,56 C78,60 74,62 70,64 L68,96
+              C74,100 80,104 80,112 L80,140 C80,148 74,152 66,152 L34,152 C26,152 20,148 20,140 L20,112
+              C20,104 26,100 32,96 L30,64 C26,62 22,60 22,56 L22,38 C22,30 24,24 30,22 L38,16 C40,9 44,6 50,6 Z"/>
+          </clipPath>
+        </defs>
+        <g clip-path="url(#dmg-clip)">
+          <rect class="zone" data-zone="0" x="0" y="0" width="38" height="60"><title>Avant gauche</title></rect>
+          <rect class="zone" data-zone="1" x="38" y="0" width="24" height="60"><title>Avant</title></rect>
+          <rect class="zone" data-zone="2" x="62" y="0" width="38" height="60"><title>Avant droit</title></rect>
+          <rect class="zone" data-zone="3" x="0" y="60" width="38" height="44"><title>Gauche</title></rect>
+          <rect class="zone base" x="38" y="60" width="24" height="44"/>
+          <rect class="zone" data-zone="4" x="62" y="60" width="38" height="44"><title>Droite</title></rect>
+          <rect class="zone" data-zone="5" x="0" y="104" width="38" height="66"><title>Arrière gauche</title></rect>
+          <rect class="zone" data-zone="6" x="38" y="104" width="24" height="66"><title>Arrière</title></rect>
+          <rect class="zone" data-zone="7" x="62" y="104" width="38" height="66"><title>Arrière droit</title></rect>
+        </g>
+        <use href="#dmg-shape" class="outline"/>
+        <rect class="aero" x="30" y="1" width="40" height="4" rx="1.5"><title>Lame avant (aéro)</title></rect>
+        <rect class="aero" x="16" y="157" width="68" height="8" rx="2"><title>Aileron arrière (aéro)</title></rect>
+        <rect class="wheel" data-wheel="0" x="9" y="28" width="11" height="25" rx="3"><title>Roue avant gauche</title></rect>
+        <rect class="wheel" data-wheel="1" x="80" y="28" width="11" height="25" rx="3"><title>Roue avant droite</title></rect>
+        <rect class="wheel" data-wheel="2" x="8" y="110" width="12" height="28" rx="3"><title>Roue arrière gauche</title></rect>
+        <rect class="wheel" data-wheel="3" x="80" y="110" width="12" height="28" rx="3"><title>Roue arrière droite</title></rect>
+        <ellipse class="cockpit" cx="50" cy="82" rx="14" ry="19"/>
+        <text class="pct" id="dmg-pct" x="50" y="86" text-anchor="middle">100%</text>
+      </svg>
       <div class="brake-alert" id="dmg-alert" hidden></div>
       <dl>
         <dt>Aéro</dt><dd id="dmg-aero">–</dd>

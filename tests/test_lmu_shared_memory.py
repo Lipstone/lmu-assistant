@@ -276,3 +276,26 @@ def test_inputs_fields():
     assert (snap.throttle, snap.brake, snap.clutch, snap.steering) == (0.756, 1.0, 0.0, -0.25)
     assert snap.steering_range_deg == 540.0 and snap.abs_active and not snap.tc_active
     assert parse_buffer(bytes(make_data())).steering_range_deg is None  # 0 : inconnu
+
+
+def test_vehicles_damage_and_fuel_from_telemetry():
+    d = make_data()
+    t = d.telemetry.telemInfo[0]  # voiture mID 9 (3e en scoring)
+    t.mDentSeverity[4] = 2  # arrière
+    t.mWheels[3].mDetached = True
+    t.mFuel, t.mFuelCapacity, t.mVirtualEnergy = 31.25, 100.0, 0.425
+    d.telemetry.telemInfo[1].mFuel = 0.0  # voiture mID 5 : carburant non transmis
+    snap = parse_buffer(bytes(d))
+    by_id = {v.id: v for v in snap.vehicles}
+    assert by_id[9].dents == [0, 0, 0, 0, 0, 0, 2, 0] and by_id[9].wheels_off == 1
+    assert by_id[9].fuel_l == 31.25 and by_id[9].energy_pct == 42.5
+    assert by_id[5].fuel_l is None and by_id[5].energy_pct is None and by_id[5].dents == [0] * 8
+    assert by_id[7].fuel_l == 42.346
+
+
+def test_vehicle_without_telemetry_has_no_damage_or_fuel():
+    d = make_data()
+    d.telemetry.activeVehicles = 2  # la télémétrie de mID 7 (index 2) n'est plus active
+    snap = parse_buffer(bytes(d))
+    by_id = {v.id: v for v in snap.vehicles}
+    assert by_id[7].dents is None and by_id[7].fuel_l is None
