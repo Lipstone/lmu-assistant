@@ -7,6 +7,7 @@ import logging
 import time
 from pathlib import Path
 
+import anyio
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.staticfiles import StaticFiles
 
@@ -165,12 +166,6 @@ class Broadcaster:
             client.push(text)
 
 
-async def _receive_until_closed(ws: WebSocket) -> None:
-    with contextlib.suppress(WebSocketDisconnect):
-        while True:
-            await ws.receive_text()  # garde la connexion ouverte
-
-
 def create_app(
     source: DataSource,
     hz: float | None = None,
@@ -208,15 +203,21 @@ def create_app(
         keys = COMMON_KEYS + WIDGET_KEYS[widget] if widget in WIDGET_KEYS else None
         client = Client(ws, keys, ws.query_params.get("snapshots") != "0")
         broadcaster.clients.add(client)
-        sender = asyncio.create_task(client.run())
-        receiver = asyncio.create_task(_receive_until_closed(ws))
         try:
-            await asyncio.wait({sender, receiver}, return_when=asyncio.FIRST_COMPLETED)
-        finally:  # page fermée ou envoi impossible : on oublie le client
+            # Envoi et réception en parallèle ; le premier qui s'arrête (page fermée, envoi impossible) arrête l'autre.
+            async with anyio.create_task_group() as tg:
+                async def send() -> None:
+                    with contextlib.suppress(Exception):
+                        await client.run()
+                    tg.cancel_scope.cancel()
+
+                tg.start_soon(send)
+                with contextlib.suppress(WebSocketDisconnect):
+                    while True:
+                        await ws.receive_text()  # garde la connexion ouverte
+                tg.cancel_scope.cancel()
+        finally:
             broadcaster.clients.discard(client)
-            sender.cancel()
-            receiver.cancel()
-            await asyncio.gather(sender, receiver, return_exceptions=True)
 
     async def config_changed(config) -> None:
         await broadcaster.send_all({"type": "config", "data": config.model_dump()})
