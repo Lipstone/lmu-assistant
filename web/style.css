@@ -115,7 +115,7 @@ dd.good { color: var(--ok); }
 .flag.red { background: var(--bad); color: #fff; }
 .flag.checkered { background: repeating-conic-gradient(#fff 0 25%, #000 0 50%) 0 0 / 12px 12px; color: #000; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 
-/* Widget Dégâts : voiture vue de dessus en SVG. Gris = rien, orange = léger, rouge = lourd ;
+/* Widget Dégâts : voiture vue de dessus en SVG (GT3 type 911). Gris = rien, orange = léger, rouge = lourd ;
    roue : orange = crevée, pointillés rouges = arrachée ; suspension (triangles) et aéro (lame avant, aileron) :
    orange sous 90 %, rouge sous 70 %. */
 .car-svg { display: block; width: 97px; height: 129px; margin: 2px auto 0; overflow: visible; --body: #3a3f48; --wheel: #5b616c; }
@@ -124,6 +124,9 @@ dd.good { color: var(--ok); }
 .car-svg .z2 { fill: var(--bad); }
 .car-svg .outline { fill: none; stroke: rgba(255, 255, 255, 0.55); stroke-width: 1.2; }
 .car-svg .cockpit { fill: rgba(0, 0, 0, 0.45); stroke: rgba(255, 255, 255, 0.25); stroke-width: 0.8; }
+.car-svg .detail { fill: none; stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.9; stroke-linecap: round; pointer-events: none; }
+.car-svg .lamp { fill: rgba(255, 255, 255, 0.55); pointer-events: none; }
+.car-svg .mirror { fill: var(--wheel); }
 .car-svg .pct { fill: var(--text); font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .car-svg .pct.hit { fill: var(--warn); }
 .car-svg .pct.heavy { fill: var(--bad); }
