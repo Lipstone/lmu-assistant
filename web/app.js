@@ -276,7 +276,7 @@ function renderRelative(d) {
 }
 
 // F08 : classement par classe ; sélection des lignes et écarts côté serveur (backend/lmu_assistant/standings.py).
-// Écart au leader de la classe (en tours s'il y a au moins un tour), écart à la voiture devant au survol.
+// Intervalle avec la voiture juste devant dans la classe (en tours s'il y a au moins un tour), écart au leader au survol.
 const fmtGap = (s, laps) => (laps ? `+${laps}T` : s == null ? "–" : `+${s.toFixed(1)}`);
 const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45.6
 
@@ -293,8 +293,8 @@ function renderStandings(d) {
           return sep + `<tr class="${e.is_player ? "me" : ""}"><td class="cpos">P${e.class_position}</td>` +
             `<td class="num">${e.number ? "#" + esc(e.number) : ""}</td>` +
             `<td class="driver">${driverCell(e)}</td>` +
-            `<td class="gap" title="${leader ? "" : "à la voiture devant : " + fmtGap(e.interval_s, e.laps_interval)}">` +
-            `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>${optCells("standings", e)}</tr>`;
+            `<td class="gap" title="${leader ? "" : "au leader : " + fmtGap(e.gap_leader_s, e.laps_leader)}">` +
+            `${leader ? "Leader" : fmtGap(e.interval_s, e.laps_interval)}</td>${optCells("standings", e)}</tr>`;
         })
         .join("");
     })
