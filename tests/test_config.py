@@ -202,3 +202,19 @@ def test_ranking_columns_off_by_default_and_saved(tmp_path):
     loaded = {w.id: w for w in ConfigStore(tmp_path / "config.json").config.widgets}
     assert loaded["relative"].show_damage and loaded["relative"].show_consumption and loaded["relative"].show_remaining
     assert not loaded["standings"].show_damage
+
+
+def test_lap_columns_default_and_saved(tmp_path):
+    widgets = {w.id: w for w in AppConfig().widgets}
+    assert widgets["standings"].show_last_lap  # dernier tour toujours affiché avant d'être réglable
+    assert not widgets["relative"].show_last_lap and not widgets["standings"].show_best_lap
+    # ancienne config sans la clé : dernier tour gardé dans le Classement
+    assert AppConfig.model_validate({"widgets": [{"id": "standings"}]}).widgets[0].show_last_lap
+    data = AppConfig().model_dump()
+    for w in data["widgets"]:
+        if w["id"] == "standings":
+            w.update(show_last_lap=False, show_best_lap=True)
+    store = ConfigStore(tmp_path / "config.json")
+    store.save(AppConfig.model_validate(data))
+    loaded = {w.id: w for w in ConfigStore(tmp_path / "config.json").config.widgets}
+    assert loaded["standings"].show_best_lap and not loaded["standings"].show_last_lap

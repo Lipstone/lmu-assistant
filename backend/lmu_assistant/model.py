@@ -134,6 +134,7 @@ class RelativeEntry(OpponentFields):
     same_class: bool = True
     in_pits: bool = False
     last_lap_s: float | None = None
+    best_lap_s: float | None = None
     is_player: bool = False
 
 

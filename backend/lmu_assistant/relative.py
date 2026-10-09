@@ -64,7 +64,7 @@ def compute_relative(snap: Snapshot, each_side: int = CARS_EACH_SIDE) -> Snapsho
             class_position=class_pos.get(v.id, 0),
             gap_s=round(d * lap_s, 1) if lap_s else None,
             laps_diff=laps_diff, same_class=v.car_class == player.car_class, in_pits=v.in_pits,
-            last_lap_s=v.last_lap_s, is_player=v is player, **opponent_fields(v),
+            last_lap_s=v.last_lap_s, best_lap_s=v.best_lap_s, is_player=v is player, **opponent_fields(v),
         )
 
     others = [(v, _track_gap(v.lap_fraction, player.lap_fraction))

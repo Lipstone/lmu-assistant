@@ -2,9 +2,11 @@
 const $ = (id) => document.getElementById(id);
 const NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs", stint: "Relais" };
 let config = null;
-// Colonnes optionnelles des classements (dégâts, consommation des autres voitures), désactivées par défaut.
+// Colonnes optionnelles des classements (dégâts, carburant, consommation, tours), désactivées par défaut sauf le
+// dernier tour du Classement.
 const COLUMN_WIDGETS = ["relative", "standings"];
-const COLUMNS = [["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"]];
+const COLUMNS = [["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
+  ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
 
 function num(input, fallback) {
   const v = parseFloat(input.value);
