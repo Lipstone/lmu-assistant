@@ -190,19 +190,19 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 
 // Colonnes optionnelles du relative et du classement (Réglages overlay, par widget, désactivées par défaut) :
 // dégâts globaux et consommation par tour de chaque voiture (backend/lmu_assistant/opponents.py).
-// Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour.
-const columns = {
-  relative: { damage: false, remaining: false, consumption: false },
-  standings: { damage: false, remaining: false, consumption: false },
-};
+// Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour, meilleur tour,
+// dernier tour.
+const COLUMN_KEYS = { damage: "show_damage", remaining: "show_remaining", consumption: "show_consumption",
+  best: "show_best_lap", last: "show_last_lap" };
+const columns = { relative: { last: false }, standings: { last: true } };
 
 function damageCell(e) {
   if (e.damage_pct == null) return '<td class="opt dmg" title="dégâts non transmis par le jeu">–</td>';
-  const p = Math.round(e.damage_pct);
-  const notes = [`carrosserie ${p} %`];
+  const p = Math.round(100 - e.damage_pct); // dégâts : 0 % = intacte
+  const notes = [`carrosserie endommagée à ${p} %`];
   if (e.wheels_off) notes.push(`${e.wheels_off} roue${e.wheels_off > 1 ? "s" : ""} crevée(s) ou arrachée(s)`);
   if (e.parts_detached) notes.push("pièces arrachées");
-  const cls = e.wheels_off || p < 75 ? "bad" : p < 100 || e.parts_detached ? "warn" : "intact";
+  const cls = e.wheels_off || p > 25 ? "bad" : p > 0 || e.parts_detached ? "warn" : "intact";
   return `<td class="opt dmg ${cls}" title="${notes.join(" · ")}">${p}${e.wheels_off ? "!" : ""}</td>`;
 }
 
@@ -234,10 +234,14 @@ function remainingCell(e) {
     `${left.toFixed(left >= 100 ? 0 : 1)}${energy ? "%" : "L"}</td>`;
 }
 
-const optCells = (id, e) =>
-  (columns[id].damage ? damageCell(e) : "") + (columns[id].remaining ? remainingCell(e) : "") +
-  (columns[id].consumption ? consumptionCell(e) : "");
-const optCount = (id) => +columns[id].damage + +columns[id].remaining + +columns[id].consumption;
+const lapCell = (cls, title, s) => `<td class="opt lap ${cls}" title="${title}">${fmtShortLap(s)}</td>`;
+const CELLS = {
+  damage: damageCell, remaining: remainingCell, consumption: consumptionCell,
+  best: (e) => lapCell("best", "meilleur tour", e.best_lap_s),
+  last: (e) => lapCell("last", "dernier tour", e.last_lap_s),
+};
+const optCells = (id, e) => Object.keys(CELLS).filter((k) => columns[id][k]).map((k) => CELLS[k](e)).join("");
+const optCount = (id) => Object.keys(CELLS).filter((k) => columns[id][k]).length;
 
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
@@ -263,7 +267,7 @@ const fmtGap = (s, laps) => (laps ? `+${laps}T` : s == null ? "–" : `+${s.toFi
 const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45.6
 
 function renderStandings(d) {
-  const span = 5 + optCount("standings");
+  const span = 4 + optCount("standings");
   $("standings").innerHTML = (d.standings || [])
     .map((c) => {
       const head = `<tr class="class-head"><td colspan="${span}"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
@@ -276,8 +280,7 @@ function renderStandings(d) {
             `<td class="num">${e.number ? "#" + esc(e.number) : ""}</td>` +
             `<td class="driver">${esc(e.driver)}${e.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
             `<td class="gap" title="${leader ? "" : "à la voiture devant : " + fmtGap(e.interval_s, e.laps_interval)}">` +
-            `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>${optCells("standings", e)}` +
-            `<td class="last" title="dernier tour">${fmtShortLap(e.last_lap_s)}</td></tr>`;
+            `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>${optCells("standings", e)}</tr>`;
         })
         .join("");
     })
@@ -338,8 +341,10 @@ function renderSession(d) {
 // F11 : dégâts ; calculs côté serveur (backend/lmu_assistant/damage.py). Voiture vue de dessus en SVG
 // (web/index.html) : 8 zones de carrosserie colorées sur leur bord (orange = léger, rouge = lourd), état global au centre,
 // roues (crevée, arrachée), suspensions (triangles, par roue), lame avant et aileron (aéro) ; aéro, suspension et réparation
-// viennent de l'API REST du jeu (« – » si elle ne répond pas).
-const fmtPctState = (p) => (p == null ? "–" : `${Math.round(p)} %`);
+// viennent de l'API REST du jeu (« – » si elle ne répond pas). Le serveur donne un état (100 % = intact) ; la page
+// affiche les dégâts (0 % = intact).
+const dmgOf = (state) => (state == null ? null : Math.round(100 - state));
+const fmtDmg = (state) => (state == null ? "–" : `${dmgOf(state)} %`);
 const level = (p, warn = 90, bad = 70) => (p == null || p >= warn ? "" : p >= bad ? "s1" : "s2");
 
 function renderDamage(d) {
@@ -355,20 +360,20 @@ function renderDamage(d) {
   });
   car.querySelectorAll("[data-susp]").forEach((a) => a.setAttribute("class", `susp ${level(susp && susp[a.dataset.susp])}`));
   car.querySelectorAll(".aero").forEach((a) => a.setAttribute("class", `aero ${level(g.aero_pct)}`));
-  const pct = Math.round(g.body_pct ?? 100);
+  const pct = dmgOf(g.body_pct ?? 100);
   $("dmg-pct").textContent = `${pct}%`;
-  $("dmg-pct").setAttribute("class", `pct ${pct < 75 ? "heavy" : pct < 100 ? "hit" : ""}`);
+  $("dmg-pct").setAttribute("class", `pct ${pct > 25 ? "heavy" : pct > 0 ? "hit" : ""}`);
   const alerts = [];
   (g.wheels || []).forEach((w, i) => w && alerts.push(`${WHEELS[i]} ${w}`));
   if (g.parts_detached) alerts.push("pièces arrachées");
   if (g.engine_overheating) alerts.push("moteur en surchauffe");
   $("dmg-alert").hidden = !alerts.length;
   $("dmg-alert").textContent = alerts.join(" · ");
-  $("dmg-aero").textContent = fmtPctState(g.aero_pct);
+  $("dmg-aero").textContent = fmtDmg(g.aero_pct);
   $("dmg-aero").classList.toggle("alert", g.aero_pct != null && g.aero_pct < 90);
   const worst = susp ? susp.reduce((m, p, i) => (p != null && p < susp[m] ? i : m), 0) : null;
-  $("dmg-susp").textContent = !susp ? "–" : susp[worst] >= 100 ? "OK" : `${WHEELS[worst]} ${Math.round(susp[worst])} %`;
-  $("dmg-susp").title = susp ? susp.map((p, i) => `${WHEELS[i]} ${fmtPctState(p)}`).join(" · ") : "";
+  $("dmg-susp").textContent = !susp ? "–" : susp[worst] >= 100 ? "OK" : `${WHEELS[worst]} ${fmtDmg(susp[worst])}`;
+  $("dmg-susp").title = susp ? susp.map((p, i) => `${WHEELS[i]} ${fmtDmg(p)}`).join(" · ") : "";
   $("dmg-susp").classList.toggle("alert", !!susp && susp[worst] < 90);
   $("dmg-repair").textContent = g.repair_s == null ? "–" : g.repair_s ? `${Math.round(g.repair_s)} s` : "aucune";
   $("dmg-impact").textContent = g.last_impact_ago_s == null ? "aucun" : `il y a ${fmtClock(g.last_impact_ago_s).replace(/^0:0?/, "")}`;
@@ -498,7 +503,7 @@ function applyConfig(cfg) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
     if (columns[w.id]) {
-      columns[w.id] = { damage: !!w.show_damage, remaining: !!w.show_remaining, consumption: !!w.show_consumption };
+      columns[w.id] = Object.fromEntries(Object.entries(COLUMN_KEYS).map(([k, key]) => [k, !!w[key]]));
       // fenêtre overlay plus large d'autant de colonnes (style.css)
       el.style.setProperty("--opt-cols", optCount(w.id));
       el.classList.toggle("opt-cols", optCount(w.id) > 0);

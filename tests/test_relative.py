@@ -25,6 +25,7 @@ def test_relative_orders_cars_around_player_on_track():
     assert by_id[2].gap_s == -10.0 and by_id[2].laps_diff == 1
     assert by_id[0].is_player and by_id[0].gap_s == 0
     assert by_id[3].class_position == 1 and by_id[4].class_position == 4
+    assert by_id[0].best_lap_s == 200.0  # meilleur tour transmis pour la colonne optionnelle
 
 
 def test_relative_empty_without_player():
