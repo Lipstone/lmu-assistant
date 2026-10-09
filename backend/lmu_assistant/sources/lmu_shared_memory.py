@@ -497,6 +497,7 @@ def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
             estimated_lap_s=_lap_time(v.mEstimatedLapTime),
             time_behind_leader_s=round(v.mTimeBehindLeader, 3) if math.isfinite(v.mTimeBehindLeader) else None,
             laps_behind_leader=max(0, v.mLapsBehindLeader), in_pits=bool(v.mInPits), pitstops=max(0, v.mNumPitstops),
+            penalties=max(0, v.mNumPenalties),
             is_player=v.mID == player_id,
         ))
         t = telem.get(v.mID)
@@ -507,12 +508,15 @@ def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
 
 
 def _vehicle_telemetry(car: Vehicle, t: TelemInfo) -> None:
-    """Dégâts et carburant d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
+    """Dégâts, carburant et usure des pneus d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
     de toutes les voitures ; carburant à 0 sans réservoir connu = valeur non transmise (laissée à None)."""
     dents = list(t.mDentSeverity)
     car.dents = [min(max(int(dents[i]), 0), 2) for i in DENT_ORDER]
     car.parts_detached = bool(t.mDetached)
     car.wheels_off = sum(1 for w in t.mWheels if w.mFlat or w.mDetached)
+    wear = [_finite(w.mWear, 0, 1) for w in t.mWheels]
+    if None not in wear:
+        car.tyre_wear = [round(w, 4) for w in wear]
     fuel = _finite(t.mFuel, 0, 1000)
     if fuel is not None and (fuel > 0 or t.mFuelCapacity > 0):
         car.fuel_l = round(fuel, 3)

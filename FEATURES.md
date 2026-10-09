@@ -14,8 +14,8 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F04 | Temps au tour | Dernier, meilleur, moyenne des N derniers, régularité | ✅ |
 | F05 | Pneus | Températures (int/milieu/ext), pressions, usure par roue | ✅ |
 | F06 | Freins | Températures par roue, alerte surchauffe | ✅ |
-| F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, meilleur et dernier tour de chaque voiture | ✅ |
-| F08 | Classement | Classement simplifié par classe, intervalle avec le pilote devant (écart au leader au survol) ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, meilleur tour et dernier tour (affiché par défaut) de chaque voiture | ✅ |
+| F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, pénalités, relais sur le train de pneus, meilleur et dernier tour de chaque voiture | ✅ |
+| F08 | Classement | Classement simplifié par classe, intervalle avec le pilote devant (écart au leader au survol) ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, pénalités, relais sur le train de pneus, meilleur tour et dernier tour (affiché par défaut) de chaque voiture | ✅ |
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ✅ |
 | F10 | Session et piste | Temps restant, drapeaux (jaune local, FCY, bleu…), météo, température piste/air et son évolution, grip | ✅ |
 | F11 | Dégâts | Voiture vue de dessus (SVG) : dégâts carrosserie (8 zones, 0 % = intacte), roues (crevaison, arrachée) et suspensions dessinées à part, aéro (lame, aileron) ; aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |

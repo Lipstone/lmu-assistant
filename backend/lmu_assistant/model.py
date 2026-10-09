@@ -93,6 +93,7 @@ class Vehicle:
     laps_behind_leader: int = 0
     in_pits: bool = False
     pitstops: int = 0
+    penalties: int = 0  # pénalités en cours (scoring du jeu)
     is_player: bool = False
     # Télémétrie de la voiture (dégâts et consommation des autres voitures), None si le jeu ne la donne pas
     dents: list[int] | None = None  # même ordre que DamageInfo.body
@@ -100,15 +101,18 @@ class Vehicle:
     wheels_off: int = 0  # roues crevées ou arrachées
     fuel_l: float | None = None
     energy_pct: float | None = None  # énergie virtuelle restante, None si la voiture n'en a pas
+    tyre_wear: list[float] | None = None  # usure des 4 pneus (mWear, remonte quand les pneus sont changés)
     # Calculés par `opponents.OpponentsCalculator`
     damage_pct: float | None = None  # état global de la carrosserie, 100 = intacte
     fuel_per_lap: float | None = None  # litres par tour (moyenne des derniers tours sans arrêt)
     energy_per_lap: float | None = None  # % d'énergie virtuelle par tour
+    tyre_stints: int | None = None  # relais sur le train de pneus actuel (1 = premier), estimé
 
 
 @dataclass
 class OpponentFields:
-    """Colonnes optionnelles des classements (relative, classement par classe) : dégâts et consommation."""
+    """Colonnes optionnelles des classements (relative, classement par classe) : dégâts, carburant, pénalités,
+    relais sur le train de pneus."""
 
     damage_pct: float | None = None  # état global de la carrosserie, 100 = intacte
     wheels_off: int = 0
@@ -117,6 +121,8 @@ class OpponentFields:
     energy_per_lap: float | None = None
     fuel_l: float | None = None
     energy_pct: float | None = None
+    penalties: int = 0
+    tyre_stints: int | None = None
 
 
 @dataclass
