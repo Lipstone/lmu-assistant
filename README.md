@@ -13,7 +13,8 @@ Tout est affichable de deux façons, à partir des mêmes données :
 
 Double-cliquer sur **`LMU-Assistant.exe`** (Windows, sans installer Python). Il démarre le serveur, ouvre l'**interface ingénieur dans une fenêtre** et affiche l'overlay, sans console. Fermer la fenêtre de l'interface arrête tout. Les messages de l'application sont dans `data/lmu-assistant.log`.
 
-- Télécharger l'exe : onglet **Actions** du dépôt → dernier passage de la CI sur `main` → artefact **LMU-Assistant-windows**.
+- **Installer (recommandé)** : onglet **Actions** du dépôt → dernier passage de la CI sur `main` → artefact **LMU-Assistant-installateur** → lancer `LMU-Assistant-Setup.exe`. Windows peut demander une autorisation à l'installation (éditeur inconnu : *Informations complémentaires* → *Exécuter quand même*), plus ensuite : l'appli se lance depuis le menu Démarrer ou le Bureau. Installée pour l'utilisateur seul, sans droits administrateur, dans `%LOCALAPPDATA%\Programs\LMU Assistant` ; une nouvelle version s'installe par-dessus en gardant les réglages.
+- Version portable (sans installation) : artefact **LMU-Assistant-windows**. Ne pas la lancer depuis le zip : l'extraire d'abord, sinon Windows redemande l'autorisation à chaque lancement.
 - Options utiles : `LMU-Assistant.exe --no-overlay` (sans les widgets en jeu), `--no-window` (sans la fenêtre de l'interface), `--browser` (ouvre aussi la page), `--source mock` (données simulées), et toutes les options du serveur ci-dessous.
 - Les réglages et enregistrements sont dans le dossier `data/` créé à côté de l'exe.
 

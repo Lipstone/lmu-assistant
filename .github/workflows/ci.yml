@@ -58,3 +58,27 @@ jobs:
         with:
           name: LMU-Assistant-windows
           path: dist/LMU-Assistant.exe
+      - name: Construit l'installateur (Inno Setup)
+        shell: pwsh
+        run: |
+          python packaging/build_exe.py --onedir
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress | Out-Null }
+          $version = python -c "import lmu_assistant; print(lmu_assistant.__version__)"
+          & $iscc "/DAppVersion=$version" packaging\installer.iss
+          if ($LASTEXITCODE -ne 0) { throw "Inno Setup a échoué" }
+      - name: Vérifie l'installation silencieuse et le lancement de l'appli installée
+        shell: pwsh
+        run: |
+          $p = Start-Process -FilePath dist\LMU-Assistant-Setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -PassThru -Wait
+          if ($p.ExitCode -ne 0) { throw "Installation échouée ($($p.ExitCode))" }
+          $app = "$env:LOCALAPPDATA\Programs\LMU Assistant"
+          if (-not (Test-Path "$app\LMU-Assistant.exe")) { throw "Exe absent de $app" }
+          $p = Start-Process -FilePath "$app\LMU-Assistant.exe" -ArgumentList "--source","mock","--port","8797","--quit-after","25" -PassThru -Wait
+          $out = Get-Content "$app\data\lmu-assistant.log" -Raw
+          Write-Output $out
+          if ($p.ExitCode -ne 0 -or $out -notmatch "widgets \(Qt\)" -or $out -notmatch "\[interface\]") { throw "L'appli installée ne s'est pas ouverte" }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: LMU-Assistant-installateur
+          path: dist/LMU-Assistant-Setup.exe
