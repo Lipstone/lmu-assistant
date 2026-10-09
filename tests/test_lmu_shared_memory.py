@@ -70,7 +70,7 @@ def make_data() -> ObjectOut:
         wheel.mTemperature[2] = 273.15 + 90 + w  # droite
         wheel.mPressure = 170.0 + w
         wheel.mWear = 0.9 - w / 100
-        wheel.mBrakeTemp = 400.0 + w
+        wheel.mBrakeTemp = 273.15 + 400.0 + w
     return d
 
 
@@ -299,3 +299,27 @@ def test_vehicle_without_telemetry_has_no_damage_or_fuel():
     snap = parse_buffer(bytes(d))
     by_id = {v.id: v for v in snap.vehicles}
     assert by_id[7].dents is None and by_id[7].fuel_l is None
+
+
+def test_wheels_not_filled_in_garage():
+    """Au garage, LMU laisse les pneus à 0 K / 0 kPa : rien plutôt que -273 °C ; freins en Kelvin."""
+    d = make_data()
+    t = d.telemetry.telemInfo[2]
+    for w in range(4):
+        wheel = t.mWheels[w]
+        for k in range(3):
+            wheel.mTemperature[k] = 0.0
+        wheel.mPressure = 0.0
+        wheel.mBrakeTemp = 296.0
+    w = parse_buffer(bytes(d)).wheels
+    assert all(x.temp_c is None and x.pressure_kpa is None for x in w)
+    assert w[0].brake_temp_c == pytest.approx(22.9, abs=0.05)
+
+
+def test_tyre_temp_falls_back_to_inner_layer():
+    d = make_data()
+    wheel = d.telemetry.telemInfo[2].mWheels[1]
+    for k in range(3):
+        wheel.mTemperature[k] = 0.0
+        wheel.mTireInnerLayerTemperature[k] = 273.15 + 70 + k
+    assert parse_buffer(bytes(d)).wheels[1].temp_c == pytest.approx((70.0, 71.0, 72.0))

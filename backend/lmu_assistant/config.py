@@ -52,7 +52,7 @@ WIDGET_SIZES = {
     "delta": (200, 196),
     "fuel": (200, 210),
     "car": (180, 118),
-    "tyres": (220, 178),
+    "tyres": (250, 178),
     "brakes": (200, 204),
     "relative": (300, 196),
     "standings": (300, 350),

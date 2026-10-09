@@ -65,10 +65,10 @@ Le verrou officiel du jeu (`LMU_SharedMemoryLockData`) n'est pas pris : il deman
 | `in_pits` | `mInPits` | |
 | `lap_invalid` | `TelemInfoV01.mLapInvalidated` | tour en cours invalidé (limites de piste), exclu de la moyenne des temps (F04) |
 | `wheels[i]` | `mWheels[i]`, ordre 0 = AVG, 1 = AVD, 2 = ARG, 3 = ARD (même ordre que Snapshot) | |
-| `temp_c` | `mTemperature[3]` | Kelvin − 273,15 → °C |
-| `pressure_kpa` | `mPressure` | kPa |
+| `temp_c` | `mTemperature[3]`, sinon `mTireInnerLayerTemperature[3]`, sinon `mTireCarcassTemperature` | Kelvin − 273,15 → °C ; `None` si 0 K (voiture au garage : LMU ne remplit pas les pneus) |
+| `pressure_kpa` | `mPressure` | kPa ; `None` si 0 |
 | `wear` | `mWear` | fraction 0-1 recopiée telle quelle ; supposée 1,0 = neuf (à vérifier) |
-| `brake_temp_c` | `mBrakeTemp` | déjà en °C |
+| `brake_temp_c` | `mBrakeTemp` | **Kelvin** dans LMU malgré l'en-tête rF2 (« Celsius ») : 296 au stand sur les 4 freins = 23 °C ; − 273,15 → °C |
 
 **Intérieur / extérieur** : `mTemperature` est en gauche / centre / droite vu du pilote, pas intérieur / extérieur. Pour les roues gauches (AVG, ARG), l'extérieur est à gauche : `(int, milieu, ext) = (T[2], T[1], T[0])`. Pour les roues droites (AVD, ARD) : `(T[0], T[1], T[2])`.
 

@@ -20,7 +20,7 @@ body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); col
 .topbar .nav-link ~ a { font-size: 14px; color: var(--accent); }
 .nav-current { color: var(--muted); }
 .widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 16px; }
-.widget { background: var(--panel); border-radius: 8px; padding: 12px 14px; }
+.widget { background: var(--panel); border-radius: 8px; padding: 12px 14px; min-width: 0; }
 .widget h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
 .big { font-size: 32px; font-variant-numeric: tabular-nums; }
 dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
@@ -47,20 +47,21 @@ dd.good { color: var(--ok); }
 .laps td:nth-child(3) { text-align: right; color: var(--muted); }
 .laps td.faster { color: var(--ok); }
 .laps tr.excluded td:nth-child(2) { color: var(--muted); text-decoration: line-through; }
-.tyres { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-variant-numeric: tabular-nums; }
+.tyres { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-variant-numeric: tabular-nums; }
 .tyre { background: #22262e; border-radius: 4px; padding: 4px 6px; }
 .wheel-name { display: block; font-size: 11px; color: var(--muted); }
 .tyre.right .wheel-name { text-align: right; }
-.temps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; font-size: 16px; text-align: center; }
+.temps { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 2px; font-size: 16px; text-align: center; }
 .temps span { border-radius: 3px; padding: 2px 0; color: #000; font-weight: 600; }
 .temps .cold { background: #4fc3f7; }
 .temps .ideal { background: var(--ok); }
 .temps .warm { background: var(--warn); }
 .temps .hot { background: var(--bad); }
-.tyre-info { display: flex; justify-content: space-between; margin-top: 3px; font-size: 13px; }
+.temps .none { background: #3a3f48; color: var(--muted); }
+.tyre-info { display: flex; justify-content: space-between; gap: 4px; margin-top: 3px; font-size: 13px; white-space: nowrap; }
 .tyre-info .alert { color: var(--warn); font-weight: 600; }
 
-.brakes { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-variant-numeric: tabular-nums; }
+.brakes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-variant-numeric: tabular-nums; }
 .brake { background: #22262e; border-radius: 4px; padding: 4px 6px; display: flex; flex-direction: column; }
 .brake.right { align-items: flex-end; }
 .brake-temp { font-size: 22px; font-weight: 600; }
@@ -79,7 +80,7 @@ dd.good { color: var(--ok); }
 .relative .class-pos { display: inline-block; min-width: 30px; padding: 0 3px; border-radius: 3px; color: #fff;
   font-size: 12px; font-weight: 600; text-align: center; }
 .relative .num { color: var(--muted); font-size: 12px; }
-.relative .driver { max-width: 130px; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.relative .driver { max-width: 0; width: 100%; } /* colonne = place restante, nom tronqué */
 .relative .gap, .relative .laps-diff { text-align: right; }
 .relative .laps-diff { font-size: 12px; font-weight: 600; }
 .relative tr.me td { background: #2c3340; font-weight: 600; }
@@ -94,7 +95,11 @@ dd.good { color: var(--ok); }
 .standings .muted { font-weight: 400; }
 .standings .cpos { color: var(--muted); }
 .standings .num { color: var(--muted); font-size: 12px; }
-.standings .driver { max-width: 120px; overflow: hidden; text-overflow: ellipsis; width: 100%; }
+.standings .driver { max-width: 0; width: 100%; }
+/* nom tronqué, badge STAND toujours entier */
+:is(.relative, .standings) .drv { display: flex; align-items: center; gap: 4px; min-width: 0; }
+:is(.relative, .standings) .drv .name { overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+:is(.relative, .standings) .drv .pit { flex: none; }
 .standings .gap, .standings .last { text-align: right; }
 .standings .last { color: var(--muted); font-size: 12px; }
 .standings tr.me td { background: #2c3340; font-weight: 600; }
@@ -207,7 +212,8 @@ body.overlay .relative td { border-top-color: rgba(255, 255, 255, 0.07); }
 body.overlay .relative tr.me td, body.overlay .standings tr.me td { background: rgba(79, 195, 247, 0.2); }
 body.overlay .laps td { border-top-color: rgba(255, 255, 255, 0.07); }
 body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delta"], body.overlay .widget[data-widget="brakes"] { width: 200px; }
-body.overlay .widget[data-widget="lap"], body.overlay .widget[data-widget="tyres"] { width: 220px; }
+body.overlay .widget[data-widget="lap"] { width: 220px; }
+body.overlay .widget[data-widget="tyres"] { width: 250px; }
 body.overlay .widget[data-widget="pit"] { width: 250px; }
 body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
 body.overlay .widget[data-widget="stint"] { width: 240px; }

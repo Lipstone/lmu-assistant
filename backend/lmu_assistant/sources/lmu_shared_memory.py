@@ -50,7 +50,7 @@ class TelemWheel(_Struct):
         ("mSuspensionDeflection", ctypes.c_double),
         ("mRideHeight", ctypes.c_double),
         ("mSuspForce", ctypes.c_double),
-        ("mBrakeTemp", ctypes.c_double),  # °C
+        ("mBrakeTemp", ctypes.c_double),  # Kelvin dans LMU (l'en-tête rF2 dit °C : 296 au stand = 23 °C)
         ("mBrakePressure", ctypes.c_double),
         ("mRotation", ctypes.c_double),
         ("mLateralPatchVel", ctypes.c_double),
@@ -424,15 +424,27 @@ def session_name(session: int) -> str:
     return ""
 
 
+def _kelvin(values) -> list[float] | None:
+    """Températures en Kelvin → °C ; None si le jeu ne les remplit pas (0 K, voiture au garage)."""
+    values = list(values)
+    if not all(math.isfinite(v) and v > 0 for v in values):
+        return None
+    return [round(v - KELVIN, 1) for v in values]
+
+
 def _wheel(w: TelemWheel, left_side: bool) -> Wheel:
-    # mTemperature = gauche/centre/droite vu du pilote : côté gauche, l'extérieur est à gauche
-    left, middle, right = (t - KELVIN for t in w.mTemperature)
-    inner, outer = (right, left) if left_side else (left, right)
+    # mTemperature = gauche/centre/droite vu du pilote : côté gauche, l'extérieur est à gauche.
+    # Surface à 0 K → couche interne, puis carcasse ; rien de rempli → None (affiché « – »).
+    temps = _kelvin(w.mTemperature) or _kelvin(w.mTireInnerLayerTemperature) or _kelvin([w.mTireCarcassTemperature] * 3)
+    if temps is not None:
+        left, middle, right = temps
+        temps = (right, middle, left) if left_side else (left, middle, right)
+    brake = _kelvin([w.mBrakeTemp])
     return Wheel(
-        temp_c=(round(inner, 1), round(middle, 1), round(outer, 1)),
-        pressure_kpa=round(w.mPressure, 1),
+        temp_c=temps,
+        pressure_kpa=round(w.mPressure, 1) if math.isfinite(w.mPressure) and w.mPressure > 0 else None,
         wear=round(w.mWear, 4),
-        brake_temp_c=round(w.mBrakeTemp, 1),
+        brake_temp_c=brake[0] if brake else None,
         flat=bool(w.mFlat),
         detached=bool(w.mDetached),
     )

@@ -130,6 +130,7 @@ const PRESSURE = { kpa: [1, 0, " kPa"], psi: [0.1450377, 1, " psi"], bar: [0.01,
 const HOT_RED_C = 15; // rouge à 15 °C au-dessus de la plage idéale
 
 function tempClass(t) {
+  if (t == null) return "none";
   const [lo, hi] = tyreRange;
   if (t < lo) return "cold";
   if (t <= hi) return "ideal";
@@ -140,13 +141,14 @@ function renderTyres(d) {
   const [k, digits, unit] = PRESSURE[pressureUnit] || PRESSURE.kpa;
   setHTML($("tyres"), d.wheels
     .map((w, i) => {
-      const [inner, mid, outer] = w.temp_c;
+      // null = non transmis par le jeu (voiture au garage) : « – »
+      const [inner, mid, outer] = w.temp_c || [null, null, null];
       const left = i % 2 === 0;
       const temps = left ? [outer, mid, inner] : [inner, mid, outer];
       const wear = Math.round(w.wear * 100);
       return `<div class="tyre ${left ? "left" : "right"}"><span class="wheel-name">${WHEELS[i]}</span>` +
-        `<div class="temps">${temps.map((t) => `<span class="${tempClass(t)}">${Math.round(t)}</span>`).join("")}</div>` +
-        `<div class="tyre-info"><span>${(w.pressure_kpa * k).toFixed(digits)}${unit}</span>` +
+        `<div class="temps">${temps.map((t) => `<span class="${tempClass(t)}">${t == null ? "–" : Math.round(t)}</span>`).join("")}</div>` +
+        `<div class="tyre-info"><span>${w.pressure_kpa == null ? "–" : (w.pressure_kpa * k).toFixed(digits) + unit}</span>` +
         `<span class="${wear < 30 ? "alert" : ""}">${wear}%</span></div></div>`;
     })
     .join(""));
@@ -158,6 +160,7 @@ const BRAKES_COLD_C = 200;
 const BRAKES_WARN_C = 100;
 
 function brakeClass(t, threshold, overheat) {
+  if (t == null) return "";
   if (overheat || t > threshold) return "hot";
   if (t > threshold - BRAKES_WARN_C) return "warm";
   return t < BRAKES_COLD_C ? "cold" : "ideal";
@@ -172,9 +175,9 @@ function renderBrakes(d) {
     .map((w, i) => {
       const t = w.brake_temp_c;
       return `<div class="brake ${i % 2 ? "right" : "left"}"><span class="wheel-name">${WHEELS[i]}</span>` +
-        `<span class="brake-temp ${brakeClass(t, thr, over[i])}">${Math.round(t)}</span>` +
+        `<span class="brake-temp ${brakeClass(t, thr, over[i])}">${t == null ? "–" : Math.round(t)}</span>` +
         `<span class="brake-peak" title="${b.peak_last_lap_c ? "pic du tour précédent" : "pic du tour en cours"}">` +
-        `pic ${peaks[i] == null ? "–" : Math.round(peaks[i])}</span></div>`;
+        `pic ${peaks[i] ? Math.round(peaks[i]) : "–"}</span></div>`;
     })
     .join(""));
   const hot = WHEELS.filter((_, i) => over[i]);
@@ -250,6 +253,10 @@ const CELLS = {
 const optCells = (id, e) => Object.keys(CELLS).filter((k) => columns[id][k]).map((k) => CELLS[k](e)).join("");
 const optCount = (id) => Object.keys(CELLS).filter((k) => columns[id][k]).length;
 
+// Nom tronqué (…) mais badge STAND toujours entier.
+const driverCell = (e) => `<div class="drv"><span class="name">${esc(e.driver)}</span>` +
+  `${e.in_pits ? '<span class="pit">STAND</span>' : ""}</div>`;
+
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
 function renderRelative(d) {
@@ -262,7 +269,7 @@ function renderRelative(d) {
       return `<tr class="${cls}"><td><span class="class-pos" style="background:${classColor(r.car_class)}" ` +
         `title="${esc(r.car_class)} · P${r.position} au général">P${r.class_position}</span></td>` +
         `<td class="num">${r.number ? "#" + esc(r.number) : ""}</td>` +
-        `<td class="driver">${esc(r.driver)}${r.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
+        `<td class="driver">${driverCell(r)}</td>` +
         `<td class="laps-diff">${laps}</td>${optCells("relative", r)}<td class="gap">${gap}</td></tr>`;
     })
     .join(""));
@@ -285,7 +292,7 @@ function renderStandings(d) {
           const leader = e.class_position === 1;
           return sep + `<tr class="${e.is_player ? "me" : ""}"><td class="cpos">P${e.class_position}</td>` +
             `<td class="num">${e.number ? "#" + esc(e.number) : ""}</td>` +
-            `<td class="driver">${esc(e.driver)}${e.in_pits ? ' <span class="pit">STAND</span>' : ""}</td>` +
+            `<td class="driver">${driverCell(e)}</td>` +
             `<td class="gap" title="${leader ? "" : "à la voiture devant : " + fmtGap(e.interval_s, e.laps_interval)}">` +
             `${leader ? "Leader" : fmtGap(e.gap_leader_s, e.laps_leader)}</td>${optCells("standings", e)}</tr>`;
         })

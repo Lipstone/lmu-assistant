@@ -5,10 +5,10 @@ from dataclasses import asdict, dataclass, field
 
 @dataclass
 class Wheel:
-    temp_c: tuple[float, float, float] = (0.0, 0.0, 0.0)  # intérieur, milieu, extérieur
-    pressure_kpa: float = 0.0
+    temp_c: tuple[float, float, float] | None = (0.0, 0.0, 0.0)  # intérieur, milieu, extérieur ; None = non transmis
+    pressure_kpa: float | None = 0.0  # None = non transmis
     wear: float = 1.0  # 1.0 = neuf
-    brake_temp_c: float = 0.0
+    brake_temp_c: float | None = 0.0  # None = non transmis
     flat: bool = False  # crevaison (F11)
     detached: bool = False  # roue arrachée (F11)
 
