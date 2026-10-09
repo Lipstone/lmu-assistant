@@ -307,8 +307,8 @@ class HistoryRecorder:
         si = snap.session_info
         return dict(
             wear=[round(w.wear, 4) for w in snap.wheels],
-            tyre_temp=[round(sum(w.temp_c) / 3, 1) for w in snap.wheels],
-            pressure=[round(w.pressure_kpa, 1) for w in snap.wheels],
+            tyre_temp=[None if w.temp_c is None else round(sum(w.temp_c) / 3, 1) for w in snap.wheels],
+            pressure=[None if w.pressure_kpa is None else round(w.pressure_kpa, 1) for w in snap.wheels],
             air_temp=si.air_temp_c, track_temp=si.track_temp_c,
             rain=snap.raining, wetness=snap.wetness, grip=snap.track_grip,
             position=snap.position,

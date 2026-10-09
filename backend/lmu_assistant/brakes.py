@@ -43,6 +43,8 @@ class BrakesCalculator:
 
         temps = [w.brake_temp_c for w in snap.wheels[:4]]
         for i, t in enumerate(temps):
+            if t is None:
+                continue
             self._peak[i] = max(self._peak[i], t)
             if t > threshold_c:
                 self._overheat[i] = True
