@@ -18,7 +18,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F08 | Classement | Classement simplifié par classe, écarts, dernier tour ; colonnes optionnelles dégâts globaux et conso par tour de chaque voiture | ✅ |
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ✅ |
 | F10 | Session et piste | Temps restant, drapeaux (jaune local, FCY, bleu…), météo, température piste/air et son évolution, grip | ✅ |
-| F11 | Dégâts | Voiture vue de dessus (SVG) : état carrosserie (8 zones), roues, aéro (lame, aileron) ; aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
+| F11 | Dégâts | Voiture vue de dessus (SVG) : état carrosserie (8 zones), roues (crevaison, arrachée) et suspensions dessinées à part, aéro (lame, aileron) ; aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
 | F12 | Inputs | Pédales et volant en direct (trace courte réglable), témoins ABS / TC | ✅ |
 
 ## Hors course (ingénieur augmenté)

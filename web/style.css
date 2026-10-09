@@ -116,8 +116,9 @@ dd.good { color: var(--ok); }
 .flag.checkered { background: repeating-conic-gradient(#fff 0 25%, #000 0 50%) 0 0 / 12px 12px; color: #000; text-shadow: 0 0 3px #fff, 0 0 3px #fff; }
 
 /* Widget Dégâts : voiture vue de dessus en SVG. Gris = rien, orange = léger, rouge = lourd ;
-   roue en pointillés = arrachée ; aéro (lame avant, aileron) orange sous 90 %, rouge sous 70 %. */
-.car-svg { display: block; width: 76px; height: 129px; margin: 2px auto 0; overflow: visible; --body: #3a3f48; --wheel: #5b616c; }
+   roue : orange = crevée, pointillés rouges = arrachée ; suspension (triangles) et aéro (lame avant, aileron) :
+   orange sous 90 %, rouge sous 70 %. */
+.car-svg { display: block; width: 97px; height: 129px; margin: 2px auto 0; overflow: visible; --body: #3a3f48; --wheel: #5b616c; }
 .car-svg .zone { fill: var(--body); stroke: rgba(0, 0, 0, 0.35); stroke-width: 0.8; }
 .car-svg .z1 { fill: var(--warn); }
 .car-svg .z2 { fill: var(--bad); }
@@ -129,6 +130,9 @@ dd.good { color: var(--ok); }
 .car-svg .wheel, .car-svg .aero { fill: var(--wheel); }
 .car-svg .s1 { fill: var(--warn); }
 .car-svg .s2 { fill: var(--bad); }
+.car-svg .susp { fill: none; stroke: var(--wheel); stroke-width: 2.4; stroke-linejoin: round; stroke-linecap: round; }
+.car-svg .susp.s1 { fill: none; stroke: var(--warn); }
+.car-svg .susp.s2 { fill: none; stroke: var(--bad); stroke-width: 3; }
 .car-svg .wheel.off { fill: none; stroke: var(--bad); stroke-width: 1.4; stroke-dasharray: 3 2; }
 
 .inputs { display: flex; gap: 8px; align-items: stretch; }
