@@ -319,7 +319,7 @@ function renderSession(d) {
 }
 
 // F11 : dégâts ; calculs côté serveur (backend/lmu_assistant/damage.py). Voiture vue de dessus en SVG
-// (web/index.html) : 8 zones de carrosserie (gris = rien, orange = léger, rouge = lourd), état global au centre,
+// (web/index.html) : 8 zones de carrosserie colorées sur leur bord (orange = léger, rouge = lourd), état global au centre,
 // roues (crevée, arrachée), suspensions (triangles, par roue), lame avant et aileron (aéro) ; aéro, suspension et réparation
 // viennent de l'API REST du jeu (« – » si elle ne répond pas).
 const fmtPctState = (p) => (p == null ? "–" : `${Math.round(p)} %`);
@@ -329,7 +329,7 @@ function renderDamage(d) {
   const g = d.damage || {};
   const body = g.body || [];
   const car = $("dmg-car");
-  car.querySelectorAll("[data-zone]").forEach((z) => z.setAttribute("class", `zone z${body[z.dataset.zone] || 0}`));
+  car.querySelectorAll("[data-zone]").forEach((z) => z.setAttribute("class", `edge z${body[z.dataset.zone] || 0}`));
   const susp = g.suspension_pct;
   // Roue : état du pneu / de la roue seulement ; suspension (triangles) : état donné par l'API du jeu
   car.querySelectorAll("[data-wheel]").forEach((w) => {
