@@ -68,6 +68,25 @@ class View(QWebEngineView):
             self.on_move(self.x(), self.y())
 
 
+class MainWindow(QWebEngineView):
+    """Fenêtre de l'interface ingénieur (page principale) : fenêtre normale, dans la barre des tâches.
+    La fermer quitte l'application (serveur et overlay compris)."""
+
+    def __init__(self, url: str, title: str) -> None:
+        super().__init__()
+        self.setWindowTitle(title)
+        self.setMinimumSize(640, 400)
+        self.resize(1440, 900)
+        # Liens « télécharger » (exports de l'analyse) : enregistrés dans le dossier Téléchargements.
+        self.page().profile().downloadRequested.connect(lambda download: download.accept())
+        self.titleChanged.connect(lambda t: self.setWindowTitle(f"{title} - {t}" if t and t != title else title))
+        self.setUrl(url)
+
+    def closeEvent(self, event) -> None:
+        super().closeEvent(event)
+        QApplication.instance().quit()
+
+
 class QtWindow(QObject):
     """Interface attendue par `Overlay` (move, resize, show, hide, x, y, set_click_through),
     utilisable depuis n'importe quel thread."""
@@ -157,12 +176,17 @@ class Bridge(QObject):
             handle.startSystemMove()  # déplacement natif, suivi ensuite par Overlay.sync_moves
 
 
-def run(overlay, url_for, title_for, states: dict, quit_after: float | None = None) -> int:
-    """Crée une fenêtre par widget et exécute la boucle Qt (thread principal) jusqu'à la fermeture.
-    `states` : état initial de chaque fenêtre (WindowState). Renvoie le nombre de fenêtres créées."""
+def run(overlay, url_for, title_for, states: dict, quit_after: float | None = None,
+        main_url: str | None = None, main_title: str = "LMU Assistant") -> int:
+    """Crée une fenêtre par widget (si `overlay`) et la fenêtre de l'interface ingénieur (si `main_url`),
+    puis exécute la boucle Qt (thread principal) jusqu'à la fermeture.
+    `states` : état initial de chaque fenêtre (WindowState). Renvoie le nombre de fenêtres de widgets créées."""
     app = QApplication.instance() or QApplication([])
+    app.setApplicationName(main_title)
     script = _channel_script()
-    keep = []  # ponts et canaux : gardés en vie tant que l'overlay tourne
+    keep = []  # ponts, canaux et fenêtre principale : gardés en vie tant que l'application tourne
+    if overlay is None:
+        states = {}
     for wid, state in states.items():
         view = View(title_for(wid))
         view.page().scripts().insert(script)
@@ -175,7 +199,13 @@ def run(overlay, url_for, title_for, states: dict, quit_after: float | None = No
         win = QtWindow(view)
         overlay.windows[wid] = win
         view.setUrl(url_for(wid))
-    threading.Thread(target=overlay.run, name="overlay", daemon=True).start()
+    if overlay is not None:
+        threading.Thread(target=overlay.run, name="overlay", daemon=True).start()
+    if main_url:
+        main = MainWindow(main_url, main_title)
+        main.show()
+        keep.append(main)
+        print(f"[interface] fenêtre ouverte : {main_url}")
     # Ctrl+C dans la console : Python ne reprend la main que si la boucle Qt lui laisse du temps.
     if threading.current_thread() is threading.main_thread():
         signal.signal(signal.SIGINT, lambda *_: app.quit())
@@ -184,6 +214,7 @@ def run(overlay, url_for, title_for, states: dict, quit_after: float | None = No
     tick.start(300)
     if quit_after:
         QTimer.singleShot(int(quit_after * 1000), app.quit)
-    print(f"[overlay] {len(states)} fenêtres de widgets (Qt)")
+    if overlay is not None:
+        print(f"[overlay] {len(states)} fenêtres de widgets (Qt)")
     app.exec()
     return len(states)

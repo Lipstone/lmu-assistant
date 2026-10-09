@@ -20,7 +20,7 @@ def main() -> None:
         str(ROOT / "packaging" / "launch.py"),
         "--name", "LMU-Assistant",
         "--onefile",
-        "--console",  # la console affiche les adresses (réseau local, QR code) ; fermer = quitter
+        "--windowed",  # pas de console : messages dans data/lmu-assistant.log ; fermer l'interface = quitter
         "--noconfirm",
         "--clean",
         "--distpath", str(ROOT / "dist"),

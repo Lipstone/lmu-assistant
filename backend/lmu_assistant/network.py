@@ -104,6 +104,7 @@ async def info(request: Request) -> dict:
         "source": getattr(source, "name", None),
         "port": port,
         "lan_urls": lan_urls(port, host),
+        "lan_access": host not in LOOPBACK_HOSTS,
     }
 
 

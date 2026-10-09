@@ -88,6 +88,7 @@ function fill(cfg) {
   setValue($("hotkey"), cfg.hotkey);
   setValue($("click-through"), cfg.window.click_through);
   setValue($("placement"), cfg.placement);
+  setValue($("lan-access"), cfg.lan_access);
   setValue($("fuel-mode"), cfg.fuel_mode);
   setValue($("delta-reference"), cfg.delta_reference);
   setValue($("laptime-avg-laps"), cfg.laptime_avg_laps);
@@ -121,6 +122,7 @@ function collect() {
     ...globalOpacities(),
     hotkey: $("hotkey").value.trim() || config.hotkey,
     placement: $("placement").checked,
+    lan_access: $("lan-access").checked,
     fuel_mode: $("fuel-mode").value,
     delta_reference: $("delta-reference").value,
     tyre_temp_min_c: num($("tyre-temp-min"), config.tyre_temp_min_c),

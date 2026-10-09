@@ -47,3 +47,28 @@ def test_paths_when_frozen(monkeypatch, tmp_path):
     assert paths.is_frozen()
     assert paths.resource_dir() == tmp_path / "bundle"
     assert paths.data_dir() == Path(exe).resolve().parent / "data"
+
+
+def test_host_follows_lan_access_setting(tmp_path):
+    from lmu_assistant.__main__ import resolve_host
+
+    cfg = tmp_path / "config.json"
+    parser = build_parser()
+    args = parser.parse_args(["--config", str(cfg)])
+    assert resolve_host(args) == "127.0.0.1"  # par défaut : pas de demande du pare-feu Windows
+    cfg.write_text(json.dumps({"lan_access": True}), encoding="utf-8")
+    assert resolve_host(parser.parse_args(["--config", str(cfg)])) == "0.0.0.0"
+    assert resolve_host(parser.parse_args(["--config", str(cfg), "--host", "127.0.0.1"])) == "127.0.0.1"
+
+
+def test_windowed_exe_writes_log(monkeypatch, tmp_path):
+    from lmu_assistant import launcher
+
+    monkeypatch.setattr(launcher.paths, "data_dir", lambda: tmp_path / "data")
+    monkeypatch.setattr(sys, "stdout", None)
+    monkeypatch.setattr(sys, "stderr", None)
+    launcher.redirect_output()
+    print("bonjour")
+    sys.stdout.flush()
+    assert "bonjour" in (tmp_path / "data" / launcher.LOG_NAME).read_text(encoding="utf-8")
+    sys.stdout.close()

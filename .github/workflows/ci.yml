@@ -32,7 +32,7 @@ jobs:
       - name: Vérifie que l'exécutable démarre et sert la page
         shell: pwsh
         run: |
-          $p = Start-Process -FilePath dist\LMU-Assistant.exe -ArgumentList "--no-overlay","--source","mock","--port","8799" -PassThru
+          $p = Start-Process -FilePath dist\LMU-Assistant.exe -ArgumentList "--no-overlay","--no-window","--source","mock","--port","8799" -PassThru
           $ok = $false
           for ($i = 0; $i -lt 30; $i++) {
             Start-Sleep -Seconds 1
@@ -45,12 +45,15 @@ jobs:
           Stop-Process -Id $p.Id -Force
           if (-not $ok) { throw "L'exécutable n'a pas répondu sur le port 8799" }
           Write-Output "OK : $($info | ConvertTo-Json -Compress)"
-      - name: Vérifie que l'overlay (Qt) s'ouvre
+      - name: Vérifie que l'interface et l'overlay (Qt) s'ouvrent, sans console
         shell: pwsh
         run: |
-          $out = & dist\LMU-Assistant.exe --source mock --port 8798 --quit-after 25 2>&1 | Out-String
+          # Exe sans console : les messages sont dans data\lmu-assistant.log, à côté de l'exe.
+          $p = Start-Process -FilePath dist\LMU-Assistant.exe -ArgumentList "--source","mock","--port","8798","--quit-after","25" -PassThru -Wait
+          $out = Get-Content dist\data\lmu-assistant.log -Raw
           Write-Output $out
-          if ($LASTEXITCODE -ne 0 -or $out -notmatch "widgets \(Qt\)") { throw "L'overlay ne s'est pas ouvert" }
+          if ($p.ExitCode -ne 0 -or $out -notmatch "widgets \(Qt\)") { throw "L'overlay ne s'est pas ouvert" }
+          if ($out -notmatch "\[interface\]") { throw "L'interface ingénieur ne s'est pas ouverte" }
       - uses: actions/upload-artifact@v4
         with:
           name: LMU-Assistant-windows

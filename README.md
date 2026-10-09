@@ -11,10 +11,10 @@ Tout est affichable de deux façons, à partir des mêmes données :
 
 ## Lancer l'application
 
-Double-cliquer sur **`LMU-Assistant.exe`** (Windows, sans installer Python). Il démarre le serveur et l'overlay ensemble ; la console affiche les adresses de la page web (PC et réseau local). Fermer l'overlay ou la console arrête tout.
+Double-cliquer sur **`LMU-Assistant.exe`** (Windows, sans installer Python). Il démarre le serveur, ouvre l'**interface ingénieur dans une fenêtre** et affiche l'overlay, sans console. Fermer la fenêtre de l'interface arrête tout. Les messages de l'application sont dans `data/lmu-assistant.log`.
 
 - Télécharger l'exe : onglet **Actions** du dépôt → dernier passage de la CI sur `main` → artefact **LMU-Assistant-windows**.
-- Options utiles : `LMU-Assistant.exe --no-overlay` (page web seulement), `--browser` (ouvre aussi la page), `--source mock` (données simulées), et toutes les options du serveur ci-dessous.
+- Options utiles : `LMU-Assistant.exe --no-overlay` (sans les widgets en jeu), `--no-window` (sans la fenêtre de l'interface), `--browser` (ouvre aussi la page), `--source mock` (données simulées), et toutes les options du serveur ci-dessous.
 - Les réglages et enregistrements sont dans le dossier `data/` créé à côté de l'exe.
 
 Construire l'exe soi-même (sous Windows) :
@@ -227,7 +227,7 @@ Format : JSON Lines compressé en gzip. La 1re ligne est un en-tête (`format`, 
 
 ## Accès depuis une tablette / un téléphone
 
-Le serveur écoute par défaut sur tout le réseau local. Au démarrage, il affiche les adresses à ouvrir depuis un autre appareil, par exemple :
+Une fois l'accès réseau local activé (voir plus bas), le serveur affiche au démarrage (dans `data/lmu-assistant.log` pour l'exe) les adresses à ouvrir depuis un autre appareil, par exemple :
 
 ```
 LMU Assistant : http://localhost:8765  (source : mock)
@@ -235,8 +235,8 @@ LMU Assistant : http://localhost:8765  (source : mock)
 ```
 
 - Sur le PC, le lien **Connexion** de la barre du haut (`/connect.html`) affiche ces adresses et un **QR code** à scanner avec la tablette ou le téléphone (connecté au même Wi-Fi).
-- **Pare-feu Windows** : au premier lancement, Windows demande d'autoriser Python. Cocher **Réseaux privés** (pas « publics ») puis *Autoriser l'accès*. Si la fenêtre a été refusée : *Pare-feu Windows Defender > Autoriser une application* et cocher « Privé » pour Python. Le réseau Wi-Fi du PC doit aussi être en profil **privé**.
-- Pour **désactiver** l'accès depuis le réseau (page visible uniquement sur le PC) : `python -m lmu_assistant --host 127.0.0.1`.
+- L'accès réseau local est **désactivé par défaut** (la page n'écoute que sur le PC, donc aucune demande du pare-feu Windows). L'activer : **Réglages > Réseau local**, puis relancer l'application (ou `--host 0.0.0.0`).
+- **Pare-feu Windows** : une fois l'accès activé, Windows demande au lancement suivant d'autoriser l'application. Cocher **Réseaux privés** (pas « publics ») puis *Autoriser l'accès*. Si la fenêtre a été refusée : *Pare-feu Windows Defender > Autoriser une application* et cocher « Privé » pour LMU-Assistant (ou Python). Le réseau Wi-Fi du PC doit aussi être en profil **privé**.
 
 ## Organisation
 

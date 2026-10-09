@@ -179,6 +179,11 @@ class AppConfig(BaseModel):
         False, description="mode placement : fenêtres overlay déplaçables et agrandissables à la souris"
     )
     placement_hotkey: str = Field("ctrl+shift+p", min_length=1, max_length=64)
+    lan_access: bool = Field(
+        False,
+        description="page accessible depuis le réseau local (tablette, QR code) ; pris en compte au redémarrage, "
+        "Windows demande alors d'autoriser l'appli dans le pare-feu",
+    )
 
     @model_validator(mode="before")
     @classmethod

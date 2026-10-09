@@ -2,6 +2,7 @@ import argparse
 
 import uvicorn
 
+from .config import ConfigStore
 from .network import lan_urls
 from .server import create_app
 from .sources import get_source
@@ -10,7 +11,8 @@ from .sources import get_source
 def build_parser(description: str = "LMU Assistant : serveur local") -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=description)
     parser.add_argument("--source", choices=["mock", "lmu", "replay"], default="lmu")
-    parser.add_argument("--host", default="0.0.0.0", help="0.0.0.0 = accessible depuis le réseau local")
+    parser.add_argument("--host", default=None,
+                        help="0.0.0.0 = accessible depuis le réseau local (défaut : réglage lan_access, sinon 127.0.0.1)")
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--hz", type=float, default=None, help="fréquence d'envoi aux clients (défaut : réglage refresh_hz, 30/s)")
     parser.add_argument("--config", default=None, help="fichier de configuration JSON (défaut : data/config.json)")
@@ -26,7 +28,18 @@ def build_parser(description: str = "LMU Assistant : serveur local") -> argparse
     return parser
 
 
+def resolve_host(args: argparse.Namespace) -> str:
+    """Adresse d'écoute : --host s'il est donné, sinon selon le réglage « accès réseau local ».
+
+    Écouter seulement sur 127.0.0.1 évite la demande d'autorisation du pare-feu Windows au lancement.
+    """
+    if args.host is None:
+        args.host = "0.0.0.0" if ConfigStore(args.config).config.lan_access else "127.0.0.1"
+    return args.host
+
+
 def build_app(parser: argparse.ArgumentParser, args: argparse.Namespace):
+    resolve_host(args)
     if args.source == "replay":
         if not args.file:
             parser.error("--source replay demande --file CHEMIN")
