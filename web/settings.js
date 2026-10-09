@@ -244,7 +244,8 @@ fetch("/api/config")
 // le formulaire suit, sinon « Enregistrer » remettrait les anciennes valeurs.
 function follow() {
   const scheme = location.protocol === "https:" ? "wss" : "ws";
-  const ws = new WebSocket(`${scheme}://${location.host}/ws`);
+  // réglages seulement : pas besoin des images de la course
+  const ws = new WebSocket(`${scheme}://${location.host}/ws?snapshots=0`);
   ws.onmessage = (e) => {
     const msg = JSON.parse(e.data);
     if (msg.type === "config") fill(msg.data);
