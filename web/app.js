@@ -320,7 +320,7 @@ function renderSession(d) {
 
 // F11 : dégâts ; calculs côté serveur (backend/lmu_assistant/damage.py). Voiture vue de dessus en SVG
 // (web/index.html) : 8 zones de carrosserie (gris = rien, orange = léger, rouge = lourd), état global au centre,
-// roues (crevée, arrachée, suspension touchée), lame avant et aileron (aéro) ; aéro, suspension et réparation
+// roues (crevée, arrachée), suspensions (triangles, par roue), lame avant et aileron (aéro) ; aéro, suspension et réparation
 // viennent de l'API REST du jeu (« – » si elle ne répond pas).
 const fmtPctState = (p) => (p == null ? "–" : `${Math.round(p)} %`);
 const level = (p, warn = 90, bad = 70) => (p == null || p >= warn ? "" : p >= bad ? "s1" : "s2");
@@ -331,12 +331,12 @@ function renderDamage(d) {
   const car = $("dmg-car");
   car.querySelectorAll("[data-zone]").forEach((z) => z.setAttribute("class", `zone z${body[z.dataset.zone] || 0}`));
   const susp = g.suspension_pct;
+  // Roue : état du pneu / de la roue seulement ; suspension (triangles) : état donné par l'API du jeu
   car.querySelectorAll("[data-wheel]").forEach((w) => {
-    const i = w.dataset.wheel;
-    const state = (g.wheels || [])[i];
-    const cls = state === "arrachée" ? "off" : state ? "s1" : level(susp && susp[i]);
-    w.setAttribute("class", `wheel ${cls}`);
+    const state = (g.wheels || [])[w.dataset.wheel];
+    w.setAttribute("class", `wheel ${state === "arrachée" ? "off" : state ? "s1" : ""}`);
   });
+  car.querySelectorAll("[data-susp]").forEach((a) => a.setAttribute("class", `susp ${level(susp && susp[a.dataset.susp])}`));
   car.querySelectorAll(".aero").forEach((a) => a.setAttribute("class", `aero ${level(g.aero_pct)}`));
   const pct = Math.round(g.body_pct ?? 100);
   $("dmg-pct").textContent = `${pct}%`;
