@@ -23,10 +23,10 @@ body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); col
 .widget { background: var(--panel); border-radius: 8px; padding: 12px 14px; min-width: 0; }
 .widget h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
 .big { font-size: 32px; font-variant-numeric: tabular-nums; }
-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 10px; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
+dl { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 2px 10px; margin: 8px 0 0; font-variant-numeric: tabular-nums; }
 dt { color: var(--muted); }
-dd { margin: 0; text-align: right; }
-dt, dd { white-space: nowrap; }
+dd { margin: 0; text-align: right; overflow-wrap: break-word; } /* carte étroite : la valeur passe à la ligne au lieu de déborder */
+dt { white-space: nowrap; }
 .bar { height: 6px; background: #333; border-radius: 3px; margin-top: 8px; overflow: hidden; }
 .bar > div { height: 100%; width: 0; background: var(--accent); }
 .bar > div.alert { background: var(--warn); }
@@ -234,7 +234,8 @@ body.overlay .widget[data-widget="fuel"], body.overlay .widget[data-widget="delt
 body.overlay .widget[data-widget="lap"] { width: 220px; }
 body.overlay .widget[data-widget="tyres"] { width: 250px; }
 body.overlay .widget[data-widget="pit"] { width: 250px; }
-body.overlay .widget[data-widget="session"], body.overlay .widget[data-widget="damage"] { width: 230px; }
+body.overlay .widget[data-widget="damage"] { width: 230px; }
+body.overlay .widget[data-widget="session"] { width: 250px; }
 body.overlay .widget[data-widget="stint"] { width: 240px; }
 body.overlay .widget[data-widget="weather"] { width: 260px; }
 body.overlay .wx-slot { background: rgba(255, 255, 255, 0.06); }
