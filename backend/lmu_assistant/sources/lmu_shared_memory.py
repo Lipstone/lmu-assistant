@@ -631,6 +631,8 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.current_lap_s = round(max(0.0, telem.mElapsedTime - telem.mLapStartET), 3)
         snap.lap_invalid = bool(telem.mLapInvalidated)
         snap.wheels = [_wheel(w, left_side=(i % 2 == 0)) for i, w in enumerate(telem.mWheels)]
+        for wheel, name in zip(snap.wheels, _compounds(telem) or [None] * 4):
+            wheel.compound = name  # plage idéale de température selon la gomme (widget Pneus)
         _damage(snap, telem)
         _inputs(snap, telem)
         if scoring is not None and info.mLapDist > 0:

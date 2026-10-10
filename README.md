@@ -77,7 +77,7 @@ Calculs côté serveur (`backend/lmu_assistant/laptimes.py`), avec le temps du t
 
 Le widget **Pneus** montre les quatre roues comme vues du dessus (AVG, AVD en haut, ARG, ARD en bas). Pour chaque roue : les trois températures **extérieur / milieu / intérieur**, l'extérieur dessiné du côté extérieur de la voiture (à gauche pour les roues gauches, à droite pour les roues droites), la **pression** et l'**usure** (% de gomme restante, orange sous 30 %).
 
-Couleur des températures selon la **plage idéale** (75 à 100 °C par défaut) : bleu en dessous, vert dedans, orange au-dessus, rouge à plus de 15 °C au-dessus. Plage et unité de pression (kPa, psi ou bar) se règlent dans Réglages overlay (« Widget Pneus »). L'usure est le `mWear` du jeu recopié tel quel, supposé 1 = neuf : à vérifier en jeu.
+Couleur des températures selon la **plage idéale de la gomme montée sur chaque roue** : bleu en dessous, vert dedans, orange au-dessus, rouge à plus de 15 °C au-dessus. Plages par défaut (indicatives, à ajuster selon la voiture) : tendre 75-95 °C, medium 80-100, dure 85-105, intermédiaire 55-80, pluie 40-65, autre gomme ou inconnue 75-100. La gomme est reconnue d'après le nom donné par le jeu (soft, medium, hard, inter, wet), un rond de sa couleur suit le nom de la roue, et la plage utilisée s'affiche au survol. Plages et unité de pression (kPa, psi ou bar) se règlent dans Réglages overlay (« Widget Pneus »). L'usure est le `mWear` du jeu recopié tel quel, supposé 1 = neuf : à vérifier en jeu.
 
 ## Freins (F06)
 

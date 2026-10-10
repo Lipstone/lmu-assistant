@@ -126,6 +126,7 @@ class MockSource(DataSource):
                 brake_temp_c=round(
                     (300 if i < 2 else 260) + (560 - 30 * i if i < 2 else 380) * max(0.0, math.sin(phase * 7 + 1)) ** 3, 1
                 ),
+                compound="Medium",
             )
             for i in range(4)
         ]

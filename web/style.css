@@ -266,6 +266,9 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
 .settings td.opa { white-space: nowrap; }
+.settings .tyre-ranges table { width: auto; margin-top: 4px; border-collapse: collapse; }
+.settings .tyre-ranges td { padding: 2px 8px 2px 0; white-space: nowrap; }
+.settings .tyre-ranges input[type="number"] { width: 70px; }
 .settings td.cols { font-size: 13px; }
 .settings td.cols label { display: block; white-space: nowrap; }
 .settings td.opa input[type="range"] { width: 80px; vertical-align: middle; }
@@ -276,7 +279,7 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
 .settings button.reset { background: none; color: var(--muted); padding: 0 4px; font-weight: 400; font-size: 15px; }
 .settings button.reset:hover { color: var(--accent); }
 .opacity-global { display: flex; flex-wrap: wrap; gap: 4px 24px; }
-.settings input#inputs-trace, .settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
+.settings input#inputs-trace, .settings input#laptime-avg-laps, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .settings .actions { display: flex; gap: 12px; align-items: center; }

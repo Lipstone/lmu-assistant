@@ -11,6 +11,7 @@ class Wheel:
     brake_temp_c: float | None = 0.0  # None = non transmis
     flat: bool = False  # crevaison (F11)
     detached: bool = False  # roue arrachée (F11)
+    compound: str | None = None  # gomme montée (nom du jeu : Soft, Medium, Hard, Wet…), None = inconnue
 
 
 @dataclass
