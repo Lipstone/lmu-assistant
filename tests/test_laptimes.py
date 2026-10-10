@@ -76,3 +76,29 @@ def test_reset_on_new_session():
     drive(calc, [(1, None), (2, 200.0), (3, 201.0)])
     s = drive(calc, [(1, None, {"session": "Course 2"})])
     assert s.laps.recent == [] and s.laps.avg_s is None
+
+
+def test_invalid_lap_without_game_time_uses_measured_duration():
+    # LMU ne publie pas de temps (<= 0, donc None) pour un tour invalidé : durée entre deux départs de tour.
+    calc = LapTimesCalculator()
+    drive(calc, [(1, None, {"lap_start_et": 100.0}), (2, 200.0, {"t": 0.1, "lap_start_et": 300.0})])
+    s = drive(calc, [
+        (2, 200.0, {"t": 50.0, "lap_start_et": 300.0, "lap_invalid": True}),
+        (3, None, {"t": 0.1, "lap_start_et": 503.25}),
+    ])
+    assert [(e.lap, e.time_s, e.valid, e.invalid) for e in s.laps.recent] == [
+        (2, 203.25, False, True), (1, 200.0, True, False)]
+    assert s.laps.avg_s == 200.0
+
+
+def test_measured_duration_waits_for_telemetry():
+    # Le numéro de tour change avant le départ du tour en télémétrie : la durée du tour précédent ne compte pas,
+    # et le tour n'est pas abandonné parce que le chrono affiche encore le temps du tour fini.
+    calc = LapTimesCalculator()
+    drive(calc, [(1, None, {"lap_start_et": 0.0}), (2, 200.0, {"t": 0.1, "lap_start_et": 200.0})])
+    s = drive(calc, [
+        (3, 200.0, {"t": 201.2, "lap_start_et": 200.0}),  # télémétrie en retard : encore le départ du tour 2
+        (3, 200.0, {"t": 0.05, "lap_start_et": 401.3}),
+        (3, None, {"t": 0.3, "lap_start_et": 401.3}),  # tour invalidé : pas de temps du jeu
+    ])
+    assert [(e.lap, e.time_s, e.invalid) for e in s.laps.recent] == [(2, 201.3, True), (1, 200.0, False)]

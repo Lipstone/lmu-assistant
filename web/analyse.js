@@ -4,8 +4,9 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 
 function fmtLap(s) {
   if (s == null) return "–";
-  const m = Math.floor(s / 60);
-  return `${m}:${(s - m * 60).toFixed(3).padStart(6, "0")}`;
+  const ms = Math.round(s * 1000); // arrondi d'abord : 59,9996 s donne 1:00.000, pas 0:60.000
+  const m = Math.floor(ms / 60000);
+  return `${m}:${((ms - m * 60000) / 1000).toFixed(3).padStart(6, "0")}`;
 }
 const fmtSec = (s) => (s == null ? "–" : s.toFixed(3));
 const fmt = (v, d = 1, unit = "") => (v == null ? "–" : `${v.toFixed(d)}${unit}`);

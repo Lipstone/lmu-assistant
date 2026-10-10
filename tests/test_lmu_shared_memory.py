@@ -95,6 +95,7 @@ def test_parse_player_snapshot():
     assert snap.last_lap_s == 210.5
     assert snap.best_lap_s == 208.25
     assert snap.current_lap_s == pytest.approx(40.5)
+    assert snap.lap_start_et == 960.0
     assert snap.session_time_left_s == pytest.approx(2600.0)
     assert snap.max_laps is None  # mMaxLaps = 0
     assert snap.virtual_energy_pct is None  # mVirtualEnergy = 0 : voiture sans énergie virtuelle
