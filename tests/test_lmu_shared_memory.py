@@ -357,3 +357,14 @@ def test_tyre_temp_falls_back_to_inner_layer():
         wheel.mTemperature[k] = 0.0
         wheel.mTireInnerLayerTemperature[k] = 273.15 + 70 + k
     assert parse_buffer(bytes(d)).wheels[1].temp_c == pytest.approx((70.0, 71.0, 72.0))
+
+
+def test_player_wheels_carry_their_compound():
+    d = make_data()
+    t = d.telemetry.telemInfo[2]  # joueur (mID 7)
+    t.mFrontTireCompoundName, t.mFrontTireCompoundIndex = b"Soft", 0
+    t.mRearTireCompoundName, t.mRearTireCompoundIndex = b"Wet", 1
+    for w, idx in zip(t.mWheels, (0, 0, 1, 1)):
+        w.mCompoundIndex = idx
+    snap = parse_buffer(bytes(d))
+    assert [w.compound for w in snap.wheels] == ["Soft", "Soft", "Wet", "Wet"]

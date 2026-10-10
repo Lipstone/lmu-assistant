@@ -51,7 +51,12 @@
         </select>
       </label>
       <label>Widget Temps au tour : moyenne sur <input type="number" id="laptime-avg-laps" min="2" max="20" step="1"> tours valides</label>
-      <label>Widget Pneus : plage idéale de <input type="number" id="tyre-temp-min" min="0" max="200"> à <input type="number" id="tyre-temp-max" min="0" max="200"> °C</label>
+      <div class="tyre-ranges">Widget Pneus : plage de température idéale selon la gomme montée sur chaque roue
+        <table>
+          <tbody id="tyre-ranges"></tbody>
+          <tr><td>Autre gomme ou inconnue</td><td><input type="number" id="tyre-temp-min" min="0" max="200"> à <input type="number" id="tyre-temp-max" min="0" max="200"> °C</td></tr>
+        </table>
+      </div>
       <label>Pression en
         <select id="pressure-unit">
           <option value="kpa">kPa</option>
@@ -59,6 +64,7 @@
           <option value="bar">bar</option>
         </select>
       </label>
+      <label><input type="checkbox" id="tyres-show-brakes"> Widget Pneus : afficher aussi la température des freins</label>
       <label>Widget Freins : surchauffe au-delà de <input type="number" id="brake-overheat" min="100" max="2000" step="10"> °C</label>
       <label>Widget Stand : temps perdu au stand <input type="number" id="pit-loss" min="0" max="600" step="1"> s (tant qu'aucun arrêt n'est mesuré)</label>
       <label><input type="checkbox" id="shift-use-table"> Widget Shift light : régimes optimaux du tableau des GT3 quand la voiture y est</label>

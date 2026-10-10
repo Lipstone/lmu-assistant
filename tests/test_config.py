@@ -227,3 +227,22 @@ def test_lap_columns_default_and_saved(tmp_path):
     store.save(AppConfig.model_validate(data))
     loaded = {w.id: w for w in ConfigStore(tmp_path / "config.json").config.widgets}
     assert loaded["standings"].show_best_lap and not loaded["standings"].show_last_lap
+
+
+def test_tyre_ranges_per_compound(tmp_path):
+    r = AppConfig().tyre_ranges
+    assert r.wet[1] < r.soft[0]  # les pneus pluie travaillent bien plus froid que les slicks
+    assert r.soft[0] < r.hard[0]
+    # ancienne config sans la clé : valeurs par défaut ; une gomme réglée garde les autres par défaut
+    cfg = AppConfig.model_validate({"tyre_ranges": {"wet": [30, 60]}})
+    assert cfg.tyre_ranges.wet == [30, 60] and cfg.tyre_ranges.soft == r.soft
+    with pytest.raises(ValidationError):
+        AppConfig.model_validate({"tyre_ranges": {"inter": [80, 60]}})
+    store = ConfigStore(tmp_path / "config.json")
+    store.save(cfg)
+    assert ConfigStore(tmp_path / "config.json").config.tyre_ranges.wet == [30, 60]
+
+
+def test_tyres_show_brakes_off_by_default():
+    assert not AppConfig().tyres_show_brakes
+    assert AppConfig.model_validate({"tyres_show_brakes": True}).tyres_show_brakes

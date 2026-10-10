@@ -8,6 +8,21 @@ const COLUMN_WIDGETS = ["relative", "standings"];
 const COLUMNS = [["show_headers", "Titres"], ["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
   ["show_penalties", "Pénalités"], ["show_compound", "Gomme"], ["show_tyre_stints", "Relais pneus"], ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
 
+// Plage idéale de température de chaque gomme (widget Pneus), même ordre que TyreRanges (config.py).
+const COMPOUNDS = [["soft", "Tendre (soft)"], ["medium", "Medium"], ["hard", "Dure (hard)"], ["inter", "Intermédiaire"], ["wet", "Pluie"]];
+
+function buildTyreRanges() {
+  $("tyre-ranges").innerHTML = COMPOUNDS.map(([k, label]) =>
+    `<tr><td>${label}</td><td><input type="number" id="tyre-${k}-min" min="0" max="200"> à ` +
+    `<input type="number" id="tyre-${k}-max" min="0" max="200"> °C</td></tr>`).join("");
+}
+
+function tyreRanges() {
+  const old = config.tyre_ranges || {};
+  return Object.fromEntries(COMPOUNDS.map(([k]) => [k,
+    [num($(`tyre-${k}-min`), (old[k] || [])[0]), num($(`tyre-${k}-max`), (old[k] || [])[1])]]));
+}
+
 // Ordre des colonnes après le pilote (▲ ▼) : clé de colonne (config.COLUMN_KEYS) de chaque case, « gap » = écart
 // (relative) ou intervalle (classement), toujours affiché. Même ordre par défaut que web/app.js.
 const COL_OF = { show_damage: "damage", show_remaining: "remaining", show_consumption: "consumption",
@@ -123,7 +138,13 @@ function fill(cfg) {
   setValue($("laptime-avg-laps"), cfg.laptime_avg_laps);
   setValue($("tyre-temp-min"), cfg.tyre_temp_min_c);
   setValue($("tyre-temp-max"), cfg.tyre_temp_max_c);
+  for (const [k] of COMPOUNDS) {
+    const r = (cfg.tyre_ranges || {})[k] || [];
+    setValue($(`tyre-${k}-min`), r[0]);
+    setValue($(`tyre-${k}-max`), r[1]);
+  }
   setValue($("pressure-unit"), cfg.pressure_unit);
+  setValue($("tyres-show-brakes"), !!cfg.tyres_show_brakes);
   setValue($("brake-overheat"), cfg.brake_overheat_c);
   setValue($("pit-loss"), cfg.pit_loss_s);
   setValue($("shift-use-table"), cfg.shift_use_table);
@@ -161,7 +182,9 @@ function collect() {
     delta_reference: $("delta-reference").value,
     tyre_temp_min_c: num($("tyre-temp-min"), config.tyre_temp_min_c),
     tyre_temp_max_c: num($("tyre-temp-max"), config.tyre_temp_max_c),
+    tyre_ranges: tyreRanges(),
     pressure_unit: $("pressure-unit").value,
+    tyres_show_brakes: $("tyres-show-brakes").checked,
     brake_overheat_c: num($("brake-overheat"), config.brake_overheat_c),
     pit_loss_s: num($("pit-loss"), config.pit_loss_s),
     shift_use_table: $("shift-use-table").checked,
@@ -278,6 +301,7 @@ $("screen-w").addEventListener("input", sizePreview);
 $("screen-h").addEventListener("input", sizePreview);
 window.addEventListener("resize", sizePreview);
 
+buildTyreRanges();
 fetch("/api/config")
   .then((r) => r.json())
   .then(fill)
