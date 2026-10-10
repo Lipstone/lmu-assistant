@@ -96,6 +96,7 @@ class WidgetConfig(BaseModel):
         False, description="widgets Relative et Classement : colonne de la consommation par tour de chaque voiture"
     )
     show_penalties: bool = Field(False, description="widgets Relative et Classement : colonne des pénalités de chaque voiture")
+    show_headers: bool = Field(False, description="widgets Relative et Classement : ligne des titres des colonnes")
     show_compound: bool = Field(
         False,
         description="widgets Relative et Classement : gomme montée par chaque voiture, avant et arrière "

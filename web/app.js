@@ -277,6 +277,18 @@ const CELLS = {
   last: (e) => lapCell("last", "dernier tour", e.last_lap_s),
 };
 const optCells = (id, e) => Object.keys(CELLS).filter((k) => columns[id][k]).map((k) => CELLS[k](e)).join("");
+// Titres des colonnes (option « Titres » par widget) : ligne d'en-tête au-dessus du relative / du classement.
+const headers = { relative: false, standings: false };
+const OPT_TITLES = { damage: ["Dég.", "dégâts de la carrosserie"], remaining: ["Rest.", "carburant ou énergie restant"],
+  consumption: ["Conso", "consommation par tour"], penalties: ["Pén.", "pénalités"], compound: ["Gom.", "gomme"],
+  tyres: ["Rel.", "relais sur ce train de pneus"], best: ["Meill.", "meilleur tour"], last: ["Dern.", "dernier tour"] };
+function headRow(id, before, after = []) {
+  if (!headers[id]) return "";
+  const th = ([t, title], cls = "") => `<th class="${cls}" title="${title || ""}">${t}</th>`;
+  const opt = Object.keys(CELLS).filter((k) => columns[id][k]).map((k) => th(OPT_TITLES[k], "opt"));
+  return `<tr class="col-head">${before.map((c) => th(c)).join("")}${opt.join("")}${after.map((c) => th(c, "gap")).join("")}</tr>`;
+}
+
 const optCount = (id) => Object.keys(CELLS).filter((k) => columns[id][k]).length;
 
 // Nom tronqué (…) mais badge STAND toujours entier.
@@ -286,7 +298,8 @@ const driverCell = (e) => `<div class="drv"><span class="name">${esc(e.driver)}<
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
 function renderRelative(d) {
-  setHTML($("relative"), (d.relative || [])
+  setHTML($("relative"), headRow("relative", [["Pos.", "position dans la classe"], ["N°"], ["Pilote"], ["Tours", "tours d'avance ou de retard"]],
+    [["Écart", "écart sur la piste (s)"]]) + (d.relative || [])
     .map((r) => {
       const cls = [r.is_player ? "me" : "", r.laps_diff > 0 ? "lap-up" : r.laps_diff < 0 ? "lap-down" : "",
         r.same_class ? "" : "other-class"].join(" ");
@@ -308,7 +321,8 @@ const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45
 
 function renderStandings(d) {
   const span = 4 + optCount("standings");
-  setHTML($("standings"), (d.standings || [])
+  setHTML($("standings"), headRow("standings", [["Pos.", "position dans la classe"], ["N°"], ["Pilote"],
+    ["Interv.", "intervalle avec la voiture devant ; écart au leader au survol"]]) + (d.standings || [])
     .map((c) => {
       const head = `<tr class="class-head"><td colspan="${span}"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
         `${esc(c.car_class || "?")} <span class="muted">(${c.cars})</span></td></tr>`;
@@ -608,6 +622,7 @@ function applyConfig(cfg) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
     if (columns[w.id]) {
+      headers[w.id] = !!w.show_headers;
       columns[w.id] = Object.fromEntries(Object.entries(COLUMN_KEYS).map(([k, key]) => [k, !!w[key]]));
       // fenêtre overlay plus large d'autant de colonnes (style.css)
       el.style.setProperty("--opt-cols", optCount(w.id));

@@ -5,7 +5,7 @@ let config = null;
 // Colonnes optionnelles des classements (dégâts, carburant, consommation, tours), désactivées par défaut sauf le
 // dernier tour du Classement.
 const COLUMN_WIDGETS = ["relative", "standings"];
-const COLUMNS = [["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
+const COLUMNS = [["show_headers", "Titres"], ["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
   ["show_penalties", "Pénalités"], ["show_compound", "Gomme"], ["show_tyre_stints", "Relais pneus"], ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
 
 function num(input, fallback) {

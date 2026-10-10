@@ -208,6 +208,7 @@ def test_lap_columns_default_and_saved(tmp_path):
     widgets = {w.id: w for w in AppConfig().widgets}
     assert widgets["standings"].show_last_lap  # dernier tour toujours affiché avant d'être réglable
     assert widgets["standings"].show_compound and not widgets["relative"].show_compound
+    assert not any(w.show_headers for w in AppConfig().widgets)  # titres des colonnes : option
     assert not widgets["relative"].show_last_lap and not widgets["standings"].show_best_lap
     # ancienne config sans la clé : dernier tour gardé dans le Classement
     old = AppConfig.model_validate({"widgets": [{"id": "standings"}]}).widgets[0]
