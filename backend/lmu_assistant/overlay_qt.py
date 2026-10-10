@@ -92,7 +92,8 @@ class MainWindow(QWebEngineView):
         self.setUrl(url)
 
     def closeEvent(self, event) -> None:
-        if self.keep_running:
+        # Qt 6 : app.quit() ferme d'abord les fenêtres et abandonne si l'une refuse ; en sortie, on accepte.
+        if self.keep_running and not QApplication.instance().property("lmu_quitting"):
             event.ignore()
             self.hide()
             if self.on_hidden:
@@ -229,7 +230,7 @@ class Tray(QObject):
     """Icône de la zone de notification : l'application tourne tant qu'on ne choisit pas « Quitter »,
     l'interface ingénieur s'ouvre et se ferme sans toucher à l'overlay course."""
 
-    def __init__(self, app: QApplication, overlay, open_main, title: str) -> None:
+    def __init__(self, app: QApplication, overlay, open_main, title: str, quit_app) -> None:
         super().__init__()
         self.icon = QSystemTrayIcon(app_icon())
         self.icon.setToolTip(title)
@@ -249,7 +250,7 @@ class Tray(QObject):
             menu.addAction(action)
         menu.addSeparator()
         quit_action = QAction("Quitter LMU Assistant", menu)
-        quit_action.triggered.connect(app.quit)
+        quit_action.triggered.connect(quit_app)
         menu.addAction(quit_action)
         self.menu = menu
         self.icon.setContextMenu(menu)
@@ -274,6 +275,11 @@ def run(overlay, url_for, title_for, states: dict, quit_after: float | None = No
     app = QApplication.instance() or QApplication([])
     app.setApplicationName(main_title)
     app.setWindowIcon(app_icon())
+
+    def quit_app() -> None:
+        """Quitte vraiment : la fenêtre de l'interface ne doit plus se contenter de se cacher."""
+        app.setProperty("lmu_quitting", True)
+        app.quit()
     script = _channel_script()
     keep = []  # ponts, canaux et fenêtre principale : gardés en vie tant que l'application tourne
     if overlay is None:
@@ -308,20 +314,22 @@ def run(overlay, url_for, title_for, states: dict, quit_after: float | None = No
     # Icône de notification : seulement avec l'overlay (sans lui, fermer l'interface quitte, comme avant).
     tray = None
     if overlay is not None and main_url and QSystemTrayIcon.isSystemTrayAvailable():
-        tray = Tray(app, overlay, open_main, main_title)
+        tray = Tray(app, overlay, open_main, main_title, quit_app)
         app.setQuitOnLastWindowClosed(False)
         keep.append(tray)
     if main_url and show_main:
         open_main()
     # Ctrl+C dans la console : Python ne reprend la main que si la boucle Qt lui laisse du temps.
     if threading.current_thread() is threading.main_thread():
-        signal.signal(signal.SIGINT, lambda *_: app.quit())
+        signal.signal(signal.SIGINT, lambda *_: quit_app())
     tick = QTimer()
     tick.timeout.connect(lambda: None)
     tick.start(300)
     if quit_after:
-        QTimer.singleShot(int(quit_after * 1000), app.quit)
+        QTimer.singleShot(int(quit_after * 1000), quit_app)
     if overlay is not None:
         print(f"[overlay] {len(states)} fenêtres de widgets (Qt)")
     app.exec()
+    if tray is not None:
+        tray.icon.hide()  # pas d'icône fantôme dans la zone de notification
     return len(states)

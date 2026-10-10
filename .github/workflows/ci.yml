@@ -22,6 +22,7 @@ jobs:
   build-exe:
     needs: test
     runs-on: windows-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -46,6 +47,7 @@ jobs:
           if (-not $ok) { throw "L'exécutable n'a pas répondu sur le port 8799" }
           Write-Output "OK : $($info | ConvertTo-Json -Compress)"
       - name: Vérifie que l'interface et l'overlay (Qt) s'ouvrent, sans console
+        timeout-minutes: 3  # l'appli se ferme seule au bout de 25 s : au-delà, elle est bloquée
         shell: pwsh
         run: |
           # Exe sans console : les messages sont dans data\lmu-assistant.log, à côté de l'exe.
@@ -68,6 +70,7 @@ jobs:
           & $iscc "/DAppVersion=$version" packaging\installer.iss
           if ($LASTEXITCODE -ne 0) { throw "Inno Setup a échoué" }
       - name: Vérifie l'installation silencieuse et le lancement de l'appli installée
+        timeout-minutes: 3  # l'appli se ferme seule au bout de 25 s : au-delà, elle est bloquée
         shell: pwsh
         run: |
           $p = Start-Process -FilePath dist\LMU-Assistant-Setup.exe -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -PassThru -Wait
