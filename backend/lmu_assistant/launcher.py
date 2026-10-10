@@ -1,7 +1,8 @@
 """Point d'entrée de l'exécutable LMU-Assistant : serveur + interface ingénieur + overlay en un seul lancement.
 
 Le serveur tourne dans un thread ; les fenêtres Qt (interface ingénieur et widgets de l'overlay)
-occupent le thread principal. Fermer la fenêtre de l'interface arrête tout.
+occupent le thread principal. L'interface ingénieur et l'overlay course sont indépendants : fermer la
+fenêtre de l'interface laisse l'overlay tourner, « Quitter » dans l'icône de notification arrête tout.
 Avec --no-window et --no-overlay, le serveur tourne jusqu'à Ctrl+C.
 
 L'exécutable n'a pas de console : les messages vont dans data/lmu-assistant.log, à côté de l'exe.
@@ -98,10 +99,11 @@ def main(argv: list[str] | None = None) -> None:
             try:
                 from .overlay import run as run_qt
 
-                run_qt(  # bloque jusqu'à la fermeture de la fenêtre de l'interface
+                run_qt(  # bloque jusqu'à « Quitter » (ou la fermeture de l'interface sans overlay)
                     f"{local}/?mode=overlay",
                     quit_after=args.quit_after,
-                    main_url=None if args.no_window else f"{local}/",
+                    main_url=f"{local}/",  # sans overlay ni fenêtre au lancement : rouvrable par l'icône
+                    show_main=not args.no_window,
                     widgets=not args.no_overlay,
                 )
                 return

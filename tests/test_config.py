@@ -229,6 +229,24 @@ def test_lap_columns_default_and_saved(tmp_path):
     assert loaded["standings"].show_best_lap and not loaded["standings"].show_last_lap
 
 
+def test_page_visible_independent_from_overlay():
+    from lmu_assistant.config import AppConfig
+
+    cfg = AppConfig.model_validate({"widgets": [{"id": "fuel", "visible": False, "page_visible": True}]})
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.visible, fuel.page_visible) == (False, True)
+
+
+def test_old_visible_also_hides_in_engineer_page():
+    from lmu_assistant.config import AppConfig
+
+    # Config d'avant la séparation : un widget masqué l'était partout, il le reste
+    cfg = AppConfig.model_validate({"widgets": [{"id": "fuel", "visible": False}]})
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.visible, fuel.page_visible) == (False, False)
+    assert next(w for w in cfg.widgets if w.id == "lap").page_visible is True
+
+
 def test_tyre_ranges_per_compound(tmp_path):
     r = AppConfig().tyre_ranges
     assert r.wet[1] < r.soft[0]  # les pneus pluie travaillent bien plus froid que les slicks

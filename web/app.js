@@ -651,6 +651,7 @@ function render(d) {
 // Opacités du fond et du texte : valeur du widget si définie, sinon valeur globale.
 function applyConfig(cfg) {
   setPlacement(!!cfg.placement);
+  fillWidgetMenu(cfg);
   fuelMode = cfg.fuel_mode || "auto";
   deltaRef = cfg.delta_reference || "best";
   tyreRange = [cfg.tyre_temp_min_c ?? 75, cfg.tyre_temp_max_c ?? 100];
@@ -669,7 +670,8 @@ function applyConfig(cfg) {
       el.style.setProperty("--opt-cols", optCount(w.id));
       el.classList.toggle("opt-cols", optCount(w.id) > 0);
     }
-    el.hidden = ONLY ? w.id !== ONLY : !w.visible;
+    // Overlay course (`visible`) et interface ingénieur (`page_visible`) choisissent leurs widgets séparément.
+    el.hidden = ONLY ? w.id !== ONLY : !(OVERLAY ? w.visible : w.page_visible ?? w.visible);
     if (OVERLAY) {
       el.style.left = ONLY ? "0" : `${w.x}px`;
       el.style.top = ONLY ? "0" : `${w.y}px`;
@@ -699,7 +701,7 @@ function setPlacement(on) {
 
 if (ONLY) {
   document.addEventListener("mousedown", (e) => {
-    if (placing && e.button === 0 && !e.target.closest(".grip")) {
+    if (placing && e.button === 0 && !e.target.closest(".grip, .w-close")) {
       e.preventDefault();
       overlayApi()?.start_move(); // déplacement natif de la fenêtre
     }
@@ -762,6 +764,65 @@ function setupFit() {
 }
 setupFit();
 
+// Enregistre des champs d'un widget (dernière config du serveur, qui la renvoie ensuite à toutes les pages).
+async function saveWidget(id, changes) {
+  try {
+    const cfg = await (await fetch("/api/config")).json();
+    Object.assign(cfg.widgets.find((w) => w.id === id), changes);
+    await fetch("/api/config", { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify(cfg) });
+  } catch {
+    loadConfig(); // échec : on réaffiche l'état enregistré
+  }
+}
+
+// Croix de chaque widget. Overlay (mode placement) : retire le widget de l'overlay course, la fenêtre se ferme
+// tout de suite. Interface ingénieur : masque le widget de cette page seulement (menu « Widgets » pour le remettre).
+function setupClose() {
+  if (OVERLAY && !ONLY) return; // aperçu des réglages
+  for (const el of document.querySelectorAll(ONLY ? `[data-widget="${ONLY}"]` : "[data-widget]")) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "w-close";
+    btn.textContent = "×";
+    btn.title = ONLY ? "Retirer ce widget de l'overlay (à remettre dans Réglages overlay)" : "Masquer ce widget de l'interface";
+    btn.addEventListener("mousedown", (e) => e.stopPropagation()); // pas de déplacement de la fenêtre
+    btn.addEventListener("click", (e) => {
+      e.preventDefault();
+      const id = el.dataset.widget;
+      if (ONLY) {
+        if (overlayApi()) overlayApi().hide_widget();
+        else saveWidget(id, { visible: false });
+      } else {
+        el.hidden = true;
+        saveWidget(id, { page_visible: false });
+      }
+    });
+    el.appendChild(btn);
+  }
+}
+setupClose();
+
+// Interface ingénieur : menu « Widgets » pour choisir les widgets affichés sur cette page.
+const WIDGET_NAMES = { lap: "Temps au tour", delta: "Delta", fuel: "Carburant / énergie", car: "Voiture", tyres: "Pneus", brakes: "Freins", relative: "Relative", standings: "Classement", pit: "Fenêtre de stand", session: "Session et piste", damage: "Dégâts", inputs: "Inputs", stint: "Relais", weather: "Météo", shift: "Shift light" };
+function fillWidgetMenu(cfg) {
+  const list = $("widget-menu-list");
+  if (!list || OVERLAY) return;
+  const ids = (cfg.widgets || []).map((w) => w.id);
+  if (list.dataset.ids !== ids.join()) {
+    list.dataset.ids = ids.join();
+    list.innerHTML = ids
+      .map((id) => `<label><input type="checkbox" data-id="${id}"> ${WIDGET_NAMES[id] || id}</label>`)
+      .join("");
+    list.addEventListener("change", (e) => {
+      const box = e.target.closest("input[data-id]");
+      if (box) saveWidget(box.dataset.id, { page_visible: box.checked });
+    });
+  }
+  for (const w of cfg.widgets || []) {
+    list.querySelector(`input[data-id="${w.id}"]`).checked = w.page_visible ?? w.visible;
+  }
+}
+
 function loadConfig() {
   fetch("/api/config")
     .then((r) => (r.ok ? r.json() : null))
@@ -812,3 +873,9 @@ function connect() {
   };
 }
 connect();
+
+// Menu « Widgets » : se ferme au clic ailleurs sur la page.
+document.addEventListener("click", (e) => {
+  const menu = document.querySelector(".widget-menu[open]");
+  if (menu && !menu.contains(e.target)) menu.open = false;
+});

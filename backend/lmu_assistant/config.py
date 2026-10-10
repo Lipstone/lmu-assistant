@@ -80,7 +80,10 @@ class WidgetConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     id: str
-    visible: bool = True
+    visible: bool = Field(True, description="fenêtre du widget affichée dans l'overlay course")
+    page_visible: bool = Field(
+        True, description="widget affiché dans l'interface ingénieur (indépendant de l'overlay course)"
+    )
     x: int = Field(0, ge=-10000, le=10000, description="position de la fenêtre du widget sur l'écran (pixels)")
     y: int = Field(0, ge=-10000, le=10000)
     scale: float = Field(1.0, ge=0.25, le=4.0)
@@ -125,6 +128,9 @@ class WidgetConfig(BaseModel):
     @classmethod
     def _old_opacity(cls, data):
         data = _migrate_opacity(data, is_global=False)
+        # Avant la séparation overlay / interface ingénieur, `visible` valait pour les deux : on garde l'affichage
+        if isinstance(data, dict) and "page_visible" not in data and isinstance(data.get("visible"), bool):
+            data = {**data, "page_visible": data["visible"]}
         # Classement : dernier tour (toujours affiché avant d'être réglable) et gommes cochés par défaut
         if isinstance(data, dict) and data.get("id") == "standings":
             data = {"show_last_lap": True, "show_compound": True, **data}

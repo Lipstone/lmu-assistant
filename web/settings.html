@@ -22,10 +22,10 @@
     <section class="widget">
       <h2>Widgets</h2>
       <table>
-        <thead><tr><th>Widget</th><th>Visible</th><th>X écran (px)</th><th>Y écran (px)</th><th>Échelle</th><th>Fond</th><th>Texte</th><th>Colonnes en plus</th></tr></thead>
+        <thead><tr><th>Widget</th><th>Overlay</th><th>Interface</th><th>X écran (px)</th><th>Y écran (px)</th><th>Échelle</th><th>Fond</th><th>Texte</th><th>Colonnes en plus</th></tr></thead>
         <tbody id="widgets"></tbody>
       </table>
-      <p class="hint">En overlay, chaque widget a sa propre fenêtre : X/Y = position de son coin haut gauche sur l'écran, Échelle = taille. Décocher « Visible » ferme sa fenêtre. Sur la page normale, seule la case « Visible » s'applique.
+      <p class="hint">En overlay, chaque widget a sa propre fenêtre : X/Y = position de son coin haut gauche sur l'écran, Échelle = taille. Overlay = fenêtre du widget dans l'overlay course (décocher la ferme ; la croix du mode placement fait de même) ; Interface = widget affiché dans l'interface ingénieur, indépendamment de l'overlay (croix au survol et menu « Widgets » de l'interface).
         Fond et Texte : opacité du fond du widget (0 % = texte directement sur le jeu) et du texte et des jauges. Un curseur grisé suit la valeur globale ; le déplacer règle ce widget seul, ↺ le remet sur la valeur globale. Appliqué en direct.<br>
         Colonnes en plus (Relative et Classement, après « Enregistrer ») : ▲ ▼ = changer l'ordre des colonnes (de haut en bas = de gauche à droite, après le pilote) ; Titres = ligne des titres des colonnes en haut du widget ; Dégâts = dégâts globaux de la carrosserie de chaque voiture (0 % = intacte, « ! » = roue crevée ou arrachée) ; Restant = énergie virtuelle (%) ou carburant (L) dans chaque voiture, tours possibles au survol ; Conso = consommation par tour estimée d'après le carburant ou l'énergie virtuelle restants à chaque passage de ligne (% d'énergie si la voiture en a, sinon litres ; « – » tant qu'aucun tour sans arrêt n'est mesuré ou si le jeu ne transmet pas la donnée) ; Pénalités = pénalités en cours de chaque voiture ; Gomme = gomme montée par chaque voiture (rond rouge tendre, jaune medium, blanc dure, vert intermédiaire, bleu pluie ; quatre ronds en carré, placés comme les roues vues de dessus, dès qu'il y a au moins deux gommes) ; Relais pneus = nombre de relais faits sur le train de pneus actuel (estimé : un changement de pneus est repéré quand leur usure remonte) ; Meilleur tour et Dernier tour de chaque voiture.</p>
     </section>
@@ -78,7 +78,7 @@
       <br>
       <label><input type="checkbox" id="placement"> <strong>Mode placement</strong></label>
       <label>Raccourci mode placement <input type="text" id="placement-hotkey" placeholder="ctrl+shift+p"></label>
-      <p class="hint">En mode placement, chaque fenêtre de l'overlay se déplace en la faisant glisser et s'agrandit par la poignée en bas à droite ; c'est enregistré automatiquement. Les clics ne passent plus au jeu tant que le mode est actif.</p>
+      <p class="hint">En mode placement, chaque fenêtre de l'overlay se déplace en la faisant glisser et s'agrandit par la poignée en bas à droite ; la croix rouge en haut à droite le retire de l'overlay (case « Overlay » ci-dessus pour le remettre). C'est enregistré automatiquement. Les clics ne passent plus au jeu tant que le mode est actif.</p>
       <p class="hint">Les widgets se mettent à jour immédiatement. Position, taille et affichage des fenêtres, clics traversants et raccourci sont appliqués par l'overlay en cours sous ~2 s.</p>
     </section>
 
