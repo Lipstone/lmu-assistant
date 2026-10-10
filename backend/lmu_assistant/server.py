@@ -123,7 +123,7 @@ class Broadcaster:
 
     def compute(self, snap):
         cfg = self.config_store.config if self.config_store else None
-        snap = self.laps.update(self.delta.update(self.fuel.update(snap)), cfg.laptime_avg_laps if cfg else AVG_LAPS)
+        snap = self.delta.update(self.laps.update(self.fuel.update(snap), cfg.laptime_avg_laps if cfg else AVG_LAPS))
         snap = self.brakes.update(snap, cfg.brake_overheat_c if cfg else OVERHEAT_C)
         snap = compute_standings(compute_relative(self.opponents.update(snap)))
         snap = self.pit.update(snap, cfg.pit_loss_s if cfg else PIT_LOSS_S)

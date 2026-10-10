@@ -27,7 +27,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 
 | ID | Fonctionnalité | Détail | État |
 |---|---|---|---|
-| F20 | Historique des tours | Enregistrement de chaque tour (temps, secteurs, carburant, pneus, météo, trace) en SQLite, page Analyse | ✅ |
+| F20 | Historique des tours | Enregistrement de chaque tour (temps, secteurs, carburant, pneus, météo, trace) en SQLite, page Analyse ; liste des sessions avec filtre, suppression groupée (cases à cocher) et comparaison de 2 à 8 sessions | ✅ |
 | F21 | Relais (stints) | Découpage automatique en relais, résumé par relais, widget du relais en cours | ✅ |
 | F22 | Dégradation pneus | Évolution des temps (tendance en s/tour) et de l'usure par pneu sur un relais | ✅ |
 | F23 | Comparaison de tours | Secteurs, meilleur tour théorique, écart par secteur, écart cumulé et vitesse le long du tour | ✅ |
