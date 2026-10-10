@@ -1,24 +1,44 @@
+/* Couleurs communes. Les widgets de l'overlay ont leurs propres fonds (body.overlay, plus bas). */
 :root {
-  --bg: #0f1115;
-  --panel: #1a1d24;
+  --bg: #0b0d12;
+  --panel: #151922;
+  --panel-2: #1d222d;   /* blocs dans une carte, champs de saisie */
+  --border: #272d39;
   --text: #e8eaed;
-  --muted: #9aa0a6;
+  --muted: #a0a8b4;
   --accent: #4fc3f7;
   --ok: #66bb6a;
   --warn: #ffb74d;
   --bad: #ef5350;
+  --radius: 10px;
+  color-scheme: dark;
 }
 * { box-sizing: border-box; }
-body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
-.topbar { display: flex; gap: 12px; align-items: center; padding: 10px 16px; background: var(--panel); }
-.status { font-size: 12px; padding: 2px 8px; border-radius: 10px; background: var(--warn); color: #000; }
-.status.on { background: var(--ok); }
+body { margin: 0; font-family: "Segoe UI Variable Text", "Segoe UI", Inter, system-ui, sans-serif; background: var(--bg); color: var(--text);
+  -webkit-font-smoothing: antialiased; }
 [hidden] { display: none !important; }
-.topbar { flex-wrap: wrap; }
-.topbar a { color: var(--text); text-decoration: none; }
-.topbar .nav-link { margin-left: auto; font-size: 14px; color: var(--accent); }
-.topbar .nav-link ~ a { font-size: 14px; color: var(--accent); }
-.nav-current { color: var(--muted); }
+a { color: var(--accent); }
+
+/* Barre du haut commune à toutes les pages : marque, menu des pages, état de la connexion (tableau de bord) */
+.topbar { position: sticky; top: 0; z-index: 20; display: flex; flex-wrap: wrap; gap: 6px 20px; align-items: center; min-height: 52px;
+  padding: 8px 20px; background: rgba(17, 20, 27, 0.92); border-bottom: 1px solid var(--border);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.topbar a { text-decoration: none; }
+.topbar .brand { display: inline-flex; align-items: center; gap: 8px; color: var(--text); font-weight: 700; font-size: 15px; letter-spacing: 0.01em; white-space: nowrap; }
+.brand-mark { width: 10px; height: 18px; border-radius: 2px; background: linear-gradient(180deg, var(--accent), #2f80ff); transform: skewX(-14deg); }
+.appnav { display: flex; gap: 2px; padding: 3px; background: var(--bg); border: 1px solid var(--border); border-radius: 9px;
+  overflow-x: auto; scrollbar-width: none; max-width: 100%; }
+.appnav::-webkit-scrollbar { display: none; }
+.appnav a { padding: 6px 12px; border-radius: 6px; color: var(--muted); font-size: 14px; font-weight: 500; white-space: nowrap;
+  transition: background 0.15s, color 0.15s; }
+.appnav a:hover { color: var(--text); background: var(--panel-2); }
+.appnav a[aria-current="page"] { color: var(--text); background: var(--panel-2); box-shadow: inset 0 -2px 0 var(--accent); }
+.appnav a:focus-visible, .topbar .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.topbar-info { display: flex; align-items: center; gap: 10px; min-width: 0; margin-left: auto; font-size: 13px; color: var(--muted); }
+.topbar-info .session { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.status { flex: none; font-size: 12px; font-weight: 600; padding: 3px 10px 3px 8px; border-radius: 999px; background: rgba(255, 183, 77, 0.15); color: var(--warn); }
+.status::before { content: ""; display: inline-block; width: 7px; height: 7px; margin-right: 6px; border-radius: 50%; background: currentColor; vertical-align: 1px; }
+.status.on { background: rgba(102, 187, 106, 0.15); color: var(--ok); }
 .widgets { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; padding: 16px; }
 .widget { background: var(--panel); border-radius: 8px; padding: 12px 14px; min-width: 0; }
 .widget h2 { margin: 0 0 6px; font-size: 13px; font-weight: 600; color: var(--muted); text-transform: uppercase; }
@@ -60,6 +80,8 @@ dd.good { color: var(--ok); }
 .temps .none { background: #3a3f48; color: var(--muted); }
 .tyre-info { display: flex; justify-content: space-between; gap: 4px; margin-top: 3px; font-size: 13px; white-space: nowrap; }
 .tyre-info .alert { color: var(--warn); font-weight: 600; }
+.tyre-brake { display: flex; justify-content: space-between; gap: 4px; margin-top: 2px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.tyre-brake .brake-temp { font-size: 13px; }
 
 .brakes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-variant-numeric: tabular-nums; }
 .brake { background: #22262e; border-radius: 4px; padding: 4px 6px; display: flex; flex-direction: column; }
@@ -284,6 +306,9 @@ body.placing .w-close { display: block; background: var(--bad); color: #fff; cur
 .settings input[type="number"], .settings input[type="text"], .settings select { width: 100%; max-width: 110px; background: #22262e; color: var(--text); border: 1px solid #333; border-radius: 4px; padding: 4px 6px; }
 .settings select { width: auto; max-width: none; }
 .settings td.opa { white-space: nowrap; }
+.settings .tyre-ranges table { width: auto; margin-top: 4px; border-collapse: collapse; }
+.settings .tyre-ranges td { padding: 2px 8px 2px 0; white-space: nowrap; }
+.settings .tyre-ranges input[type="number"] { width: 70px; }
 .settings td.cols { font-size: 13px; }
 .settings td.cols label { display: block; white-space: nowrap; }
 .settings .col-item { display: flex; align-items: center; gap: 2px; }
@@ -298,7 +323,7 @@ body.placing .w-close { display: block; background: var(--bad); color: #fff; cur
 .settings button.reset { background: none; color: var(--muted); padding: 0 4px; font-weight: 400; font-size: 15px; }
 .settings button.reset:hover { color: var(--accent); }
 .opacity-global { display: flex; flex-wrap: wrap; gap: 4px 24px; }
-.settings input#inputs-trace, .settings input#laptime-avg-laps, .settings input#tyre-temp-min, .settings input#tyre-temp-max, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
+.settings input#inputs-trace, .settings input#laptime-avg-laps, .settings input#brake-overheat, .settings input#pit-loss { width: 70px; }
 .settings label { display: inline-flex; gap: 6px; align-items: center; margin: 4px 16px 4px 0; }
 .settings button { background: var(--accent); color: #000; border: 0; border-radius: 4px; padding: 8px 16px; font-weight: 600; cursor: pointer; }
 .settings .actions { display: flex; gap: 12px; align-items: center; }
@@ -327,7 +352,6 @@ body.placing .w-close { display: block; background: var(--bad); color: #fff; cur
 .data td.muted { color: var(--muted); text-align: left; }
 .data .tags { text-align: left; }
 .data .tags span { display: inline-block; margin-right: 3px; padding: 0 4px; border-radius: 3px; background: #333; color: var(--text); font-size: 11px; }
-.topbar .brand { font-weight: 700; }
 .data i.dot, .legend i, .tip i { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 5px; }
 .charts { display: grid; grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 16px; }
 .charts figure { margin: 0; min-width: 0; }
@@ -391,11 +415,79 @@ body.placing .w-close { display: block; background: var(--bad); color: #fff; cur
 .urls a { color: var(--accent); }
 .hint { color: var(--muted); font-size: 13px; }
 
-/* Téléphone : marges et chiffres un peu plus compacts */
+
+/* ===== Pages (tableau de bord, analyse, stratégie, réglages, connexion) : cartes, formulaires, boutons communs.
+   Tout est limité à body:not(.overlay) ou aux pages hors overlay : les fenêtres de l'overlay course gardent leur style. */
+body:not(.overlay) .widgets { gap: 12px; padding: 16px; }
+body:not(.overlay) .widget { border: 1px solid var(--border); border-radius: var(--radius); padding: 13px 14px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.25); }
+body:not(.overlay) .widget h2 { margin: 0 0 10px; font-size: 12px; font-weight: 650; letter-spacing: 0.07em; color: var(--muted); }
+body:not(.overlay) dt { color: var(--muted); }
+.settings, .analyse, .connect { width: 100%; margin: 0 auto; padding: 20px; gap: 16px; }
+.settings { max-width: 1200px; }
+.analyse { max-width: 1400px; }
+.hint, .settings .hint { line-height: 1.5; }
+
+/* Champs de saisie */
+:is(.settings, .analyse) :is(input[type="number"], input[type="text"], input:not([type]), select, textarea) {
+  background: var(--panel-2); color: var(--text); border: 1px solid #353c49; border-radius: 6px; padding: 6px 9px; font: inherit;
+  font-size: 14px; transition: border-color 0.15s, box-shadow 0.15s; }
+:is(.settings, .analyse) :is(input, select, textarea):focus-visible { outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(79, 195, 247, 0.25); }
+:is(.settings, .analyse) input[type="checkbox"], :is(.settings, .analyse) input[type="range"] { accent-color: var(--accent); }
+:is(.settings, .analyse) input[type="checkbox"] { width: 16px; height: 16px; margin: 0; }
+
+/* Boutons */
+:is(.settings, .analyse) button { border-radius: 7px; padding: 8px 16px; font: inherit; font-size: 14px; font-weight: 600;
+  transition: filter 0.15s, background 0.15s; }
+:is(.settings, .analyse) button:hover:not(:disabled) { filter: brightness(1.1); }
+:is(.settings, .analyse) button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.analyse button.secondary { background: var(--panel-2); border: 1px solid #353c49; }
+.settings button.reset { padding: 0 4px; }
+
+/* Réglages : un réglage par ligne, tableau des widgets aéré, bouton Enregistrer toujours visible en bas */
+.settings .widget > label { display: flex; flex-wrap: wrap; width: fit-content; max-width: 100%; margin: 0; padding: 5px 0; }
+.settings .widget > br { display: none; }
+.settings label input[type="number"] { flex: none; width: 90px; }
+.settings label input[type="text"] { flex: none; width: 140px; }
+.settings .widget table th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid var(--border); padding: 6px; }
+.settings .widget table td { padding: 5px 6px; border-top: 1px solid var(--border); }
+.settings .widget table tr:first-child td { border-top: 0; }
+.settings .widget:has(> table) { overflow-x: auto; } /* tableau des widgets : défile sur écran étroit au lieu d'écraser les champs */
+.settings .widget table td input[type="number"] { min-width: 64px; }
+.settings .widget table tbody tr:hover td { background: rgba(255, 255, 255, 0.025); }
+.settings .opacity-global { padding: 4px 0 8px; margin-bottom: 4px; border-bottom: 1px solid var(--border); }
+.settings .actions { position: sticky; bottom: 0; z-index: 10; margin: 0 -20px; padding: 12px 20px;
+  background: linear-gradient(180deg, rgba(11, 13, 18, 0), var(--bg) 35%); }
+.settings .actions button { padding: 10px 24px; }
+
+/* Analyse et stratégie */
+.analyse .data th { font-size: 12px; text-transform: uppercase; letter-spacing: 0.04em; border-bottom-color: var(--border); }
+.analyse .data tbody tr:hover td { background: rgba(255, 255, 255, 0.03); }
+.report-card, .scenario { border: 1px solid var(--border); }
+.report-card { border-radius: 8px; padding: 10px 14px; }
+.strategy-form fieldset { border-color: var(--border); border-radius: 8px; padding: 10px 14px; }
+
+/* Connexion */
+.urls li.selected { background: var(--panel-2); }
+.connect .urls { word-break: normal; overflow-wrap: anywhere; }
+
+/* Tablette : la barre passe sur deux lignes (marque + état, puis le menu) */
+@media (max-width: 900px) {
+  .topbar { padding: 8px 12px; }
+  .topbar .appnav { order: 3; width: 100%; }
+  .topbar-info { margin-left: auto; }
+}
+/* Téléphone : une colonne de widgets, marges réduites */
 @media (max-width: 480px) {
-  .topbar { padding: 8px 12px; gap: 8px; }
-  .widgets { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 8px; }
-  .big { font-size: 26px; }
+  .topbar-info .session { display: none; }
+  .topbar .appnav { flex-wrap: wrap; }
+  .appnav a { padding: 6px 10px; font-size: 13px; }
+  body:not(.overlay) .widgets { grid-template-columns: minmax(0, 1fr); gap: 10px; padding: 10px; }
+  body:not(.overlay) .widget[data-widget] { grid-column: auto; }
+  .settings, .analyse, .connect { padding: 12px; }
+  .settings .actions { margin: 0 -12px; padding: 12px; }
+  .big { font-size: 28px; }
 }
 /* Liste des sessions (sélection multiple, comparaison) */
 .session-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }

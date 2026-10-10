@@ -48,7 +48,7 @@ WIDGET_KEYS = {
     "delta": ("delta",),
     "fuel": ("fuel", "energy", "fuel_l", "fuel_capacity_l", "virtual_energy_pct"),
     "car": ("speed_kmh", "gear", "rpm"),
-    "tyres": ("wheels",),
+    "tyres": ("wheels", "brakes"),  # freins : option tyres_show_brakes
     "brakes": ("brakes", "wheels"),
     "relative": ("relative",),
     "standings": ("standings",),
@@ -60,6 +60,16 @@ WIDGET_KEYS = {
     "weather": ("weather",),
     "shift": ("shift",),
 }
+# Fréquence maximale d'envoi (par seconde) selon ce que l'œil voit bouger : sans entrée ici, la fréquence des
+# réglages (refresh_hz). Mesuré (banc Chromium, 50 voitures) : −30 à −45 % de CPU pour les fenêtres par rapport à
+# tout à 30/s, sans changement visible. Pour ces widgets, une image identique à la précédente n'est pas renvoyée
+# (les autres, comme la trace des pédales, ont besoin de chaque image pour avancer dans le temps).
+WIDGET_MAX_HZ = {
+    "lap": 10.0, "tyres": 10.0, "brakes": 10.0, "relative": 10.0, "standings": 10.0,  # chiffres au dixième
+    "damage": 5.0,
+    "fuel": 2.0, "pit": 2.0, "session": 2.0, "stint": 2.0, "weather": 2.0,  # changent au tour ou à la minute
+}
+PAGE_MAX_HZ = 15.0  # interface ingénieur (tous les widgets d'un coup)
 
 
 class Client:
@@ -67,10 +77,15 @@ class Client:
     la précédente, la nouvelle la remplace (on n'envoie que la plus récente, la latence reste celle d'une image).
     Les autres messages (config) sont tous envoyés, dans l'ordre."""
 
-    def __init__(self, ws: WebSocket, keys: tuple[str, ...] | None = None, snapshots: bool = True) -> None:
+    def __init__(self, ws: WebSocket, keys: tuple[str, ...] | None = None, snapshots: bool = True,
+                 max_hz: float | None = None) -> None:
         self.ws = ws
         self.keys = keys  # None : tous les champs (sauf NOT_SENT)
         self.snapshots = snapshots
+        self.min_period = 1.0 / max_hz if max_hz else 0.0
+        self.skip_same = keys is not None and bool(max_hz)
+        self.next_at = 0.0  # pas d'image avant (time.monotonic)
+        self.last_body: str | None = None  # dernière image envoyée, sans l'heure d'envoi
         self.snapshot: str | None = None
         self.messages: list[str] = []
         self.ready = asyncio.Event()
@@ -154,16 +169,27 @@ class Broadcaster:
             await asyncio.sleep(next_t - loop.time())
 
     def publish(self, data: dict) -> None:
-        """Donne l'image à chaque client ; le JSON est fait une fois par jeu de champs, pas par client."""
-        texts: dict = {}
+        """Donne l'image à chaque client qui en attend une (fréquence du widget) et dont les données ont changé ;
+        le JSON est fait une fois par jeu de champs, pas par client."""
+        now = time.monotonic()
+        bodies: dict = {}
         for client in list(self.clients):
-            if not client.snapshots:
+            if not client.snapshots or now < client.next_at:
                 continue
-            if client.keys not in texts:
-                part = ({k: v for k, v in data.items() if k not in NOT_SENT} if client.keys is None
-                        else {k: data[k] for k in client.keys if k in data})
-                texts[client.keys] = json.dumps({"type": "snapshot", "data": part}, separators=(",", ":"))
-            client.push_snapshot(texts[client.keys])
+            if client.keys not in bodies:
+                part = ({k: v for k, v in data.items() if k not in NOT_SENT and k != "ts"} if client.keys is None
+                        else {k: data[k] for k in client.keys if k in data and k != "ts"})
+                bodies[client.keys] = json.dumps(part, separators=(",", ":"))
+            body = bodies[client.keys]
+            if client.skip_same and body == client.last_body:
+                continue  # rien de nouveau à afficher
+            client.last_body = body
+            if client.min_period:  # cadence régulière ; après une pause, une période à partir de maintenant
+                due = client.next_at + client.min_period
+                client.next_at = due if due >= now else now + client.min_period
+            ts = data.get("ts")
+            data_text = body if ts is None else f'{body[:-1]}{"," if body != "{}" else ""}"ts":{json.dumps(ts)}}}'
+            client.push_snapshot(f'{{"type":"snapshot","data":{data_text}}}')
 
     async def send_all(self, message: dict) -> None:
         text = json.dumps(message, separators=(",", ":"))
@@ -206,7 +232,8 @@ def create_app(
         await ws.accept()
         widget = ws.query_params.get("widget")
         keys = COMMON_KEYS + WIDGET_KEYS[widget] if widget in WIDGET_KEYS else None
-        client = Client(ws, keys, ws.query_params.get("snapshots") != "0")
+        max_hz = WIDGET_MAX_HZ.get(widget) if widget in WIDGET_KEYS else PAGE_MAX_HZ
+        client = Client(ws, keys, ws.query_params.get("snapshots") != "0", max_hz)
         broadcaster.clients.add(client)
         try:
             # Envoi et réception en parallèle ; le premier qui s'arrête (page fermée, envoi impossible) arrête l'autre.

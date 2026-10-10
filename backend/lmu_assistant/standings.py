@@ -1,8 +1,8 @@
 """Classement par classe (F08), simplifié pour tenir dans un widget.
 
 Le serveur passe chaque Snapshot à `compute_standings`, qui remplit `snapshot.standings` à partir de
-`snapshot.vehicles` : une liste par classe (classe du joueur d'abord, puis dans l'ordre de leur meilleure
-voiture au général). Dans chaque classe on garde les `TOP` premiers, plus, dans la classe du joueur, la voiture
+`snapshot.vehicles` : une liste par classe (dans l'ordre de leur meilleure voiture au général, la classe du
+joueur en dernier, en bas du widget). Dans chaque classe on garde les `TOP` premiers, plus, dans la classe du joueur, la voiture
 juste devant lui, lui-même et celle juste derrière ; `skipped_before` marque un trou dans la liste.
 
 Écarts dans la classe (au leader de la classe, et à la voiture juste devant dans la classe) :
@@ -43,7 +43,7 @@ def compute_standings(snap: Snapshot, top: int = TOP) -> Snapshot:
     for v in sorted(snap.vehicles, key=lambda v: v.position or 10_000):
         by_class.setdefault(v.car_class, []).append(v)
     player = next((v for v in snap.vehicles if v.is_player), None)
-    order = sorted(by_class, key=lambda c: (player is None or c != player.car_class, by_class[c][0].position))
+    order = sorted(by_class, key=lambda c: (player is not None and c == player.car_class, by_class[c][0].position))
 
     for car_class in order:
         cars = by_class[car_class]

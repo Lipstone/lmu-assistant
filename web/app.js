@@ -124,15 +124,23 @@ function renderLaps(d) {
 // F05 : pneus. Par roue : températures ext / milieu / int dessinées côté extérieur de la voiture
 // (roues gauches : ext à gauche ; roues droites : ext à droite), pression et usure (% de gomme restante).
 // Couleur des températures : bleu sous la plage idéale, vert dedans, orange puis rouge au-dessus.
+// Plage idéale selon la gomme de chaque roue (pluie bien plus froide qu'une tendre), réglée dans Réglages overlay ;
+// gomme inconnue : plage « autre gomme ».
 let tyreRange = [75, 100];
+let tyreRanges = {};
+const COMPOUND_FAMILIES = [[/soft|tendre/, "soft"], [/med/, "medium"], [/hard|dure/, "hard"], [/inter/, "inter"],
+  [/wet|rain|pluie/, "wet"]];
+const compoundFamily = (name) => (COMPOUND_FAMILIES.find(([re]) => re.test((name || "").toLowerCase())) || [0, null])[1];
+const rangeFor = (compound) => tyreRanges[compoundFamily(compound)] || tyreRange;
 let pressureUnit = "kpa";
+let tyresShowBrakes = false; // température des freins sous chaque pneu (option)
 const WHEELS = ["AVG", "AVD", "ARG", "ARD"];
 const PRESSURE = { kpa: [1, 0, " kPa"], psi: [0.1450377, 1, " psi"], bar: [0.01, 2, " bar"] };
 const HOT_RED_C = 15; // rouge à 15 °C au-dessus de la plage idéale
 
-function tempClass(t) {
+function tempClass(t, range) {
   if (t == null) return "none";
-  const [lo, hi] = tyreRange;
+  const [lo, hi] = range;
   if (t < lo) return "cold";
   if (t <= hi) return "ideal";
   return t < hi + HOT_RED_C ? "warm" : "hot";
@@ -140,6 +148,7 @@ function tempClass(t) {
 
 function renderTyres(d) {
   const [k, digits, unit] = PRESSURE[pressureUnit] || PRESSURE.kpa;
+  const b = d.brakes || {};
   setHTML($("tyres"), d.wheels
     .map((w, i) => {
       // null = non transmis par le jeu (voiture au garage) : « – »
@@ -147,10 +156,14 @@ function renderTyres(d) {
       const left = i % 2 === 0;
       const temps = left ? [outer, mid, inner] : [inner, mid, outer];
       const wear = Math.round(w.wear * 100);
-      return `<div class="tyre ${left ? "left" : "right"}"><span class="wheel-name">${WHEELS[i]}</span>` +
-        `<div class="temps">${temps.map((t) => `<span class="${tempClass(t)}">${t == null ? "–" : Math.round(t)}</span>`).join("")}</div>` +
+      const range = rangeFor(w.compound);
+      const title = `${w.compound || "gomme inconnue"} : plage idéale ${range[0]}-${range[1]} °C`;
+      return `<div class="tyre ${left ? "left" : "right"}" title="${esc(title)}"><span class="wheel-name">${WHEELS[i]}` +
+        `${w.compound ? ` <span class="gum-dot" style="background:${compoundColor(w.compound)}"></span>` : ""}</span>` +
+        `<div class="temps">${temps.map((t) => `<span class="${tempClass(t, range)}">${t == null ? "–" : Math.round(t)}</span>`).join("")}</div>` +
         `<div class="tyre-info"><span>${w.pressure_kpa == null ? "–" : (w.pressure_kpa * k).toFixed(digits) + unit}</span>` +
-        `<span class="${wear < 30 ? "alert" : ""}">${wear}%</span></div></div>`;
+        `<span class="${wear < 30 ? "alert" : ""}">${wear}%</span></div>` +
+        (tyresShowBrakes ? brakeLine(w.brake_temp_c, b.threshold_c ?? 800, (b.overheat || [])[i]) : "") + "</div>";
     })
     .join(""));
 }
@@ -165,6 +178,12 @@ function brakeClass(t, threshold, overheat) {
   if (overheat || t > threshold) return "hot";
   if (t > threshold - BRAKES_WARN_C) return "warm";
   return t < BRAKES_COLD_C ? "cold" : "ideal";
+}
+
+// Option du widget Pneus : température du frein de la roue, mêmes couleurs que le widget Freins.
+function brakeLine(t, threshold, overheat) {
+  return `<div class="tyre-brake" title="frein (surchauffe au-delà de ${Math.round(threshold)} °C)"><span>Frein</span>` +
+    `<span class="brake-temp ${brakeClass(t, threshold, overheat)}">${t == null ? "–" : Math.round(t) + " °C"}</span></div>`;
 }
 
 function renderBrakes(d) {
@@ -636,7 +655,9 @@ function applyConfig(cfg) {
   fuelMode = cfg.fuel_mode || "auto";
   deltaRef = cfg.delta_reference || "best";
   tyreRange = [cfg.tyre_temp_min_c ?? 75, cfg.tyre_temp_max_c ?? 100];
+  tyreRanges = cfg.tyre_ranges || {};
   pressureUnit = cfg.pressure_unit || "kpa";
+  tyresShowBrakes = !!cfg.tyres_show_brakes;
   traceS = cfg.inputs_trace_s || 8;
   for (const w of cfg.widgets || []) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);

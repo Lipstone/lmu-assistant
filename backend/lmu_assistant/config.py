@@ -14,7 +14,7 @@ import logging
 import os
 import tempfile
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, field_validator, model_validator
 
@@ -181,6 +181,37 @@ def _default_widgets() -> list[WidgetConfig]:
     return [WidgetConfig(id=w, x=_DEFAULT_POSITIONS[w][0], y=_DEFAULT_POSITIONS[w][1]) for w in WIDGET_IDS]
 
 
+# [min, max] en °C (liste et non tuple : la config relue en JSON doit être égale à celle envoyée)
+TempRange = Annotated[list[Annotated[float, Field(ge=0, le=200)]], Field(min_length=2, max_length=2)]
+COMPOUND_LABELS = {"soft": "tendre", "medium": "medium", "hard": "dure", "inter": "intermédiaire", "wet": "pluie"}
+
+
+def _check_range(what: str, r) -> None:
+    if r[0] >= r[1]:
+        raise ValueError(f"{what} : le minimum doit être sous le maximum")
+
+
+class TyreRanges(BaseModel):
+    """Plage de température idéale (°C, min et max) de chaque famille de gomme, pour le widget Pneus. La gomme de
+    chaque roue est reconnue d'après le nom donné par le jeu (soft, medium, hard, inter, wet) ; gomme inconnue :
+    `tyre_temp_min_c` / `tyre_temp_max_c`. Valeurs par défaut indicatives : les pneus pluie travaillent bien plus
+    froid que les slicks, une gomme tendre un peu plus froid qu'une dure."""
+
+    model_config = ConfigDict(extra="ignore")
+
+    soft: TempRange = [75.0, 95.0]
+    medium: TempRange = [80.0, 100.0]
+    hard: TempRange = [85.0, 105.0]
+    inter: TempRange = [55.0, 80.0]
+    wet: TempRange = [40.0, 65.0]
+
+    @model_validator(mode="after")
+    def _ordered(self) -> TyreRanges:
+        for key, label in COMPOUND_LABELS.items():
+            _check_range(f"plage idéale des pneus ({label})", getattr(self, key))
+        return self
+
+
 class AppConfig(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -199,9 +230,20 @@ class AppConfig(BaseModel):
     laptime_avg_laps: int = Field(
         5, ge=2, le=20, description="widget Temps au tour : nombre de tours valides pour la moyenne et la régularité"
     )
-    tyre_temp_min_c: float = Field(75.0, ge=0, le=200, description="widget Pneus : bas de la plage de température idéale")
-    tyre_temp_max_c: float = Field(100.0, ge=0, le=200, description="widget Pneus : haut de la plage de température idéale")
+    tyre_temp_min_c: float = Field(
+        75.0, ge=0, le=200, description="widget Pneus : bas de la plage de température idéale (gomme inconnue)"
+    )
+    tyre_temp_max_c: float = Field(
+        100.0, ge=0, le=200, description="widget Pneus : haut de la plage de température idéale (gomme inconnue)"
+    )
+    tyre_ranges: TyreRanges = Field(
+        default_factory=TyreRanges,
+        description="widget Pneus : plage de température idéale de chaque gomme, choisie d'après la gomme de chaque roue",
+    )
     pressure_unit: Literal["kpa", "psi", "bar"] = Field("kpa", description="widget Pneus : unité des pressions")
+    tyres_show_brakes: bool = Field(
+        False, description="widget Pneus : température des freins de chaque roue (couleurs et seuil du widget Freins)"
+    )
     brake_overheat_c: float = Field(800.0, ge=100, le=2000, description="widget Freins : seuil d'alerte surchauffe (°C)")
     pit_loss_s: float = Field(
         60.0, ge=0, le=600, description="widget Stand : temps perdu au stand tant qu'aucun arrêt n'a été mesuré (s)"
@@ -244,8 +286,7 @@ class AppConfig(BaseModel):
 
     @model_validator(mode="after")
     def _tyre_range(self) -> AppConfig:
-        if self.tyre_temp_min_c >= self.tyre_temp_max_c:
-            raise ValueError("plage idéale des pneus : le minimum doit être sous le maximum")
+        _check_range("plage idéale des pneus", (self.tyre_temp_min_c, self.tyre_temp_max_c))
         return self
 
     @field_validator("widgets")
