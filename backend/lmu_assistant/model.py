@@ -102,7 +102,7 @@ class Vehicle:
     fuel_l: float | None = None
     energy_pct: float | None = None  # énergie virtuelle restante, None si la voiture n'en a pas
     tyre_wear: list[float] | None = None  # usure des 4 pneus (mWear, remonte quand les pneus sont changés)
-    compounds: list[str] | None = None  # gomme montée à l'avant et à l'arrière (noms du jeu)
+    compounds: list[str] | None = None  # gomme de chaque roue AVG, AVD, ARG, ARD (noms du jeu)
     # Calculés par `opponents.OpponentsCalculator`
     damage_pct: float | None = None  # état global de la carrosserie, 100 = intacte
     fuel_per_lap: float | None = None  # litres par tour (moyenne des derniers tours sans arrêt)

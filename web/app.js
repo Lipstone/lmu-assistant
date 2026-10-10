@@ -253,7 +253,8 @@ function tyresCell(e) {
   return `<td class="opt tyres ${n > 1 ? "warn" : "intact"}" title="${n === 1 ? "1er" : n + "e"} relais sur ce train de pneus (estimé)">${n}</td>`;
 }
 
-// Gomme : un rond de couleur, ou deux (avant puis arrière) si les deux essieux n'ont pas la même gomme.
+// Gomme (4 roues AVG, AVD, ARG, ARD) : un rond si les 4 pneus sont pareils, deux (avant puis arrière) si chaque essieu
+// a sa gomme, sinon 4 ronds en carré comme les roues vues de dessus.
 // Couleurs habituelles : tendre rouge, medium jaune, dure blanche, intermédiaire verte, pluie bleue.
 const COMPOUND_COLORS = [[/soft|tendre/, "#e53935"], [/med/, "#fdd835"], [/hard|dure/, "#eeeeee"],
   [/inter/, "#43a047"], [/wet|rain|pluie/, "#1e88e5"]];
@@ -261,10 +262,15 @@ const compoundColor = (name) => (COMPOUND_COLORS.find(([re]) => re.test(name.toL
 
 function compoundCell(e) {
   const c = e.compounds;
-  if (!c || !c.length) return '<td class="opt gum" title="gomme non transmise par le jeu">–</td>';
-  const dots = (c[0] === c[1] ? [c[0]] : c)
-    .map((n) => `<span class="gum-dot" style="background:${compoundColor(n)}"></span>`).join("");
-  const title = c[0] === c[1] ? esc(c[0]) : `avant ${esc(c[0])} · arrière ${esc(c[1])}`;
+  if (!c || c.length !== 4) return '<td class="opt gum" title="gomme non transmise par le jeu">–</td>';
+  const dot = (n) => `<span class="gum-dot" style="background:${compoundColor(n)}"></span>`;
+  let dots, title;
+  if (c.every((n) => n === c[0])) [dots, title] = [dot(c[0]), esc(c[0])];
+  else if (c[0] === c[1] && c[2] === c[3]) [dots, title] = [dot(c[0]) + dot(c[2]), `avant ${esc(c[0])} · arrière ${esc(c[2])}`];
+  else {
+    dots = `<span class="gum-grid">${c.map(dot).join("")}</span>`;
+    title = ["AVG", "AVD", "ARG", "ARD"].map((w, i) => `${w} ${esc(c[i])}`).join(" · ");
+  }
   return `<td class="opt gum" title="${title}">${dots}</td>`;
 }
 
