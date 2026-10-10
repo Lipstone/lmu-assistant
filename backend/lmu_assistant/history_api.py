@@ -8,6 +8,7 @@ import json
 
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response
+from pydantic import BaseModel
 
 from . import analysis
 from .history import HistoryStore
@@ -50,6 +51,13 @@ def to_csv(rows: list[dict], columns: list, excel: bool) -> str:
             line.append("" if v is None else v)
         w.writerow(line)
     return ("\ufeff" if excel else "") + out.getvalue()
+
+
+class SessionIds(BaseModel):
+    ids: list[int]
+
+
+MAX_COMPARED = 8
 
 
 def make_history_router(store: HistoryStore, notes=None) -> APIRouter:
@@ -115,6 +123,45 @@ def make_history_router(store: HistoryStore, notes=None) -> APIRouter:
         if not store.delete_session(session_id):
             raise HTTPException(404, "session inconnue")
         return {"deleted": session_id}
+
+    @router.post("/sessions/delete")
+    def delete_sessions(body: SessionIds) -> dict:
+        """Suppression groupée (cases cochées de la page Analyse)."""
+        return {"deleted": store.delete_sessions(body.ids)}
+
+    @router.get("/compare-sessions")
+    def compare_sessions(ids: str) -> dict:
+        """Comparaison de sessions : rapport de chacune, tours propres, et meilleur tour de chaque session
+        comparé au meilleur tour de la référence (la session au meilleur tour le plus rapide)."""
+        try:
+            wanted = list(dict.fromkeys(int(x) for x in ids.split(",") if x.strip()))
+        except ValueError:
+            raise HTTPException(400, "ids invalides")
+        if not 2 <= len(wanted) <= MAX_COMPARED:
+            raise HTTPException(400, f"choisir de 2 à {MAX_COMPARED} sessions")
+        out = []
+        for sid in wanted:
+            data = _full(sid)
+            laps = data["laps"]
+            valid = [lap for lap in laps if lap.get("valid") and lap.get("time_s") is not None]
+            best = min(valid, key=lambda lap: lap["time_s"]) if valid else None
+            degs = [s["deg_s_per_lap"] for s in data["stints"] if s.get("deg_s_per_lap") is not None]
+            out.append({
+                "session": data["session"], "report": data["report"], "theoretical": data["theoretical"],
+                "stints": len(data["stints"]),
+                "deg_s_per_lap": round(sum(degs) / len(degs), 3) if degs else None,
+                "best_lap": {"id": best["id"], "lap": best["lap"]} if best else None,
+                "laps": [[lap["lap"], lap["time_s"]] for lap in laps if analysis.is_clean(lap)],
+            })
+        with_best = [s for s in out if s["best_lap"]]
+        ref = None
+        if with_best:
+            ref = min(with_best, key=lambda s: s["report"]["pace"]["best_s"])
+            ref_lap = store.lap(ref["best_lap"]["id"])
+            for s in with_best:
+                c = analysis.compare_laps(ref_lap, store.lap(s["best_lap"]["id"]))
+                s["best_vs_ref"] = {"sectors": c["sectors"], "delta": c["delta"], "speed": c["speed_b"]}
+        return {"reference": ref["session"]["id"] if ref else None, "sessions": out}
 
     @router.get("/laps/{lap_id}")
     def lap(lap_id: int) -> dict:

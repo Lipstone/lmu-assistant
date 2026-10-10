@@ -11,8 +11,12 @@ Au passage de la ligne, un tour complet et propre devient une trace de référen
 Delta = temps écoulé dans le tour en cours − temps de la référence au même avancement (interpolé).
 Négatif = plus rapide que la référence.
 
-Un tour ne sert pas de référence s'il n'a pas été suivi depuis la ligne, s'il est passé par les stands
-ou si l'avancement n'a pas été relevé sur presque tout le tour.
+Le temps d'un tour terminé est celui retenu par F04 (`snap.laps`, calculé juste avant) : le jeu peut le publier
+un peu après le passage de la ligne, et lire `last_lap_s` à l'instant du passage donnait parfois le temps du tour
+précédent.
+
+Un tour ne sert pas de référence s'il n'a pas été suivi depuis la ligne, s'il est passé par les stands,
+s'il a été invalidé par le jeu (limites de piste) ou si l'avancement n'a pas été relevé sur presque tout le tour.
 """
 
 from __future__ import annotations
@@ -32,11 +36,15 @@ from .paths import data_dir
 log = logging.getLogger(__name__)
 
 DEFAULT_RECORDS_PATH = data_dir() / "records.json"
+# Version 2 : avant, un tour invalidé (limites de piste) ou un temps du tour précédent pouvait devenir un record,
+# plus court que les vrais tours. Les records de la version 1 sont ignorés (et remplacés au premier bon tour).
+RECORDS_VERSION = 2
 START_MAX_FRACTION = 0.05  # 1er relevé d'un tour : il faut être tout près de la ligne
 END_MIN_FRACTION = 0.95  # dernier relevé avant la ligne : le tour doit être couvert presque en entier
 LATE_START_S = 5.0  # sans relevé près de la ligne après 5 s de tour, le tour n'est pas suivi depuis la ligne
 MAX_GAP_FRACTION = 0.1  # trou maximal entre deux relevés (pause, perte de données)
 MAX_DELTA_RATIO = 0.25  # au-delà de 25 % du temps de référence, le delta n'a pas de sens (stands, sortie)
+PENDING_S = 12.0  # tour terminé abandonné si F04 n'a toujours pas son temps après 12 s du tour suivant
 
 
 @dataclass
@@ -77,7 +85,11 @@ class RecordStore:
         self._traces: dict[str, Trace | None] = {}  # traces déjà lues
         if self.path and self.path.exists():
             try:
-                self.records = json.loads(self.path.read_text(encoding="utf-8")).get("records", {})
+                data = json.loads(self.path.read_text(encoding="utf-8"))
+                if data.get("version", 1) >= RECORDS_VERSION:
+                    self.records = data.get("records", {})
+                else:
+                    log.info("Records %s d'une version précédente ignorés (tours invalidés possibles)", self.path)
             except (OSError, ValueError, AttributeError) as exc:
                 log.warning("Records %s illisibles, ignorés : %s", self.path, exc)
 
@@ -104,7 +116,7 @@ class RecordStore:
             self.path.parent.mkdir(parents=True, exist_ok=True)
             fd, tmp = tempfile.mkstemp(dir=self.path.parent, prefix=".records-", suffix=".json")
             with os.fdopen(fd, "w", encoding="utf-8") as f:
-                json.dump({"version": 1, "records": self.records}, f, ensure_ascii=False)
+                json.dump({"version": RECORDS_VERSION, "records": self.records}, f, ensure_ascii=False)
             os.replace(tmp, self.path)
         except OSError as exc:
             log.warning("Record non enregistré dans %s : %s", self.path, exc)
@@ -121,6 +133,8 @@ class DeltaCalculator:
         self._fractions: list[float] = []
         self._times: list[float] = []
         self._clean = False  # tour en cours suivi depuis la ligne, sans stand ni trou
+        self._pending: tuple[int, list[float], list[float]] | None = None  # tour terminé dont on attend le temps
+        self._pending_started = False
         self.best: Trace | None = None
         self.last: Trace | None = None
 
@@ -133,13 +147,18 @@ class DeltaCalculator:
             self._key = key
 
         if snap.lap != self._lap:
-            if self._lap is not None and snap.lap == self._lap + 1:
-                self._finish_lap(snap)
+            self._pending = None
+            if self._lap is not None and snap.lap == self._lap + 1 and self._clean and self._fractions \
+                    and self._fractions[-1] >= END_MIN_FRACTION:
+                self._pending = (self._lap, self._fractions, self._times)
+                self._pending_started = False  # chrono du tour suivant parti (la télémétrie peut être en retard)
             self._lap = snap.lap
             self._fractions, self._times = [], []
             self._clean = not snap.in_pits
         if snap.in_pits:
             self._clean = False
+        if self._pending is not None:
+            self._finish_lap(snap)
         self._record_point(snap)
 
         record = self.records.get(snap.track, snap.car)
@@ -171,12 +190,18 @@ class DeltaCalculator:
         self._times.append(snap.current_lap_s)
 
     def _finish_lap(self, snap: Snapshot) -> None:
-        lap_s = snap.last_lap_s
-        if not (self._clean and lap_s and self._fractions and self._fractions[-1] >= END_MIN_FRACTION):
+        lap, fractions, times = self._pending
+        entry = next((e for e in snap.laps.recent if e.lap == lap), None)
+        if entry is None:
+            self._pending_started |= snap.current_lap_s < PENDING_S
+            if self._pending_started and snap.current_lap_s > PENDING_S:
+                self._pending = None
             return
-        if lap_s < self._times[-1]:
-            return  # temps officiel incohérent avec les relevés
-        trace = Trace(lap_s, [*self._fractions, 1.0], [*self._times, lap_s])
+        self._pending = None
+        lap_s = entry.time_s
+        if not (entry.valid and lap_s) or lap_s < times[-1]:
+            return  # tour invalidé, passé aux stands, ou temps incohérent avec les relevés
+        trace = Trace(lap_s, [*fractions, 1.0], [*times, lap_s])
         self.last = trace
         if self.best is None or lap_s < self.best.lap_s:
             self.best = trace
