@@ -235,6 +235,9 @@ class AppConfig(BaseModel):
         description="widget Pneus : plage de température idéale de chaque gomme, choisie d'après la gomme de chaque roue",
     )
     pressure_unit: Literal["kpa", "psi", "bar"] = Field("kpa", description="widget Pneus : unité des pressions")
+    tyres_show_brakes: bool = Field(
+        False, description="widget Pneus : température des freins de chaque roue (couleurs et seuil du widget Freins)"
+    )
     brake_overheat_c: float = Field(800.0, ge=100, le=2000, description="widget Freins : seuil d'alerte surchauffe (°C)")
     pit_loss_s: float = Field(
         60.0, ge=0, le=600, description="widget Stand : temps perdu au stand tant qu'aucun arrêt n'a été mesuré (s)"

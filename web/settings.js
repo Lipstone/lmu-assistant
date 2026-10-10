@@ -144,6 +144,7 @@ function fill(cfg) {
     setValue($(`tyre-${k}-max`), r[1]);
   }
   setValue($("pressure-unit"), cfg.pressure_unit);
+  setValue($("tyres-show-brakes"), !!cfg.tyres_show_brakes);
   setValue($("brake-overheat"), cfg.brake_overheat_c);
   setValue($("pit-loss"), cfg.pit_loss_s);
   setValue($("shift-use-table"), cfg.shift_use_table);
@@ -183,6 +184,7 @@ function collect() {
     tyre_temp_max_c: num($("tyre-temp-max"), config.tyre_temp_max_c),
     tyre_ranges: tyreRanges(),
     pressure_unit: $("pressure-unit").value,
+    tyres_show_brakes: $("tyres-show-brakes").checked,
     brake_overheat_c: num($("brake-overheat"), config.brake_overheat_c),
     pit_loss_s: num($("pit-loss"), config.pit_loss_s),
     shift_use_table: $("shift-use-table").checked,

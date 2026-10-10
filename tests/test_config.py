@@ -241,3 +241,8 @@ def test_tyre_ranges_per_compound(tmp_path):
     store = ConfigStore(tmp_path / "config.json")
     store.save(cfg)
     assert ConfigStore(tmp_path / "config.json").config.tyre_ranges.wet == [30, 60]
+
+
+def test_tyres_show_brakes_off_by_default():
+    assert not AppConfig().tyres_show_brakes
+    assert AppConfig.model_validate({"tyres_show_brakes": True}).tyres_show_brakes

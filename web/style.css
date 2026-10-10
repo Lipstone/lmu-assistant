@@ -60,6 +60,8 @@ dd.good { color: var(--ok); }
 .temps .none { background: #3a3f48; color: var(--muted); }
 .tyre-info { display: flex; justify-content: space-between; gap: 4px; margin-top: 3px; font-size: 13px; white-space: nowrap; }
 .tyre-info .alert { color: var(--warn); font-weight: 600; }
+.tyre-brake { display: flex; justify-content: space-between; gap: 4px; margin-top: 2px; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.tyre-brake .brake-temp { font-size: 13px; }
 
 .brakes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; font-variant-numeric: tabular-nums; }
 .brake { background: #22262e; border-radius: 4px; padding: 4px 6px; display: flex; flex-direction: column; }

@@ -48,7 +48,7 @@ WIDGET_KEYS = {
     "delta": ("delta",),
     "fuel": ("fuel", "energy", "fuel_l", "fuel_capacity_l", "virtual_energy_pct"),
     "car": ("speed_kmh", "gear", "rpm"),
-    "tyres": ("wheels",),
+    "tyres": ("wheels", "brakes"),  # freins : option tyres_show_brakes
     "brakes": ("brakes", "wheels"),
     "relative": ("relative",),
     "standings": ("standings",),
