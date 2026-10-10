@@ -59,7 +59,8 @@ function fill(cfg) {
       .map(
         (w) => `<tr data-id="${w.id}">
           <td>${NAMES[w.id] || w.id}</td>
-          <td><input type="checkbox" data-k="visible"></td>
+          <td><input type="checkbox" data-k="visible" title="Fenêtre du widget dans l'overlay course"></td>
+          <td><input type="checkbox" data-k="page_visible" title="Widget affiché dans l'interface ingénieur"></td>
           <td><input type="number" data-k="x"></td>
           <td><input type="number" data-k="y"></td>
           <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05"></td>
@@ -72,7 +73,7 @@ function fill(cfg) {
   }
   for (const w of cfg.widgets) {
     const tr = $("widgets").querySelector(`tr[data-id="${w.id}"]`);
-    for (const k of ["visible", "x", "y", "scale"]) setValue(tr.querySelector(`[data-k="${k}"]`), w[k]);
+    for (const k of ["visible", "page_visible", "x", "y", "scale"]) setValue(tr.querySelector(`[data-k="${k}"]`), w[k]);
     for (const [k] of COLUMNS) {
       const box = tr.querySelector(`[data-k="${k}"]`);
       if (box) setValue(box, !!w[k]);
@@ -113,6 +114,7 @@ function collect() {
     return {
       id: tr.dataset.id,
       visible: get("visible").checked,
+      page_visible: get("page_visible").checked,
       x: Math.round(num(get("x"), old.x)),
       y: Math.round(num(get("y"), old.y)),
       scale: num(get("scale"), old.scale),

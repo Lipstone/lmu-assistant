@@ -218,3 +218,21 @@ def test_lap_columns_default_and_saved(tmp_path):
     store.save(AppConfig.model_validate(data))
     loaded = {w.id: w for w in ConfigStore(tmp_path / "config.json").config.widgets}
     assert loaded["standings"].show_best_lap and not loaded["standings"].show_last_lap
+
+
+def test_page_visible_independent_from_overlay():
+    from lmu_assistant.config import AppConfig
+
+    cfg = AppConfig.model_validate({"widgets": [{"id": "fuel", "visible": False, "page_visible": True}]})
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.visible, fuel.page_visible) == (False, True)
+
+
+def test_old_visible_also_hides_in_engineer_page():
+    from lmu_assistant.config import AppConfig
+
+    # Config d'avant la séparation : un widget masqué l'était partout, il le reste
+    cfg = AppConfig.model_validate({"widgets": [{"id": "fuel", "visible": False}]})
+    fuel = next(w for w in cfg.widgets if w.id == "fuel")
+    assert (fuel.visible, fuel.page_visible) == (False, False)
+    assert next(w for w in cfg.widgets if w.id == "lap").page_visible is True

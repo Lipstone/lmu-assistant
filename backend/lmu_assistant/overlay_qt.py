@@ -7,17 +7,22 @@ texte net) et gère les clics traversants (Qt.WindowTransparentForInput).
 
 Qt n'accepte d'agir sur les fenêtres que depuis son thread : `QtWindow` reçoit les ordres de la
 logique de l'overlay (autre thread) par signaux, exécutés dans le thread de l'interface.
+
+L'interface ingénieur et l'overlay course sont indépendants : fermer la fenêtre de l'interface la cache
+seulement, l'application reste dans la zone de notification (icône près de l'horloge : rouvrir
+l'interface, afficher/masquer l'overlay, mode placement, quitter).
 """
 
 import os
 import signal
 import threading
 
-from PySide6.QtCore import QFile, QIODevice, QObject, Qt, QTimer, Signal, Slot
+from PySide6.QtCore import QFile, QIODevice, QObject, QRectF, Qt, QTimer, Signal, Slot
+from PySide6.QtGui import QAction, QColor, QFont, QIcon, QPainter, QPixmap
 from PySide6.QtWebChannel import QWebChannel
 from PySide6.QtWebEngineCore import QWebEngineScript
 from PySide6.QtWebEngineWidgets import QWebEngineView
-from PySide6.QtWidgets import QApplication
+from PySide6.QtWidgets import QApplication, QMenu, QSystemTrayIcon
 
 # Les fenêtres affichent la même page locale : un seul processus de rendu pour toutes.
 os.environ.setdefault("QTWEBENGINE_CHROMIUM_FLAGS", "--process-per-site")
@@ -50,10 +55,11 @@ def _channel_script() -> QWebEngineScript:
 class View(QWebEngineView):
     """Fenêtre d'un widget : sans bordure, au premier plan, fond transparent pixel par pixel."""
 
-    def __init__(self, title: str) -> None:
+    def __init__(self, title: str, click_through: bool = False) -> None:
         super().__init__()
         self.setWindowTitle(title)
-        self.setWindowFlags(FLAGS)
+        # Clics traversants dès la création : la fenêtre native naît avec le bon style.
+        self.setWindowFlags(FLAGS | (Qt.WindowType.WindowTransparentForInput if click_through else Qt.WindowType(0)))
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)  # ne vole pas le focus au jeu
         self.setStyleSheet("background: transparent")
@@ -70,10 +76,13 @@ class View(QWebEngineView):
 
 class MainWindow(QWebEngineView):
     """Fenêtre de l'interface ingénieur (page principale) : fenêtre normale, dans la barre des tâches.
-    La fermer quitte l'application (serveur et overlay compris)."""
+    Avec l'icône de notification (`keep_running`), la fermer la cache seulement : l'overlay course continue.
+    Sinon la fermer quitte l'application (serveur et overlay compris)."""
 
     def __init__(self, url: str, title: str) -> None:
         super().__init__()
+        self.keep_running = False
+        self.on_hidden = None
         self.setWindowTitle(title)
         self.setMinimumSize(640, 400)
         self.resize(1440, 900)
@@ -83,6 +92,12 @@ class MainWindow(QWebEngineView):
         self.setUrl(url)
 
     def closeEvent(self, event) -> None:
+        if self.keep_running:
+            event.ignore()
+            self.hide()
+            if self.on_hidden:
+                self.on_hidden()
+            return
         super().closeEvent(event)
         QApplication.instance().quit()
 
@@ -101,6 +116,7 @@ class QtWindow(QObject):
         self.view = view
         self.x, self.y = view.x(), view.y()
         self.shown = False
+        self.click_through: bool | None = None
         view.on_move = self._moved
         queued = Qt.ConnectionType.QueuedConnection
         self._move.connect(self._do_move, queued)
@@ -141,13 +157,25 @@ class QtWindow(QObject):
     def _do_visible(self, visible: bool) -> None:
         self.shown = visible
         self.view.setVisible(visible)
+        if visible and self.click_through is not None:
+            self._set_input_flag(self.click_through)
 
     @Slot(bool)
     def _do_click(self, enabled: bool) -> None:
-        # Changer les drapeaux masque la fenêtre : on la réaffiche si elle était visible.
-        self.view.setWindowFlag(Qt.WindowType.WindowTransparentForInput, enabled)
-        if self.shown:
-            self.view.show()
+        self.click_through = enabled
+        self._set_input_flag(enabled)
+
+    def _set_input_flag(self, enabled: bool) -> None:
+        """Clics traversants ou non. Sur la fenêtre native déjà créée, le style change sur place
+        (QWindow.setFlags) : instantané. QWidget.setWindowFlag recréerait chaque fenêtre et sa page,
+        ce qui rendait le mode placement très lent à s'activer (une quinzaine de fenêtres)."""
+        flag = Qt.WindowType.WindowTransparentForInput
+        handle = self.view.windowHandle()
+        if handle is None:  # pas encore affichée : réglé à la création de la fenêtre native
+            self.view.setWindowFlag(flag, enabled)
+            return
+        if bool(handle.flags() & flag) != enabled:
+            handle.setFlag(flag, enabled)
 
 
 class Bridge(QObject):
@@ -170,25 +198,88 @@ class Bridge(QObject):
             self._overlay.set_scale(self._wid, scale, False)
 
     @Slot()
+    def hide_widget(self) -> None:
+        """Croix du mode placement : retire ce widget de l'overlay (enregistrement hors du thread de l'interface)."""
+        threading.Thread(target=self._overlay.hide_widget, args=(self._wid,), daemon=True).start()
+
+    @Slot()
     def start_move(self) -> None:
         handle = self._view.windowHandle()
         if handle is not None:
             handle.startSystemMove()  # déplacement natif, suivi ensuite par Overlay.sync_moves
 
 
+def app_icon() -> QIcon:
+    """Icône de l'application (zone de notification) : pastille bleue « LMU »."""
+    pix = QPixmap(64, 64)
+    pix.fill(Qt.GlobalColor.transparent)
+    p = QPainter(pix)
+    p.setRenderHint(QPainter.RenderHint.Antialiasing)
+    p.setBrush(QColor("#4fc3f7"))
+    p.setPen(Qt.PenStyle.NoPen)
+    p.drawRoundedRect(QRectF(2, 2, 60, 60), 14, 14)
+    p.setPen(QColor("#0f1115"))
+    p.setFont(QFont("Segoe UI", 19, QFont.Weight.Bold))
+    p.drawText(QRectF(0, 0, 64, 64), Qt.AlignmentFlag.AlignCenter, "LMU")
+    p.end()
+    return QIcon(pix)
+
+
+class Tray(QObject):
+    """Icône de la zone de notification : l'application tourne tant qu'on ne choisit pas « Quitter »,
+    l'interface ingénieur s'ouvre et se ferme sans toucher à l'overlay course."""
+
+    def __init__(self, app: QApplication, overlay, open_main, title: str) -> None:
+        super().__init__()
+        self.icon = QSystemTrayIcon(app_icon())
+        self.icon.setToolTip(title)
+        self.title = title
+        self.told = False
+        menu = QMenu()
+        actions = [("Interface ingénieur", open_main)]
+        if overlay is not None:
+            def in_thread(fn):  # l'overlay enregistre sur le serveur : hors du thread de l'interface
+                return lambda: threading.Thread(target=fn, daemon=True).start()
+
+            actions += [("Afficher / masquer l'overlay course", in_thread(overlay.toggle)),
+                        ("Mode placement (déplacer, retirer des widgets)", in_thread(overlay.toggle_placement))]
+        for label, fn in actions:
+            action = QAction(label, menu)
+            action.triggered.connect(fn)
+            menu.addAction(action)
+        menu.addSeparator()
+        quit_action = QAction("Quitter LMU Assistant", menu)
+        quit_action.triggered.connect(app.quit)
+        menu.addAction(quit_action)
+        self.menu = menu
+        self.icon.setContextMenu(menu)
+        self.icon.activated.connect(
+            lambda reason: open_main() if reason in (QSystemTrayIcon.ActivationReason.Trigger,
+                                                     QSystemTrayIcon.ActivationReason.DoubleClick) else None
+        )
+        self.icon.show()
+
+    def main_hidden(self) -> None:
+        if not self.told:  # une seule fois : où est passée l'application
+            self.told = True
+            self.icon.showMessage(self.title, "L'overlay course continue. Icône LMU près de l'horloge : "
+                                  "rouvrir l'interface ou quitter.", app_icon(), 5000)
+
+
 def run(overlay, url_for, title_for, states: dict, quit_after: float | None = None,
-        main_url: str | None = None, main_title: str = "LMU Assistant") -> int:
-    """Crée une fenêtre par widget (si `overlay`) et la fenêtre de l'interface ingénieur (si `main_url`),
-    puis exécute la boucle Qt (thread principal) jusqu'à la fermeture.
+        main_url: str | None = None, main_title: str = "LMU Assistant", show_main: bool = True) -> int:
+    """Crée une fenêtre par widget (si `overlay`) et la fenêtre de l'interface ingénieur (`main_url`, affichée
+    au lancement si `show_main`), puis exécute la boucle Qt (thread principal) jusqu'à « Quitter ».
     `states` : état initial de chaque fenêtre (WindowState). Renvoie le nombre de fenêtres de widgets créées."""
     app = QApplication.instance() or QApplication([])
     app.setApplicationName(main_title)
+    app.setWindowIcon(app_icon())
     script = _channel_script()
     keep = []  # ponts, canaux et fenêtre principale : gardés en vie tant que l'application tourne
     if overlay is None:
         states = {}
     for wid, state in states.items():
-        view = View(title_for(wid))
+        view = View(title_for(wid), state.click_through)
         view.page().scripts().insert(script)
         bridge = Bridge(overlay, wid, view)
         channel = QWebChannel(view.page())
@@ -201,11 +292,27 @@ def run(overlay, url_for, title_for, states: dict, quit_after: float | None = No
         view.setUrl(url_for(wid))
     if overlay is not None:
         threading.Thread(target=overlay.run, name="overlay", daemon=True).start()
-    if main_url:
-        main = MainWindow(main_url, main_title)
-        main.show()
-        keep.append(main)
-        print(f"[interface] fenêtre ouverte : {main_url}")
+    main = None
+
+    def open_main() -> None:
+        nonlocal main
+        if main is None:
+            main = MainWindow(main_url, main_title)
+            main.keep_running = tray is not None
+            main.on_hidden = tray.main_hidden if tray is not None else None
+            print(f"[interface] fenêtre ouverte : {main_url}")
+        main.showNormal()
+        main.raise_()
+        main.activateWindow()
+
+    # Icône de notification : seulement avec l'overlay (sans lui, fermer l'interface quitte, comme avant).
+    tray = None
+    if overlay is not None and main_url and QSystemTrayIcon.isSystemTrayAvailable():
+        tray = Tray(app, overlay, open_main, main_title)
+        app.setQuitOnLastWindowClosed(False)
+        keep.append(tray)
+    if main_url and show_main:
+        open_main()
     # Ctrl+C dans la console : Python ne reprend la main que si la boucle Qt lui laisse du temps.
     if threading.current_thread() is threading.main_thread():
         signal.signal(signal.SIGINT, lambda *_: app.quit())

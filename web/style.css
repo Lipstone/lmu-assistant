@@ -212,7 +212,7 @@ body.overlay .widget { --bg-alpha: 0.75; --text-alpha: 1;
   /* Lisible même sans fond : contour sombre d'autant plus marqué que le fond est transparent */
   --halo: rgba(0, 0, 0, calc(1 - var(--bg-alpha) * 0.7));
   text-shadow: 0 0 1px var(--halo), 0 0 2px var(--halo), 0 1px 3px var(--halo); }
-body.overlay .widget > :not(.grip) { opacity: var(--text-alpha); }
+body.overlay .widget > :not(.grip, .w-close) { opacity: var(--text-alpha); }
 /* Texte sur pastille colorée : pas de contour sombre */
 body.overlay :is(.temps span, .class-pos, .flag, .aid.on, .pit, .brake-alert) { text-shadow: none; }
 body.overlay .widget h2 { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; color: #7fcff5; margin: 0 0 4px;
@@ -251,6 +251,24 @@ body.overlay .big.delta { font-size: 34px; } /* plus de lignes et des valeurs pl
 body.placing .widget { outline: 2px dashed var(--accent); outline-offset: -2px; cursor: move; user-select: none; }
 body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize;
   background: linear-gradient(135deg, transparent 50%, var(--accent) 50%); border-bottom-right-radius: 8px; touch-action: none; }
+
+/* Croix d'un widget : sur la page, au survol (masque le widget de l'interface) ; en overlay, en mode placement
+   seulement (retire le widget de l'overlay course). */
+body:not(.overlay) .widget { position: relative; }
+.w-close { display: none; position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; padding: 0; border: 0;
+  border-radius: 50%; background: #2a2e36; color: var(--muted); font: 600 16px/22px system-ui, sans-serif; text-align: center;
+  cursor: pointer; z-index: 2; }
+.w-close:hover { background: var(--bad); color: #fff; }
+body:not(.overlay) .widget:hover > .w-close { display: block; }
+body.placing .w-close { display: block; background: var(--bad); color: #fff; cursor: pointer; }
+.widget-menu { position: relative; font-size: 14px; }
+.widget-menu summary { cursor: pointer; color: var(--accent); list-style: none; }
+.widget-menu summary::-webkit-details-marker { display: none; }
+.widget-menu summary::after { content: " ▾"; }
+.widget-menu > div { position: absolute; right: 0; top: calc(100% + 8px); z-index: 10; background: var(--panel);
+  border: 1px solid #333; border-radius: 6px; padding: 8px 12px; display: grid; gap: 4px; min-width: 200px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5); }
+.widget-menu label { display: flex; gap: 8px; align-items: center; white-space: nowrap; cursor: pointer; }
 
 /* Page de réglages */
 .settings { max-width: 900px; padding: 16px; display: grid; gap: 16px; }

@@ -186,3 +186,44 @@ def test_fit_before_first_apply_is_kept(monkeypatch):
     assert ("resize", 220, 180) in windows["lap"].calls
     ov.set_content("lap", "x", None)  # valeur invalide de la page : ignorée
     assert ov.content["lap"] == (220.0, 180.0)
+
+
+def test_toggle_placement_applies_before_saving(monkeypatch):
+    server = FakeServer(monkeypatch, config())
+    ov, _, clicks = make_overlay(monkeypatch)
+    ov.apply(server.cfg)
+    clicks.clear()
+    order = []
+    monkeypatch.setattr(overlay, "put_config", lambda url, cfg: order.append(("put", list(clicks))) or True)
+    ov.toggle_placement()
+    # Les fenêtres sont devenues cliquables avant l'aller-retour avec le serveur
+    assert order == [("put", [(w, False) for w in WIDGET_IDS])]
+
+
+def test_stale_config_does_not_undo_local_action(monkeypatch):
+    server = FakeServer(monkeypatch, config())
+    ov, windows, _ = make_overlay(monkeypatch)
+    ov.apply(server.cfg)
+    generation = ov.generation
+    stale = json.loads(json.dumps(server.cfg))  # lue par la boucle de suivi juste avant le raccourci
+    ov.toggle_placement()
+    ov.apply_fetched(stale, generation)
+    assert ov.placement  # la config périmée est ignorée
+    ov.apply_fetched(server.cfg, ov.generation)
+    assert ov.placement
+
+
+def test_close_cross_hides_widget_and_saves(monkeypatch):
+    server = FakeServer(monkeypatch, config(placement=True))
+    ov, windows, _ = make_overlay(monkeypatch)
+    ov.apply(server.cfg)
+    windows["fuel"].calls.clear()
+    ov.hide_widget("fuel")
+    assert windows["fuel"].calls == [("hide",)]
+    assert server.widget("fuel")["visible"] is False
+    assert server.widget("fuel")["page_visible"] is True  # l'interface ingénieur garde le widget
+    ov.apply(server.cfg)
+    assert windows["fuel"].calls == [("hide",)]
+    ov.toggle()
+    ov.toggle()  # afficher/masquer l'overlay ne le fait pas revenir
+    assert ("show",) not in windows["fuel"].calls

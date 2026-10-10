@@ -15,7 +15,9 @@ Les changements sont relus toutes les 2 s et appliqués sans redémarrer.
 
 Mode placement (case dans les réglages ou raccourci, `ctrl+shift+p` par défaut) : les clics ne
 traversent plus, chaque fenêtre se déplace en la faisant glisser et s'agrandit par la poignée en bas
-à droite ; positions et échelles sont enregistrées dans la configuration du serveur.
+à droite ; la croix en haut à droite retire le widget de l'overlay (à réafficher dans les réglages).
+Positions, échelles et widgets retirés sont enregistrés dans la configuration du serveur.
+Le raccourci agit d'abord sur les fenêtres puis enregistre : l'effet est immédiat.
 """
 
 import argparse
@@ -31,7 +33,7 @@ from urllib.parse import urlsplit
 from .config import AppConfig, window_size
 
 TITLE = "LMU Assistant overlay"
-POLL_S = 2.0
+POLL_S = 0.5  # changements faits sur la page des réglages : appliqués à l'overlay en moins d'une seconde
 PLACEMENT_POLL_S = 0.4  # en mode placement : suivi des fenêtres déplacées à la souris
 
 DEFAULT_HOTKEY = "ctrl+shift+o"
@@ -169,6 +171,8 @@ class Overlay:
         self.hotkey = Hotkey(self.toggle)
         self.placement_hotkey = Hotkey(self.toggle_placement)
         self.initial = initial
+        self.cfg: dict = dict(initial or {})  # dernière config appliquée
+        self.generation = 0  # changé à chaque action locale : une config lue avant elle est périmée
 
     def _set_visible(self, wid: str, visible: bool) -> None:
         win = self.windows[wid]
@@ -182,6 +186,7 @@ class Overlay:
 
     def apply(self, cfg: dict) -> None:
         with self.lock:
+            self.cfg = cfg
             self.placement = bool(cfg.get("placement"))
             for wid, new in plan(cfg, self.overrides, self.content).items():
                 old = self.applied.get(wid)
@@ -217,12 +222,41 @@ class Overlay:
             return True
 
     def toggle_placement(self) -> None:
+        """Raccourci du mode placement : les fenêtres changent tout de suite, l'enregistrement suit."""
+        with self.lock:
+            self.generation += 1
+            placement = not self.placement
+            self.apply({**self.cfg, "placement": placement})
+        self.save_fields({"placement": placement})
+
+    def hide_widget(self, wid: str) -> None:
+        """Croix du mode placement : retire le widget de l'overlay (fenêtre fermée tout de suite, puis enregistré)."""
+        with self.lock:
+            state = self.applied.get(wid)
+            if state is None:
+                return
+            self.generation += 1
+            self.applied[wid] = replace(state, visible=False)
+            self.windows[wid].hide()
+            self.cfg = {**self.cfg, "widgets": [
+                {**w, "visible": False} if w.get("id") == wid else w for w in self.cfg.get("widgets", [])
+            ]}
+        self.save_widgets({wid: {"visible": False}})
+
+    def save_fields(self, fields: dict) -> bool:
+        """Enregistre sur le serveur des champs généraux de la config (ex. mode placement)."""
         with self.lock:
             cfg = fetch_config(self.config_url)
             if cfg is None:
-                return
-            cfg["placement"] = not cfg.get("placement", False)
-            if put_config(self.config_url, cfg):
+                return False
+            cfg.update(fields)
+            return put_config(self.config_url, cfg)
+
+    def apply_fetched(self, cfg: dict, generation: int) -> None:
+        """Applique une config lue sur le serveur, sauf si une action locale a eu lieu pendant la lecture
+        (la config lue ne la contient peut-être pas encore : elle la déferait un instant)."""
+        with self.lock:
+            if generation == self.generation:
                 self.apply(cfg)
 
     def sync_moves(self) -> dict[str, dict]:
@@ -286,16 +320,18 @@ class Overlay:
                 with self.lock:
                     pending = {w: {"x": self.applied[w].x, "y": self.applied[w].y} for w in self.unsaved}
                 self.save_widgets(pending)
+            generation = self.generation
             cfg = fetch_config(self.config_url)
             if cfg is not None:
-                self.apply(cfg)
+                self.apply_fetched(cfg, generation)
 
 
 def run(url: str, overrides: dict | None = None, quit_after: float | None = None,
-        main_url: str | None = None, widgets: bool = True) -> int:
+        main_url: str | None = None, widgets: bool = True, show_main: bool = True) -> int:
     """Ouvre une fenêtre par widget sur `url` (page en mode overlay) et, avec `main_url`, la fenêtre de
-    l'interface ingénieur ; bloque jusqu'à la fermeture (thread principal). `widgets=False` : fenêtre
-    principale seulement. `quit_after` : ferme au bout de N s (vérification de l'exécutable).
+    l'interface ingénieur (ouverte au lancement si `show_main`, sinon depuis l'icône de notification) ;
+    bloque jusqu'à « Quitter » (thread principal). `widgets=False` : fenêtre principale seulement.
+    `quit_after` : ferme au bout de N s (vérification de l'exécutable).
     Renvoie le nombre de fenêtres de widgets ouvertes."""
     from . import overlay_qt  # PySide6 : dépendance optionnelle `overlay`
 
@@ -309,7 +345,8 @@ def run(url: str, overrides: dict | None = None, quit_after: float | None = None
         overlay = Overlay({}, config_url, overrides, initial)
         states = plan(initial or {}, overrides)
     return overlay_qt.run(
-        overlay, lambda wid: f"{url}{sep}widget={wid}", window_title, states, quit_after, main_url=main_url
+        overlay, lambda wid: f"{url}{sep}widget={wid}", window_title, states, quit_after,
+        main_url=main_url, show_main=show_main,
     )
 
 
