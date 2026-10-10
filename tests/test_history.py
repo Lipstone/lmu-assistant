@@ -130,3 +130,30 @@ def test_exports_report_and_notes(tmp_path):
         assert client.get("/api/notes?car=GT3&track=Spa").json()[0]["session_id"] is None
         assert client.delete(f"/api/notes/{note['id']}").status_code == 200
         assert client.get("/api/notes").json() == []
+
+
+def test_bulk_delete_and_compare_sessions(tmp_path):
+    app = create_app(mock.MockSource(), hz=50, config_path=tmp_path / "c.json", records_path=None,
+                     history_path=tmp_path / "h.sqlite")
+    store = app.state.history
+    sids = [store.new_session(source="lmu", session="Essais", track="Spa", car="GT3") for _ in range(4)]
+    for k, sid in enumerate(sids[:3]):
+        for lap in (1, 2, 3):
+            store.add_lap(sid, lap=lap, time_s=140.0 + k + lap / 10, valid=True, s1=40.0 + k, s2=50.0, s3=50.0 + lap / 10,
+                          trace={"t": [10.0 + k, 20.0 + k], "v": [200, 210]})
+    with TestClient(app) as client:
+        c = client.get(f"/api/history/compare-sessions?ids={sids[1]},{sids[0]},{sids[3]}").json()
+        assert c["reference"] == sids[0]
+        by_id = {s["session"]["id"]: s for s in c["sessions"]}
+        assert [s["session"]["id"] for s in c["sessions"]] == [sids[1], sids[0], sids[3]]
+        assert by_id[sids[1]]["best_vs_ref"]["sectors"][3]["diff"] == 1.0
+        assert by_id[sids[1]]["best_vs_ref"]["delta"][0] == [0.0, 1.0]
+        assert by_id[sids[0]]["laps"][0] == [1, 140.1]
+        assert by_id[sids[3]]["best_lap"] is None and "best_vs_ref" not in by_id[sids[3]]
+        assert client.get(f"/api/history/compare-sessions?ids={sids[0]}").status_code == 400
+        assert client.get(f"/api/history/compare-sessions?ids={sids[0]},999").status_code == 404
+        r = client.post("/api/history/sessions/delete", json={"ids": [sids[0], sids[2], 999]})
+        assert r.json() == {"deleted": [sids[0], sids[2]]}
+        assert [s["id"] for s in client.get("/api/history/sessions").json()] == [sids[3], sids[1]]
+        assert store.laps(sids[0]) == []
+        assert "Comparaison de sessions" in client.get("/analyse.html").text

@@ -369,3 +369,21 @@ body.placing .grip { display: block; position: absolute; right: 0; bottom: 0; wi
   .widgets { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; padding: 8px; }
   .big { font-size: 26px; }
 }
+/* Liste des sessions (sélection multiple, comparaison) */
+.session-tools { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+.session-tools input[type=search] { flex: 1; min-width: 200px; max-width: 420px; }
+.session-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; padding: 6px 10px; background: #22262e; border-radius: 6px; font-size: 14px; }
+.session-bar span { margin-right: 4px; }
+.session-list { max-height: 320px; overflow-y: auto; }
+.data.sessions thead th { position: sticky; top: 0; background: var(--panel); z-index: 1; }
+.data.sessions tbody tr { cursor: pointer; }
+.data.sessions tbody tr:hover td { background: #22262e; }
+.data.sessions tr.shown td { background: #1f3340; }
+.data.sessions tr.checked td:first-child { box-shadow: inset 3px 0 var(--accent); }
+.data.sessions td.l, .data.sessions th.l { text-align: left; }
+.data.sessions td.check, .data.sessions th.check { width: 28px; }
+.analyse button.danger { background: var(--bad); color: #fff; }
+.analyse button.small { padding: 2px 10px; font-size: 12px; font-weight: 500; vertical-align: middle; }
+#sessions-compare-section h2 { display: flex; align-items: center; gap: 12px; }
+#sessions-compare-section h2 button { margin-left: auto; }
+.data th .ref { color: var(--warn); }

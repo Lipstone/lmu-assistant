@@ -13,6 +13,11 @@ const fmtDate = (iso) => (iso ? new Date(iso).toLocaleString("fr-FR", { dateStyl
 const avg = (xs) => (xs && xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : null);
 
 let current = null; // { session, laps, … } de la session affichée
+let sessionList = []; // toutes les sessions (la plus récente d'abord)
+let shownId = null; // session affichée
+const checked = new Set(); // sessions cochées (ids)
+let lastClicked = null; // pour Maj + clic (plage)
+let compareIds = []; // sessions de la comparaison affichée
 
 async function getJSON(url, opts) {
   const r = await fetch(url, opts);
@@ -20,31 +25,107 @@ async function getJSON(url, opts) {
   return r.json();
 }
 
-async function loadSessions(keep) {
-  const list = await getJSON("/api/history/sessions");
-  const sel = $("sessions");
-  const prev = keep ?? sel.value;
-  sel.innerHTML = list.length
-    ? list.map((s) => `<option value="${s.id}">${esc(fmtDate(s.started_at))} · ${esc(s.session)} · ${esc(s.track)} · ${esc(s.car)} · ${s.laps} tours${s.best_s ? " · " + fmtLap(s.best_s) : ""}</option>`).join("")
-    : `<option value="">Aucune session enregistrée</option>`;
-  if (prev && list.some((s) => String(s.id) === String(prev))) sel.value = prev;
-  $("delete").disabled = !list.length;
-  return list;
+const sessionLabel = (s) => `${fmtDate(s.started_at)} · ${s.session || "?"} · ${s.track || "?"} · ${s.car || "?"}`;
+
+function visibleSessions() {
+  const words = $("session-filter").value.toLowerCase().split(/\s+/).filter(Boolean);
+  if (!words.length) return sessionList;
+  return sessionList.filter((s) => {
+    const hay = [fmtDate(s.started_at), s.session, s.track, s.car, s.car_class, s.driver].join(" ").toLowerCase();
+    return words.every((w) => hay.includes(w));
+  });
+}
+
+function renderSessionList() {
+  const vis = visibleSessions();
+  const allChecked = vis.length && vis.every((s) => checked.has(s.id));
+  $("sessions").innerHTML = `<thead><tr><th class="check"><input type="checkbox" id="check-all" title="Cocher toutes les sessions affichées" ${allChecked ? "checked" : ""} ${vis.length ? "" : "disabled"}></th>` +
+    `<th class="l">Date</th><th class="l">Type</th><th class="l">Circuit</th><th class="l">Voiture</th><th class="l">Pilote</th><th>Tours</th><th>Valides</th><th>Meilleur tour</th></tr></thead><tbody>` +
+    (vis.length ? vis.map((s) => `<tr data-id="${s.id}" class="${s.id === shownId ? "shown" : ""} ${checked.has(s.id) ? "checked" : ""}">` +
+      `<td class="check"><input type="checkbox" data-check="${s.id}" ${checked.has(s.id) ? "checked" : ""} aria-label="Cocher"></td>` +
+      `<td class="l">${esc(fmtDate(s.started_at))}</td><td class="l">${esc(s.session)}</td><td class="l">${esc(s.track)}</td>` +
+      `<td class="l">${esc(s.car)}</td><td class="l">${esc(s.driver)}</td><td>${s.laps}</td><td>${s.valid_laps ?? 0}</td><td>${fmtLap(s.best_s)}</td></tr>`).join("")
+      : `<tr><td colspan="9" class="muted">${sessionList.length ? "Aucune session ne correspond au filtre." : "Aucune session enregistrée. Les tours sont enregistrés automatiquement pendant que l'on roule (lecture du jeu)."}</td></tr>`) +
+    "</tbody>";
+  $("session-count").textContent = sessionList.length ? `${vis.length === sessionList.length ? "" : vis.length + " / "}${sessionList.length} session${sessionList.length > 1 ? "s" : ""}` : "";
+  renderSelectionBar();
+}
+
+function renderSelectionBar() {
+  const n = checked.size;
+  $("session-bar").hidden = !n;
+  $("sel-count").textContent = `${n} session${n > 1 ? "s" : ""} cochée${n > 1 ? "s" : ""}`;
+  $("compare-btn").disabled = n < 2 || n > SERIES.length;
+  $("compare-btn").title = n > SERIES.length ? `Comparer au plus ${SERIES.length} sessions` : "Comparer les sessions cochées";
+  $("delete-btn").textContent = `Supprimer (${n})`;
+}
+
+async function loadSessions() {
+  sessionList = await getJSON("/api/history/sessions");
+  const ids = new Set(sessionList.map((s) => s.id));
+  for (const id of [...checked]) if (!ids.has(id)) checked.delete(id);
+  if (shownId != null && !ids.has(shownId)) shownId = null;
+  if (shownId == null && sessionList.length) shownId = sessionList[0].id;
+  renderSessionList();
+  return sessionList;
 }
 
 async function loadSession() {
-  const id = $("sessions").value;
-  if (!id) {
+  if (shownId == null) {
     current = null;
-    $("session-info").textContent = "Les tours sont enregistrés automatiquement pendant que l'on roule (lecture du jeu).";
+    $("current-section").hidden = true;
     renderAll();
     return;
   }
-  current = await getJSON(`/api/history/sessions/${id}`);
+  current = await getJSON(`/api/history/sessions/${shownId}`);
   const s = current.session;
+  $("current-section").hidden = false;
+  $("current-title").textContent = `Session affichée : ${sessionLabel(s)}`;
   $("session-info").textContent = `${s.driver || "?"} · ${s.car_class || ""} · du ${fmtDate(s.started_at)} au ${fmtDate(s.ended_at)} · source ${s.source}`;
   renderAll();
 }
+
+$("sessions").addEventListener("click", (e) => {
+  if (e.target.id === "check-all") {
+    const vis = visibleSessions();
+    for (const s of vis) e.target.checked ? checked.add(s.id) : checked.delete(s.id);
+    renderSessionList();
+    return;
+  }
+  const row = e.target.closest("tr[data-id]");
+  if (!row) return;
+  const id = Number(row.dataset.id);
+  if (e.target.dataset.check != null) {
+    // Maj + clic : applique l'état de la case à toute la plage depuis le dernier clic
+    const vis = visibleSessions().map((s) => s.id);
+    const on = e.target.checked;
+    const i = vis.indexOf(id), j = vis.indexOf(lastClicked);
+    const range = e.shiftKey && j >= 0 ? vis.slice(Math.min(i, j), Math.max(i, j) + 1) : [id];
+    for (const x of range) on ? checked.add(x) : checked.delete(x);
+    lastClicked = id;
+    renderSessionList();
+    return;
+  }
+  if (id !== shownId) {
+    shownId = id;
+    renderSessionList();
+    loadSession();
+  }
+});
+$("session-filter").addEventListener("input", renderSessionList);
+$("clear-btn").addEventListener("click", () => { checked.clear(); renderSessionList(); });
+
+async function deleteSessions(ids) {
+  const n = ids.length;
+  const what = n === 1 ? `la session « ${sessionLabel(sessionList.find((s) => s.id === ids[0]) || {})} »` : `ces ${n} sessions`;
+  if (!n || !confirm(`Supprimer définitivement ${what} et leurs tours de l'historique ?`)) return;
+  await getJSON("/api/history/sessions/delete", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ids }) });
+  for (const id of ids) checked.delete(id);
+  if (compareIds.some((id) => ids.includes(id))) closeComparison();
+  await loadSessions();
+  await loadSession();
+}
+$("delete-btn").addEventListener("click", () => deleteSessions([...checked]));
 
 // Sections de la page : chaque fonctionnalité ajoute la sienne.
 const sections = [];
@@ -328,6 +409,71 @@ async function loadCompare() {
 $("cmp-a").addEventListener("change", loadCompare);
 $("cmp-b").addEventListener("change", loadCompare);
 
+// --- Comparaison de sessions (cochées dans la liste) ------------------------------------------------------
+function closeComparison() {
+  compareIds = [];
+  $("sessions-compare-section").hidden = true;
+}
+$("compare-close").addEventListener("click", closeComparison);
+$("compare-btn").addEventListener("click", async () => {
+  // ordre chronologique : la plus ancienne à gauche
+  compareIds = [...checked].sort((a, b) => a - b);
+  await renderSessionCompare();
+  $("sessions-compare-section").scrollIntoView({ behavior: "smooth", block: "start" });
+});
+
+async function renderSessionCompare() {
+  if (compareIds.length < 2) return closeComparison();
+  const sec = $("sessions-compare-section");
+  sec.hidden = false;
+  let data;
+  try {
+    data = await getJSON(`/api/history/compare-sessions?ids=${compareIds.join(",")}`);
+  } catch (e) {
+    $("scmp-table").innerHTML = `<tr><td class="muted">Comparaison impossible : ${esc(e)}</td></tr>`;
+    return;
+  }
+  const ss = data.sessions;
+  const color = (i) => SERIES[i % SERIES.length];
+  const head = `<tr><th></th>` + ss.map((s, i) => `<th><i class="dot" style="background:${color(i)}"></i>` +
+    `${s.session.id === data.reference ? '<span class="ref" title="Référence : meilleur tour le plus rapide">★</span> ' : ""}` +
+    `${esc(fmtDate(s.session.started_at))}<br>${esc(s.session.session || "")} · ${esc(s.session.track || "")}<br>${esc(s.session.car || "")}</th>`).join("") + "</tr>";
+  // [libellé, valeur(s), format, sens du meilleur : -1 plus petit, 1 plus grand, 0 aucun]
+  const rows = [
+    ["Meilleur tour", (s) => s.report.pace.best_s, fmtLap, -1],
+    ["Écart à la référence", (s) => s.best_vs_ref?.sectors[3].diff, (v) => fmtDiff(v), -1],
+    ...[0, 1, 2].map((k) => [`S${k + 1} du meilleur tour`, (s) => s.best_vs_ref?.sectors[k].b, fmtSec, -1]),
+    ["Théorique", (s) => s.report.pace.theoretical_s, fmtLap, -1],
+    ["Moyenne", (s) => s.report.pace.avg_s, fmtLap, -1],
+    ["Médiane", (s) => s.report.pace.median_s, fmtLap, -1],
+    ["Régularité (écart-type)", (s) => s.report.consistency.stdev_s, (v) => (v == null ? "–" : `±${v.toFixed(2)} s`), -1],
+    ["Tours à 1 s de la médiane", (s) => s.report.consistency.within_1_pct, (v) => (v == null ? "–" : `${v} %`), 1],
+    ["Tours (propres)", (s) => s.report.pace.laps, (v, s) => `${v} (${s.report.pace.clean_laps})`, 0],
+    ["Temps roulé", (s) => s.report.pace.total_time_s, fmtDur, 0],
+    ["Relais", (s) => s.stints, (v) => v, 0],
+    ["Dégradation moyenne", (s) => s.deg_s_per_lap, fmtDeg, -1],
+    ["Carburant / tour", (s) => s.report.consumption.fuel_per_lap, (v) => fmt(v, 2, " L"), -1],
+    ["Énergie / tour", (s) => s.report.consumption.energy_per_lap, (v) => fmt(v, 2, " %"), -1],
+    ["Incidents (invalidés + chocs)", (s) => s.report.incidents.invalid_laps + s.report.incidents.impacts, (v) => v, -1],
+    ["Piste", (s) => s.report.conditions.track_temp_min, (v, s) => (v == null ? "–" : `${v.toFixed(0)}–${s.report.conditions.track_temp_max.toFixed(0)} °C`), 0],
+    ["Tours mouillés", (s) => s.report.conditions.wet_laps, (v) => v, 0],
+  ];
+  $("scmp-table").innerHTML = head + rows.map(([label, get, f, dir]) => {
+    const vals = ss.map((s) => { try { return get(s); } catch { return null; } });
+    const nums = vals.filter((v) => typeof v === "number");
+    const best = dir && nums.length > 1 ? (dir < 0 ? Math.min(...nums) : Math.max(...nums)) : null;
+    if (!vals.some((v) => v != null)) return "";
+    return `<tr><td>${label}</td>` + vals.map((v, i) => `<td class="${best != null && v === best && new Set(nums).size > 1 ? "faster" : ""}">${v == null ? "–" : esc(f(v, ss[i]))}</td>`).join("") + "</tr>";
+  }).join("");
+  const name = (s) => `${fmtDate(s.session.started_at)} · ${s.session.session || "?"} · ${s.session.track || "?"}`;
+  lineChart($("scmp-laps"), ss.map((s, i) => ({ name: name(s), color: color(i), points: s.laps })),
+    { xFmt: (x) => `T${x}`, yFmt: (y) => fmtLap(y).slice(0, -1), xLabel: "tour" });
+  const deltas = ss.filter((s) => s.best_vs_ref?.delta?.length && s.session.id !== data.reference)
+    .map((s) => ({ name: name(s), color: color(ss.indexOf(s)), points: s.best_vs_ref.delta }));
+  if (deltas.length) lineChart($("scmp-delta"), deltas, { xFmt: (x) => `${Math.round(x)} %`, yFmt: (y) => fmtDiff(y, 2), xLabel: "avancement dans le tour", intX: false });
+  else $("scmp-delta").innerHTML = '<p class="hint">Pas de trace comparable (circuits différents, ou meilleurs tours enregistrés sans trace).</p>';
+}
+
 // --- F28 : évolution des conditions (un relevé toutes les 30 s de session) --------------------------------
 const GRIP = ["vert", "faible", "moyen", "élevé", "saturé"];
 const fmtSessionTime = (s) => { s = Math.round(s); return `${Math.floor(s / 3600)}:${String(Math.floor((s % 3600) / 60)).padStart(2, "0")}`; };
@@ -409,28 +555,23 @@ $("note-form").addEventListener("submit", async (e) => {
 });
 $("note-cancel").addEventListener("click", resetNoteForm);
 
-$("sessions").addEventListener("change", loadSession);
-$("delete").addEventListener("click", async () => {
-  const id = $("sessions").value;
-  if (!id || !confirm("Supprimer définitivement cette session et ses tours de l'historique ?")) return;
-  await fetch(`/api/history/sessions/${id}`, { method: "DELETE" });
-  await loadSessions("");
-  await loadSession();
-});
+$("delete").addEventListener("click", () => shownId != null && deleteSessions([shownId]));
 
 // Suit la session en cours : nouvelles sessions et nouveaux tours apparaissent d'eux-mêmes.
 async function refresh() {
   try {
-    const before = $("sessions").value;
+    const before = sessionList[0]?.id;
     const list = await loadSessions();
     const latest = list[0];
-    const sel = $("sessions").value;
+    // une nouvelle session commence : on l'affiche si l'on regardait la précédente plus récente
+    if (latest && before != null && latest.id !== before && shownId === before) { shownId = latest.id; renderSessionList(); }
     const n = current?.laps?.length ?? -1;
-    if (sel !== before || (latest && String(latest.id) === sel && latest.laps !== n)) await loadSession();
+    const shown = list.find((s) => s.id === shownId);
+    if ((current?.session?.id ?? null) !== shownId || (shown && shown.laps !== n)) await loadSession();
   } catch (e) {
     $("session-info").textContent = `Serveur injoignable : ${e}`;
   }
 }
 
-loadSessions().then(loadSession).catch((e) => ($("session-info").textContent = `Serveur injoignable : ${e}`));
+loadSessions().then(loadSession).catch((e) => ($("session-count").textContent = `Serveur injoignable : ${e}`));
 setInterval(refresh, 10000);
