@@ -204,12 +204,21 @@ def test_ranking_columns_off_by_default_and_saved(tmp_path):
     assert not loaded["standings"].show_damage
 
 
+def test_column_order_keeps_known_columns():
+    w = AppConfig.model_validate({"widgets": [{"id": "standings", "column_order": ["last", "bogus", "gap", "last"]}]})
+    assert next(x for x in w.widgets if x.id == "standings").column_order == ["last", "gap"]
+    assert all(x.column_order == [] for x in AppConfig().widgets)
+
+
 def test_lap_columns_default_and_saved(tmp_path):
     widgets = {w.id: w for w in AppConfig().widgets}
     assert widgets["standings"].show_last_lap  # dernier tour toujours affiché avant d'être réglable
+    assert widgets["standings"].show_compound and not widgets["relative"].show_compound
+    assert not any(w.show_headers for w in AppConfig().widgets)  # titres des colonnes : option
     assert not widgets["relative"].show_last_lap and not widgets["standings"].show_best_lap
     # ancienne config sans la clé : dernier tour gardé dans le Classement
-    assert AppConfig.model_validate({"widgets": [{"id": "standings"}]}).widgets[0].show_last_lap
+    old = AppConfig.model_validate({"widgets": [{"id": "standings"}]}).widgets[0]
+    assert old.show_last_lap and old.show_compound
     data = AppConfig().model_dump()
     for w in data["widgets"]:
         if w["id"] == "standings":

@@ -14,8 +14,8 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 | F04 | Temps au tour | Dernier, meilleur, moyenne des N derniers, régularité | ✅ |
 | F05 | Pneus | Températures (int/milieu/ext), pressions, usure par roue | ✅ |
 | F06 | Freins | Températures par roue, alerte surchauffe | ✅ |
-| F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, pénalités, relais sur le train de pneus, meilleur et dernier tour de chaque voiture | ✅ |
-| F08 | Classement | Classement simplifié par classe, intervalle avec le pilote devant (écart au leader au survol) ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, pénalités, relais sur le train de pneus, meilleur tour et dernier tour (affiché par défaut) de chaque voiture | ✅ |
+| F07 | Relative | Pilotes devant/derrière avec écart, classe, tours d'avance/retard ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, pénalités, gomme, relais sur le train de pneus, meilleur et dernier tour de chaque voiture | ✅ |
+| F08 | Classement | Classement simplifié par classe, intervalle avec le pilote devant (écart au leader au survol), titres des colonnes en option, ordre des colonnes réglable ; colonnes optionnelles dégâts globaux (0 % = intacte), carburant / énergie restant, conso par tour, pénalités, gomme de chaque roue en ronds de couleur (affichée par défaut), relais sur le train de pneus, meilleur tour et dernier tour (affiché par défaut) de chaque voiture | ✅ |
 | F09 | Fenêtre de stand | Tours avant arrêt obligatoire (carburant/énergie), temps perdu au stand estimé | ✅ |
 | F10 | Session et piste | Temps restant, drapeaux (jaune local, FCY, bleu…), météo, température piste/air et son évolution, grip | ✅ |
 | F11 | Dégâts | Voiture vue de dessus (SVG) : dégâts carrosserie (8 zones, 0 % = intacte), roues (crevaison, arrachée) et suspensions dessinées à part, aéro (lame, aileron) ; aéro, suspension, réparation estimée, roues, chocs, moteur | ✅ |
@@ -27,7 +27,7 @@ Légende état : ⬜ à faire · 🟨 en cours · ✅ fait
 
 | ID | Fonctionnalité | Détail | État |
 |---|---|---|---|
-| F20 | Historique des tours | Enregistrement de chaque tour (temps, secteurs, carburant, pneus, météo, trace) en SQLite, page Analyse | ✅ |
+| F20 | Historique des tours | Enregistrement de chaque tour (temps, secteurs, carburant, pneus, météo, trace) en SQLite, page Analyse ; liste des sessions avec filtre, suppression groupée (cases à cocher) et comparaison de 2 à 8 sessions | ✅ |
 | F21 | Relais (stints) | Découpage automatique en relais, résumé par relais, widget du relais en cours | ✅ |
 | F22 | Dégradation pneus | Évolution des temps (tendance en s/tour) et de l'usure par pneu sur un relais | ✅ |
 | F23 | Comparaison de tours | Secteurs, meilleur tour théorique, écart par secteur, écart cumulé et vitesse le long du tour | ✅ |

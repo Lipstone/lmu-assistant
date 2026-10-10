@@ -164,6 +164,18 @@ class HistoryStore:
             self.db.commit()
             return cur.rowcount > 0
 
+    def delete_sessions(self, session_ids: list[int]) -> list[int]:
+        """Supprime plusieurs sessions d'un coup ; renvoie les ids réellement supprimés."""
+        ids = sorted({int(i) for i in session_ids})
+        if not ids:
+            return []
+        marks = ",".join("?" * len(ids))
+        with self._lock:
+            found = [r[0] for r in self.db.execute(f"SELECT id FROM sessions WHERE id IN ({marks})", ids)]
+            self.db.execute(f"DELETE FROM sessions WHERE id IN ({marks})", ids)
+            self.db.commit()
+        return found
+
     # --- lecture --------------------------------------------------------------
 
     def sessions(self) -> list[dict]:

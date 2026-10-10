@@ -67,6 +67,10 @@ WIDGET_SIZES = {
 }
 
 
+# Colonnes déplaçables du relative et du classement (ordre réglable) : écart / intervalle et colonnes optionnelles
+COLUMN_KEYS = ("gap", "damage", "remaining", "consumption", "penalties", "compound", "tyres", "best", "last")
+
+
 def window_size(widget_id: str, scale: float) -> tuple[int, int]:
     w, h = WIDGET_SIZES[widget_id]
     return round(w * scale), round(h * scale)
@@ -99,6 +103,17 @@ class WidgetConfig(BaseModel):
         False, description="widgets Relative et Classement : colonne de la consommation par tour de chaque voiture"
     )
     show_penalties: bool = Field(False, description="widgets Relative et Classement : colonne des pénalités de chaque voiture")
+    column_order: list[str] = Field(
+        default_factory=list,
+        description="widgets Relative et Classement : ordre des colonnes après le pilote (clés de COLUMN_KEYS ; "
+        "vide = ordre par défaut, colonnes absentes ajoutées à leur place par défaut)",
+    )
+    show_headers: bool = Field(False, description="widgets Relative et Classement : ligne des titres des colonnes")
+    show_compound: bool = Field(
+        False,
+        description="widgets Relative et Classement : gomme montée par chaque voiture, avant et arrière "
+        "(affichée par défaut dans le Classement)",
+    )
     show_tyre_stints: bool = Field(
         False, description="widgets Relative et Classement : colonne du nombre de relais sur le train de pneus actuel"
     )
@@ -116,10 +131,15 @@ class WidgetConfig(BaseModel):
         # Avant la séparation overlay / interface ingénieur, `visible` valait pour les deux : on garde l'affichage
         if isinstance(data, dict) and "page_visible" not in data and isinstance(data.get("visible"), bool):
             data = {**data, "page_visible": data["visible"]}
-        # Le Classement affichait toujours le dernier tour : on le garde par défaut
-        if isinstance(data, dict) and data.get("id") == "standings" and "show_last_lap" not in data:
-            data = {**data, "show_last_lap": True}
+        # Classement : dernier tour (toujours affiché avant d'être réglable) et gommes cochés par défaut
+        if isinstance(data, dict) and data.get("id") == "standings":
+            data = {"show_last_lap": True, "show_compound": True, **data}
         return data
+
+    @field_validator("column_order")
+    @classmethod
+    def _known_columns(cls, v: list[str]) -> list[str]:
+        return [k for k in dict.fromkeys(v) if k in COLUMN_KEYS]
 
     @field_validator("id")
     @classmethod

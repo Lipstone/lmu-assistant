@@ -102,6 +102,7 @@ class Vehicle:
     fuel_l: float | None = None
     energy_pct: float | None = None  # énergie virtuelle restante, None si la voiture n'en a pas
     tyre_wear: list[float] | None = None  # usure des 4 pneus (mWear, remonte quand les pneus sont changés)
+    compounds: list[str] | None = None  # gomme de chaque roue AVG, AVD, ARG, ARD (noms du jeu)
     # Calculés par `opponents.OpponentsCalculator`
     damage_pct: float | None = None  # état global de la carrosserie, 100 = intacte
     fuel_per_lap: float | None = None  # litres par tour (moyenne des derniers tours sans arrêt)
@@ -123,6 +124,7 @@ class OpponentFields:
     energy_pct: float | None = None
     penalties: int = 0
     tyre_stints: int | None = None
+    compounds: list[str] | None = None
 
 
 @dataclass
@@ -339,6 +341,7 @@ class Snapshot:
     last_lap_s: float | None = None
     best_lap_s: float | None = None
     current_lap_s: float = 0.0
+    lap_start_et: float | None = None  # début du tour en cours (s, horloge de session du jeu), None si inconnu
     last_sector1_s: float | None = None  # dernier tour : fin du secteur 1 (s depuis la ligne)
     last_sector2_s: float | None = None  # dernier tour : fin du secteur 2 (s depuis la ligne, S1 + S2)
     session_time_left_s: float | None = None

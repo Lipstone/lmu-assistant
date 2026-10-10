@@ -508,7 +508,7 @@ def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
 
 
 def _vehicle_telemetry(car: Vehicle, t: TelemInfo) -> None:
-    """Dégâts, carburant et usure des pneus d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
+    """Dégâts, carburant, usure et gommes des pneus d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
     de toutes les voitures ; carburant à 0 sans réservoir connu = valeur non transmise (laissée à None)."""
     dents = list(t.mDentSeverity)
     car.dents = [min(max(int(dents[i]), 0), 2) for i in DENT_ORDER]
@@ -517,11 +517,24 @@ def _vehicle_telemetry(car: Vehicle, t: TelemInfo) -> None:
     wear = [_finite(w.mWear, 0, 1) for w in t.mWheels]
     if None not in wear:
         car.tyre_wear = [round(w, 4) for w in wear]
+    car.compounds = _compounds(t)
     fuel = _finite(t.mFuel, 0, 1000)
     if fuel is not None and (fuel > 0 or t.mFuelCapacity > 0):
         car.fuel_l = round(fuel, 3)
     if 0 < t.mVirtualEnergy <= 1.5:
         car.energy_pct = round(min(t.mVirtualEnergy, 1.0) * 100, 3)
+
+
+def _compounds(t: TelemInfo) -> list[str] | None:
+    """Gomme de chaque roue (AVG, AVD, ARG, ARD). Le jeu nomme la gomme de chaque essieu et donne l'indice de gomme
+    de chaque roue (on peut monter 4 pneus différents) : les noms sont retrouvés par indice. Indice de roue inconnu
+    (gomme différente des deux essieux, ou indice non rempli) : gomme de l'essieu."""
+    front, rear = _text(t.mFrontTireCompoundName), _text(t.mRearTireCompoundName)
+    if not front or not rear:
+        return None
+    names = {t.mRearTireCompoundIndex: rear, t.mFrontTireCompoundIndex: front}
+    per_wheel = [names.get(w.mCompoundIndex) for w in t.mWheels]
+    return per_wheel if None not in per_wheel else [front, front, rear, rear]
 
 
 def find_player(data: ObjectOut) -> tuple[VehicleScoring | None, TelemInfo | None]:
@@ -593,6 +606,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
         snap.last_sector2_s = _lap_time(scoring.mLastSector2)
         snap.best_lap_s = _lap_time(scoring.mBestLapTime)
         snap.current_lap_s = round(max(0.0, info.mCurrentET - scoring.mLapStartET), 3)
+        snap.lap_start_et = _finite(scoring.mLapStartET, 0)
         snap.in_pits = bool(scoring.mInPits)
         snap.player_flag = scoring.mFlag
         snap.sector = SECTORS.get(scoring.mSector, 0)
@@ -616,6 +630,7 @@ def to_snapshot(data: ObjectOut) -> Snapshot:
             snap.lap = telem.mLapNumber
         # Le temps télémétrie est plus fin (mise à jour à chaque frame physique)
         snap.current_lap_s = round(max(0.0, telem.mElapsedTime - telem.mLapStartET), 3)
+        snap.lap_start_et = _finite(telem.mLapStartET, 0)
         snap.lap_invalid = bool(telem.mLapInvalidated)
         snap.wheels = [_wheel(w, left_side=(i % 2 == 0)) for i, w in enumerate(telem.mWheels)]
         _damage(snap, telem)

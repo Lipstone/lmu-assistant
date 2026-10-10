@@ -5,8 +5,36 @@ let config = null;
 // Colonnes optionnelles des classements (dégâts, carburant, consommation, tours), désactivées par défaut sauf le
 // dernier tour du Classement.
 const COLUMN_WIDGETS = ["relative", "standings"];
-const COLUMNS = [["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
-  ["show_penalties", "Pénalités"], ["show_tyre_stints", "Relais pneus"], ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
+const COLUMNS = [["show_headers", "Titres"], ["show_damage", "Dégâts"], ["show_remaining", "Restant"], ["show_consumption", "Conso"],
+  ["show_penalties", "Pénalités"], ["show_compound", "Gomme"], ["show_tyre_stints", "Relais pneus"], ["show_best_lap", "Meilleur tour"], ["show_last_lap", "Dernier tour"]];
+
+// Ordre des colonnes après le pilote (▲ ▼) : clé de colonne (config.COLUMN_KEYS) de chaque case, « gap » = écart
+// (relative) ou intervalle (classement), toujours affiché. Même ordre par défaut que web/app.js.
+const COL_OF = { show_damage: "damage", show_remaining: "remaining", show_consumption: "consumption",
+  show_penalties: "penalties", show_compound: "compound", show_tyre_stints: "tyres", show_best_lap: "best", show_last_lap: "last" };
+const OPT_ORDER = Object.values(COL_OF);
+const DEFAULT_ORDER = { relative: [...OPT_ORDER, "gap"], standings: ["gap", ...OPT_ORDER] };
+const GAP_LABEL = { relative: "Écart", standings: "Intervalle" };
+
+function fullOrder(id, saved) {
+  const order = (saved || []).filter((k) => DEFAULT_ORDER[id].includes(k));
+  DEFAULT_ORDER[id].forEach((k, i) => {
+    if (order.includes(k)) return;
+    const prev = DEFAULT_ORDER[id].slice(0, i).reverse().find((p) => order.includes(p));
+    order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, k);
+  });
+  return order;
+}
+
+function columnsCell(id) {
+  const item = (col, inner) => `<div class="col-item" data-col="${col}">${inner}` +
+    `<button type="button" class="move" data-move="-1" title="Monter (plus à gauche)">▲</button>` +
+    `<button type="button" class="move" data-move="1" title="Descendre (plus à droite)">▼</button></div>`;
+  const items = COLUMNS.filter(([k]) => COL_OF[k]).map(([k, label]) =>
+    item(COL_OF[k], `<label><input type="checkbox" data-k="${k}"> ${label}</label>`));
+  items.push(item("gap", `<label class="fixed">${GAP_LABEL[id]}</label>`));
+  return `<label><input type="checkbox" data-k="show_headers"> Titres</label><div class="col-order">${items.join("")}</div>`;
+}
 
 function num(input, fallback) {
   const v = parseFloat(input.value);
@@ -65,8 +93,7 @@ function fill(cfg) {
           <td><input type="number" data-k="y"></td>
           <td><input type="number" data-k="scale" min="0.25" max="4" step="0.05"></td>
           ${OPACITIES.map(opacityCell).join("")}
-          <td class="cols">${COLUMN_WIDGETS.includes(w.id) ? COLUMNS.map(([k, label]) =>
-            `<label><input type="checkbox" data-k="${k}"> ${label}</label>`).join(" ") : ""}</td>
+          <td class="cols">${COLUMN_WIDGETS.includes(w.id) ? columnsCell(w.id) : ""}</td>
         </tr>`
       )
       .join("");
@@ -78,6 +105,8 @@ function fill(cfg) {
       const box = tr.querySelector(`[data-k="${k}"]`);
       if (box) setValue(box, !!w[k]);
     }
+    const list = tr.querySelector(".col-order");
+    if (list) for (const col of fullOrder(w.id, w.column_order)) list.append(list.querySelector(`[data-col="${col}"]`));
     // Transparence en cours d'envoi : la config reçue entre-temps ne doit pas défaire le réglage en cours.
     if (!livePending) own[w.id] = { background_opacity: w.background_opacity, text_opacity: w.text_opacity };
   }
@@ -120,6 +149,8 @@ function collect() {
       scale: num(get("scale"), old.scale),
       ...opacities(tr.dataset.id),
       ...Object.fromEntries(COLUMNS.map(([k]) => [k, get(k) ? get(k).checked : !!old[k]])),
+      column_order: tr.querySelector(".col-order")
+        ? [...tr.querySelectorAll(".col-item")].map((d) => d.dataset.col) : old.column_order || [],
     };
   });
   return {
@@ -234,6 +265,12 @@ $("widgets").addEventListener("input", (e) => {
   liveOpacity();
 });
 $("widgets").addEventListener("click", (e) => {
+  if (e.target.classList.contains("move")) {
+    const item = e.target.closest(".col-item");
+    const to = e.target.dataset.move === "-1" ? item.previousElementSibling : item.nextElementSibling?.nextElementSibling;
+    if (e.target.dataset.move === "-1" ? to : item.nextElementSibling) item.parentNode.insertBefore(item, to);
+    return;
+  }
   if (!e.target.classList.contains("reset")) return;
   const td = e.target.closest("td.opa");
   own[td.closest("tr").dataset.id][td.dataset.opa] = null;
