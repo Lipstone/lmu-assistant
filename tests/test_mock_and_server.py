@@ -86,3 +86,30 @@ def test_slow_client_gets_latest_snapshot_only():
         return ws.sent
 
     assert asyncio.run(scenario()) == ["s1", "config", "s9"]
+
+
+def test_slow_widgets_are_throttled_and_unchanged_images_skipped(monkeypatch):
+    from lmu_assistant import server
+    from lmu_assistant.server import Broadcaster, Client
+
+    clock = [100.0]
+    monkeypatch.setattr(server.time, "monotonic", lambda: clock[0])
+    b = Broadcaster(get_source("mock"), 30, None)
+    keys = server.COMMON_KEYS
+    weather = Client(None, keys + server.WIDGET_KEYS["weather"], max_hz=2.0)
+    car = Client(None, keys + server.WIDGET_KEYS["car"])
+    b.clients = {weather, car}
+    sent = {weather: 0, car: 0}
+    for c in sent:
+        c.push_snapshot = lambda text, c=c: sent.__setitem__(c, sent[c] + 1)
+    for i in range(30):  # 1 s à 30 images/s, météo qui change à chaque image
+        b.publish({"connected": True, "ts": i, "weather": {"rain_pct": i}, "speed_kmh": 100})
+        clock[0] += 1 / 30
+    assert sent[car] == 30  # widget rapide : chaque image, même identique
+    assert sent[weather] == 2
+    clock[0] += 1
+    b.publish({"connected": True, "ts": 99, "weather": {"rain_pct": 29}, "speed_kmh": 100})
+    assert sent[weather] == 3  # dernière valeur, pas encore envoyée
+    clock[0] += 1
+    b.publish({"connected": True, "ts": 100, "weather": {"rain_pct": 29}, "speed_kmh": 100})
+    assert sent[weather] == 3  # rien de changé (sauf l'heure) : pas renvoyée
