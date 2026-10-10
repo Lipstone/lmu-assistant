@@ -21,8 +21,9 @@ function setHTML(el, html) {
 
 function fmtLap(s) {
   if (s == null) return "–";
-  const m = Math.floor(s / 60);
-  return `${m}:${(s - m * 60).toFixed(3).padStart(6, "0")}`;
+  const ms = Math.round(s * 1000); // arrondi d'abord : 59,9996 s donne 1:00.000, pas 0:60.000
+  const m = Math.floor(ms / 60000);
+  return `${m}:${((ms - m * 60000) / 1000).toFixed(3).padStart(6, "0")}`;
 }
 
 // Au-delà de 100, pas de décimale (garde le widget overlay étroit, ex. carburant à ajouter sur 24 h).
@@ -201,10 +202,11 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 // Colonnes optionnelles du relative et du classement (Réglages overlay, par widget, désactivées par défaut) :
 // dégâts globaux et consommation par tour de chaque voiture (backend/lmu_assistant/opponents.py).
 // Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour, pénalités,
-// relais sur le train de pneus, meilleur tour, dernier tour.
+// gomme, relais sur le train de pneus, meilleur tour, dernier tour.
 const COLUMN_KEYS = { damage: "show_damage", remaining: "show_remaining", consumption: "show_consumption",
-  penalties: "show_penalties", tyres: "show_tyre_stints", best: "show_best_lap", last: "show_last_lap" };
-const columns = { relative: { last: false }, standings: { last: true } };
+  penalties: "show_penalties", compound: "show_compound", tyres: "show_tyre_stints", best: "show_best_lap",
+  last: "show_last_lap" };
+const columns = { relative: { last: false }, standings: { last: true, compound: true } };
 
 function damageCell(e) {
   if (e.damage_pct == null) return '<td class="opt dmg" title="dégâts non transmis par le jeu">–</td>';
@@ -252,14 +254,60 @@ function tyresCell(e) {
   return `<td class="opt tyres ${n > 1 ? "warn" : "intact"}" title="${n === 1 ? "1er" : n + "e"} relais sur ce train de pneus (estimé)">${n}</td>`;
 }
 
+// Gomme (4 roues AVG, AVD, ARG, ARD) : un rond si les 4 pneus sont pareils, sinon 4 ronds en carré comme les roues
+// vues de dessus.
+// Couleurs habituelles : tendre rouge, medium jaune, dure blanche, intermédiaire verte, pluie bleue.
+const COMPOUND_COLORS = [[/soft|tendre/, "#e53935"], [/med/, "#fdd835"], [/hard|dure/, "#eeeeee"],
+  [/inter/, "#43a047"], [/wet|rain|pluie/, "#1e88e5"]];
+const compoundColor = (name) => (COMPOUND_COLORS.find(([re]) => re.test(name.toLowerCase())) || [0, "#9e9e9e"])[1];
+
+function compoundCell(e) {
+  const c = e.compounds;
+  if (!c || c.length !== 4) return '<td class="opt gum" title="gomme non transmise par le jeu">–</td>';
+  const dot = (n) => `<span class="gum-dot" style="background:${compoundColor(n)}"></span>`;
+  let dots, title;
+  if (c.every((n) => n === c[0])) [dots, title] = [dot(c[0]), esc(c[0])];
+  else {
+    dots = `<span class="gum-grid">${c.map(dot).join("")}</span>`;
+    title = ["AVG", "AVD", "ARG", "ARD"].map((w, i) => `${w} ${esc(c[i])}`).join(" · ");
+  }
+  return `<td class="opt gum" title="${title}">${dots}</td>`;
+}
+
 const CELLS = {
   damage: damageCell, remaining: remainingCell, consumption: consumptionCell,
   penalties: (e) => `<td class="opt pen ${e.penalties ? "bad" : "intact"}" title="pénalités en cours">${e.penalties ?? 0}</td>`,
+  compound: compoundCell,
   tyres: tyresCell,
   best: (e) => lapCell("best", "meilleur tour", e.best_lap_s),
   last: (e) => lapCell("last", "dernier tour", e.last_lap_s),
 };
-const optCells = (id, e) => Object.keys(CELLS).filter((k) => columns[id][k]).map((k) => CELLS[k](e)).join("");
+// Ordre des colonnes après le pilote (Réglages overlay, par widget) : « gap » = écart (relative) ou intervalle
+// (classement). Colonnes absentes de l'ordre enregistré : à leur place par défaut.
+const DEFAULT_ORDER = { relative: [...Object.keys(CELLS), "gap"], standings: ["gap", ...Object.keys(CELLS)] };
+const columnOrder = { relative: [], standings: [] };
+function orderedKeys(id) {
+  const order = columnOrder[id].filter((k) => DEFAULT_ORDER[id].includes(k));
+  DEFAULT_ORDER[id].forEach((k, i) => {
+    if (order.includes(k)) return;
+    const prev = DEFAULT_ORDER[id].slice(0, i).reverse().find((p) => order.includes(p));
+    order.splice(prev ? order.indexOf(prev) + 1 : 0, 0, k);
+  });
+  return order.filter((k) => k === "gap" || columns[id][k]);
+}
+const tailCells = (id, e, gap) => orderedKeys(id).map((k) => (k === "gap" ? gap : CELLS[k](e))).join("");
+// Titres des colonnes (option « Titres » par widget) : ligne d'en-tête au-dessus du relative / du classement.
+const headers = { relative: false, standings: false };
+const OPT_TITLES = { damage: ["Dég.", "dégâts de la carrosserie"], remaining: ["Rest.", "carburant ou énergie restant"],
+  consumption: ["Conso", "consommation par tour"], penalties: ["Pén.", "pénalités"], compound: ["Gom.", "gomme"],
+  tyres: ["Rel.", "relais sur ce train de pneus"], best: ["Meill.", "meilleur tour"], last: ["Dern.", "dernier tour"] };
+function headRow(id, before, gap) {
+  if (!headers[id]) return "";
+  const th = ([t, title], cls = "") => `<th class="${cls}" title="${title || ""}">${t}</th>`;
+  const tail = orderedKeys(id).map((k) => (k === "gap" ? th(gap, "gap") : th(OPT_TITLES[k], "opt")));
+  return `<tr class="col-head">${before.map((c) => th(c)).join("")}${tail.join("")}</tr>`;
+}
+
 const optCount = (id) => Object.keys(CELLS).filter((k) => columns[id][k]).length;
 
 // Nom tronqué (…) mais badge STAND toujours entier.
@@ -269,7 +317,8 @@ const driverCell = (e) => `<div class="drv"><span class="name">${esc(e.driver)}<
 // F07 : relative ; voitures proches sur la piste et écarts calculés côté serveur (backend/lmu_assistant/relative.py).
 // Orange : la voiture a un ou plusieurs tours d'avance sur nous ; bleu : tours de retard ; grisé : autre classe.
 function renderRelative(d) {
-  setHTML($("relative"), (d.relative || [])
+  setHTML($("relative"), headRow("relative", [["Pos.", "position dans la classe"], ["N°"], ["Pilote"], ["Tours", "tours d'avance ou de retard"]],
+    ["Écart", "écart sur la piste (s)"]) + (d.relative || [])
     .map((r) => {
       const cls = [r.is_player ? "me" : "", r.laps_diff > 0 ? "lap-up" : r.laps_diff < 0 ? "lap-down" : "",
         r.same_class ? "" : "other-class"].join(" ");
@@ -279,7 +328,7 @@ function renderRelative(d) {
         `title="${esc(r.car_class)} · P${r.position} au général">P${r.class_position}</span></td>` +
         `<td class="num">${r.number ? "#" + esc(r.number) : ""}</td>` +
         `<td class="driver">${driverCell(r)}</td>` +
-        `<td class="laps-diff">${laps}</td>${optCells("relative", r)}<td class="gap">${gap}</td></tr>`;
+        `<td class="laps-diff">${laps}</td>${tailCells("relative", r, `<td class="gap">${gap}</td>`)}</tr>`;
     })
     .join(""));
 }
@@ -291,7 +340,8 @@ const fmtShortLap = (s) => (s == null ? "–" : fmtLap(s).slice(0, -2)); // 3:45
 
 function renderStandings(d) {
   const span = 4 + optCount("standings");
-  setHTML($("standings"), (d.standings || [])
+  setHTML($("standings"), headRow("standings", [["Pos.", "position dans la classe"], ["N°"], ["Pilote"]],
+    ["Interv.", "intervalle avec la voiture devant ; écart au leader au survol"]) + (d.standings || [])
     .map((c) => {
       const head = `<tr class="class-head"><td colspan="${span}"><span class="class-dot" style="background:${classColor(c.car_class)}"></span>` +
         `${esc(c.car_class || "?")} <span class="muted">(${c.cars})</span></td></tr>`;
@@ -302,8 +352,8 @@ function renderStandings(d) {
           return sep + `<tr class="${e.is_player ? "me" : ""}"><td class="cpos">P${e.class_position}</td>` +
             `<td class="num">${e.number ? "#" + esc(e.number) : ""}</td>` +
             `<td class="driver">${driverCell(e)}</td>` +
-            `<td class="gap" title="${leader ? "" : "au leader : " + fmtGap(e.gap_leader_s, e.laps_leader)}">` +
-            `${leader ? "Leader" : fmtGap(e.interval_s, e.laps_interval)}</td>${optCells("standings", e)}</tr>`;
+            tailCells("standings", e, `<td class="gap" title="${leader ? "" : "au leader : " + fmtGap(e.gap_leader_s, e.laps_leader)}">` +
+              `${leader ? "Leader" : fmtGap(e.interval_s, e.laps_interval)}</td>`) + "</tr>";
         })
         .join("");
     })
@@ -591,6 +641,8 @@ function applyConfig(cfg) {
     const el = document.querySelector(`[data-widget="${w.id}"]`);
     if (!el) continue;
     if (columns[w.id]) {
+      headers[w.id] = !!w.show_headers;
+      columnOrder[w.id] = w.column_order || [];
       columns[w.id] = Object.fromEntries(Object.entries(COLUMN_KEYS).map(([k, key]) => [k, !!w[key]]));
       // fenêtre overlay plus large d'autant de colonnes (style.css)
       el.style.setProperty("--opt-cols", optCount(w.id));

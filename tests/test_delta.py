@@ -3,8 +3,19 @@ import json
 import pytest
 
 from lmu_assistant.delta import DeltaCalculator, Trace
+from lmu_assistant.laptimes import LapTimesCalculator
 from lmu_assistant.model import Snapshot
 from lmu_assistant.sources.mock import MockSource
+
+
+class Calc:
+    """Comme le serveur : F04 retient le temps des tours, puis F03 calcule le delta."""
+
+    def __init__(self, path):
+        self.laps, self.delta = LapTimesCalculator(), DeltaCalculator(path)
+
+    def update(self, s):
+        return self.delta.update(self.laps.update(s))
 
 
 def snap(lap, frac, t, **kw):
@@ -35,14 +46,14 @@ def test_trace_interpolation():
 
 
 def test_no_reference_before_first_full_lap():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0, start=0.4)  # appli lancée en cours de tour : pas une référence
     s = cross_line(calc, 2, 100.0)
     assert s.delta.best_s is None and s.delta.vs_best is None
 
 
 def test_delta_to_best_and_last():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0)
     cross_line(calc, 2, 100.0)
     drive_lap(calc, 2, 102.0)
@@ -56,7 +67,7 @@ def test_delta_to_best_and_last():
 
 
 def test_delta_follows_where_time_is_lost():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     # Référence : 1re moitié du tour en 40 s, 2e en 60 s.
     drive_lap(calc, 1, 100.0, pace=lambda f: 0.8 * f if f <= 0.5 else 0.4 + 1.2 * (f - 0.5), steps=100)
     cross_line(calc, 2, 100.0)
@@ -65,7 +76,7 @@ def test_delta_follows_where_time_is_lost():
 
 
 def test_pit_lap_not_a_reference():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0)
     cross_line(calc, 2, 100.0)
     drive_lap(calc, 2, 90.0, in_pits=True)  # tour plus rapide mais passé par les stands
@@ -74,13 +85,13 @@ def test_pit_lap_not_a_reference():
 
 
 def test_lap_with_gap_not_a_reference():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0, steps=5)  # relevés tous les 20 % du tour
     assert cross_line(calc, 2, 100.0).delta.best_s is None
 
 
 def test_stale_fraction_at_line_ignored():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0)
     cross_line(calc, 2, 100.0)
     drive_lap(calc, 2, 99.0)
@@ -91,7 +102,7 @@ def test_stale_fraction_at_line_ignored():
 
 
 def test_reset_on_new_session():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0)
     cross_line(calc, 2, 100.0)
     s = calc.update(snap(1, 0.0, 0.0, session="Course 2"))
@@ -99,7 +110,7 @@ def test_reset_on_new_session():
 
 
 def test_absurd_delta_hidden():
-    calc = DeltaCalculator(None)
+    calc = Calc(None)
     drive_lap(calc, 1, 100.0)
     cross_line(calc, 2, 100.0)
     assert calc.update(snap(2, 0.2, 80.0)).delta.vs_best is None  # arrêté sur la piste, aux stands…
@@ -107,7 +118,7 @@ def test_absurd_delta_hidden():
 
 def test_personal_record_saved_and_reloaded(tmp_path):
     path = tmp_path / "records.json"
-    calc = DeltaCalculator(path)
+    calc = Calc(path)
     drive_lap(calc, 1, 100.0, source="lmu")
     cross_line(calc, 2, 100.0, source="lmu")
     drive_lap(calc, 2, 101.0, source="lmu")
@@ -116,7 +127,7 @@ def test_personal_record_saved_and_reloaded(tmp_path):
     data = json.loads(path.read_text(encoding="utf-8"))
     assert data["records"]["Spa | Hypercar"]["lap_s"] == 100.0
 
-    calc = DeltaCalculator(path)  # nouvelle session de l'appli
+    calc = Calc(path)  # nouvelle session de l'appli
     s = calc.update(snap(1, 0.5, 49.0, source="lmu"))
     assert s.delta.record_s == 100.0 and s.delta.best_s is None
     assert s.delta.vs_record == pytest.approx(-1.0)
@@ -125,7 +136,7 @@ def test_personal_record_saved_and_reloaded(tmp_path):
 
 def test_mock_and_replay_do_not_touch_records(tmp_path):
     path = tmp_path / "records.json"
-    calc = DeltaCalculator(path)
+    calc = Calc(path)
     drive_lap(calc, 1, 100.0, source="mock")
     cross_line(calc, 2, 100.0, source="mock")
     assert not path.exists()
@@ -134,7 +145,7 @@ def test_mock_and_replay_do_not_touch_records(tmp_path):
 def test_corrupt_records_file_ignored(tmp_path):
     path = tmp_path / "records.json"
     path.write_text("{pas du json", encoding="utf-8")
-    s = DeltaCalculator(path).update(snap(1, 0.5, 49.0, source="lmu"))
+    s = Calc(path).update(snap(1, 0.5, 49.0, source="lmu"))
     assert s.delta.record_s is None
 
 
@@ -143,9 +154,40 @@ def test_mock_source_gives_delta(monkeypatch):
 
     clock = [0.0]
     monkeypatch.setattr(mock.time, "monotonic", lambda: clock[0])
-    src, calc = MockSource(), DeltaCalculator(None)
+    src, calc = MockSource(), Calc(None)
     s = None
     while clock[0] < 2.6 * mock.LAP_S:
         s = calc.update(src.read())
         clock[0] += 0.5
     assert s.delta.best_s is not None and s.delta.vs_best is not None
+
+
+def test_lap_time_published_after_the_line():
+    # Au passage de la ligne, le jeu montre encore le temps du tour précédent : il faut attendre le nouveau.
+    calc = Calc(None)
+    drive_lap(calc, 1, 100.0)
+    cross_line(calc, 2, 100.0)
+    drive_lap(calc, 2, 104.0)
+    calc.update(snap(3, 0.0, 0.0, last_lap_s=100.0))
+    s = calc.update(snap(3, 0.003, 0.3, last_lap_s=104.0))
+    assert (s.delta.best_s, s.delta.last_s) == (100.0, 104.0)
+
+
+def test_invalidated_lap_not_a_reference():
+    calc = Calc(None)
+    drive_lap(calc, 1, 100.0)
+    cross_line(calc, 2, 100.0)
+    drive_lap(calc, 2, 95.0, lap_invalid=True)  # limites de piste : tour plus court mais invalidé
+    s = cross_line(calc, 3, 95.0)
+    assert s.delta.best_s == 100.0 and s.delta.last_s == 100.0
+
+
+def test_records_of_previous_version_ignored(tmp_path):
+    path = tmp_path / "records.json"
+    path.write_text(json.dumps({"version": 1, "records": {"Spa | Hypercar": {"lap_s": 95.0, "trace": [[0.5, 47.0]]}}}),
+                    encoding="utf-8")
+    assert Calc(path).update(snap(1, 0.5, 49.0, source="lmu")).delta.record_s is None
+    calc = Calc(path)
+    drive_lap(calc, 1, 100.0, source="lmu")
+    assert cross_line(calc, 2, 100.0, source="lmu").delta.record_s == 100.0
+    assert json.loads(path.read_text(encoding="utf-8"))["version"] == 2

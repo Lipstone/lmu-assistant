@@ -95,6 +95,7 @@ def test_parse_player_snapshot():
     assert snap.last_lap_s == 210.5
     assert snap.best_lap_s == 208.25
     assert snap.current_lap_s == pytest.approx(40.5)
+    assert snap.lap_start_et == 960.0
     assert snap.session_time_left_s == pytest.approx(2600.0)
     assert snap.max_laps is None  # mMaxLaps = 0
     assert snap.virtual_energy_pct is None  # mVirtualEnergy = 0 : voiture sans énergie virtuelle
@@ -307,6 +308,23 @@ def test_vehicles_penalties_and_tyre_wear():
     by_id = {v.id: v for v in snap.vehicles}
     assert by_id[d.scoring.vehScoringInfo[0].mID].penalties == 2
     assert by_id[9].tyre_wear == [0.9, 0.89, 0.88, 0.87]
+
+
+def test_vehicles_tyre_compound_of_each_wheel():
+    d = make_data()
+    t = d.telemetry.telemInfo[0]  # voiture mID 9
+    t.mFrontTireCompoundName, t.mFrontTireCompoundIndex = b"Soft", 0
+    t.mRearTireCompoundName, t.mRearTireCompoundIndex = b"Medium", 1
+    for w, idx in zip(t.mWheels, (0, 1, 0, 1)):  # tendre à gauche, medium à droite
+        w.mCompoundIndex = idx
+    u = d.telemetry.telemInfo[2]  # voiture mID 7 : indice de roue inconnu, gomme de l'essieu
+    u.mFrontTireCompoundName, u.mRearTireCompoundName, u.mRearTireCompoundIndex = b"Hard", b"Wet", 2
+    for w in u.mWheels:
+        w.mCompoundIndex = 5
+    by_id = {v.id: v for v in parse_buffer(bytes(d)).vehicles}
+    assert by_id[9].compounds == ["Soft", "Medium", "Soft", "Medium"]
+    assert by_id[7].compounds == ["Hard", "Hard", "Wet", "Wet"]
+    assert by_id[5].compounds is None  # noms vides : gomme inconnue
 
 
 def test_vehicle_without_telemetry_has_no_damage_or_fuel():

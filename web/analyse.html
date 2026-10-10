@@ -20,17 +20,40 @@
 
   <main class="analyse">
     <section class="widget">
-      <h2>Session</h2>
-      <div class="session-pick">
-        <select id="sessions"></select>
-        <button id="delete" class="secondary" title="Supprimer cette session de l'historique">Supprimer</button>
+      <h2>Sessions</h2>
+      <div class="session-tools">
+        <input type="search" id="session-filter" placeholder="Filtrer (circuit, voiture, type, date…)">
+        <span class="hint" id="session-count"></span>
       </div>
+      <div class="session-bar" id="session-bar" hidden>
+        <span id="sel-count"></span>
+        <button id="compare-btn" title="Comparer les sessions cochées (2 à 8)">Comparer</button>
+        <button id="delete-btn" class="danger">Supprimer</button>
+        <button id="clear-btn" class="secondary">Tout décocher</button>
+      </div>
+      <div class="table-wrap session-list"><table class="data sessions" id="sessions"></table></div>
+      <p class="hint">Cliquer une ligne pour afficher la session ci-dessous. Cocher des sessions pour les comparer ou les supprimer ensemble (Maj + clic : coche une plage).</p>
+    </section>
+
+    <section class="widget" id="sessions-compare-section" hidden>
+      <h2>Comparaison de sessions <button id="compare-close" class="secondary small">Fermer</button></h2>
+      <div class="table-wrap"><table class="data" id="scmp-table"></table></div>
+      <p class="hint">Vert : meilleure valeur de la ligne. Écarts du meilleur tour par rapport à la session de référence (★, meilleur tour le plus rapide).</p>
+      <div class="charts">
+        <figure><figcaption>Temps au tour des tours propres, par session</figcaption><div class="chart" id="scmp-laps"></div></figure>
+        <figure><figcaption>Meilleur tour : écart cumulé sur la référence le long du tour (s, au-dessus de 0 : plus lent)</figcaption><div class="chart" id="scmp-delta"></div></figure>
+      </div>
+    </section>
+
+    <section class="widget" id="current-section">
+      <h2 id="current-title">Session affichée</h2>
       <p class="hint" id="session-info"></p>
       <div class="exports" id="exports">Exporter :
         <a id="exp-json" download>JSON complet</a>
         <a id="exp-laps" download>tours (CSV)</a>
         <a id="exp-stints" download>relais (CSV)</a>
         <label><input type="checkbox" id="exp-intl"> CSV international (virgule et point décimal)</label>
+        <button id="delete" class="secondary small" title="Supprimer cette session de l'historique">Supprimer cette session</button>
       </div>
     </section>
 
