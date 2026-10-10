@@ -339,6 +339,7 @@ class Snapshot:
     last_lap_s: float | None = None
     best_lap_s: float | None = None
     current_lap_s: float = 0.0
+    lap_start_et: float | None = None  # début du tour en cours (s, horloge de session du jeu), None si inconnu
     last_sector1_s: float | None = None  # dernier tour : fin du secteur 1 (s depuis la ligne)
     last_sector2_s: float | None = None  # dernier tour : fin du secteur 2 (s depuis la ligne, S1 + S2)
     session_time_left_s: float | None = None
