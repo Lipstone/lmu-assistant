@@ -36,6 +36,7 @@ FIELD_DAMAGE = {  # dégâts des autres voitures : instant du choc (s), zones (A
     "31": (1500.0, [0, 0, 0, 0, 1, 0, 2, 2]),
 }
 FIELD_PIT_EVERY = 12  # tours entre deux arrêts des autres voitures
+FIELD_COMPOUNDS = {"LMP2": ["Hard", "Hard"], "38": ["Soft", "Medium"], "91": ["Wet", "Wet"]}  # sinon Medium
 FIELD_PENALTIES = {"50": 900, "31": 1800}  # pénalité reçue (s) par voiture (colonne Pénalités des classements)
 
 RACE_S = 6 * 3600.0  # course de 6 h
@@ -145,6 +146,7 @@ class MockSource(DataSource):
             laps=self._lap - 1, lap_fraction=fraction, last_lap_s=self._last, best_lap_s=self._best,
             estimated_lap_s=LAP_S, in_pits=in_pits, pitstops=self._stops, is_player=True,
             dents=list(damage["dents"]), fuel_l=fuel_l, energy_pct=energy_pct, tyre_wear=[w.wear for w in wheels],
+            compounds=["Medium", "Medium"],
         ))
         _classify(vehicles)
         player = vehicles[-1]
@@ -258,6 +260,7 @@ class MockSource(DataSource):
                 energy_pct=round(max(0.0, 100.0 - energy_rate * since), 3) if energy_rate else None,
                 penalties=int(number in FIELD_PENALTIES and t >= FIELD_PENALTIES[number]),
                 tyre_wear=[round(max(0.0, 1 - k * 0.006 * worn), 4) for k in (1, 1, 1.2, 1.2)],
+                compounds=list(FIELD_COMPOUNDS.get(number, FIELD_COMPOUNDS.get(car_class, ["Medium", "Medium"]))),
             ))
         return cars
 

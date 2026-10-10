@@ -508,7 +508,7 @@ def vehicles(data: ObjectOut, player_id: int | None) -> list[Vehicle]:
 
 
 def _vehicle_telemetry(car: Vehicle, t: TelemInfo) -> None:
-    """Dégâts, carburant et usure des pneus d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
+    """Dégâts, carburant, usure et gommes des pneus d'une voiture (colonnes optionnelles des classements). Le jeu donne la télémétrie
     de toutes les voitures ; carburant à 0 sans réservoir connu = valeur non transmise (laissée à None)."""
     dents = list(t.mDentSeverity)
     car.dents = [min(max(int(dents[i]), 0), 2) for i in DENT_ORDER]
@@ -517,6 +517,9 @@ def _vehicle_telemetry(car: Vehicle, t: TelemInfo) -> None:
     wear = [_finite(w.mWear, 0, 1) for w in t.mWheels]
     if None not in wear:
         car.tyre_wear = [round(w, 4) for w in wear]
+    compounds = [_text(t.mFrontTireCompoundName), _text(t.mRearTireCompoundName)]
+    if all(compounds):
+        car.compounds = compounds
     fuel = _finite(t.mFuel, 0, 1000)
     if fuel is not None and (fuel > 0 or t.mFuelCapacity > 0):
         car.fuel_l = round(fuel, 3)

@@ -100,7 +100,8 @@ def test_tyre_stints_count_stops_since_tyre_change():
 
 
 def test_penalties_and_tyre_wear_from_shared_memory_reach_standings():
-    v = Vehicle(id=1, laps=3, position=1, car_class="GT3", penalties=2, tyre_wear=[0.95] * 4)
+    v = Vehicle(id=1, laps=3, position=1, car_class="GT3", penalties=2, tyre_wear=[0.95] * 4,
+                compounds=["Soft", "Medium"])
     s = compute_standings(compute_relative(OpponentsCalculator().update(snap(v))))
     e = s.standings[0].entries[0]
-    assert e.penalties == 2 and e.tyre_stints == 1
+    assert e.penalties == 2 and e.tyre_stints == 1 and e.compounds == ["Soft", "Medium"]

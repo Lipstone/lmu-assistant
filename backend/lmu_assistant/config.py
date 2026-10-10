@@ -96,6 +96,11 @@ class WidgetConfig(BaseModel):
         False, description="widgets Relative et Classement : colonne de la consommation par tour de chaque voiture"
     )
     show_penalties: bool = Field(False, description="widgets Relative et Classement : colonne des pénalités de chaque voiture")
+    show_compound: bool = Field(
+        False,
+        description="widgets Relative et Classement : gomme montée par chaque voiture, avant et arrière "
+        "(affichée par défaut dans le Classement)",
+    )
     show_tyre_stints: bool = Field(
         False, description="widgets Relative et Classement : colonne du nombre de relais sur le train de pneus actuel"
     )
@@ -110,9 +115,9 @@ class WidgetConfig(BaseModel):
     @classmethod
     def _old_opacity(cls, data):
         data = _migrate_opacity(data, is_global=False)
-        # Le Classement affichait toujours le dernier tour : on le garde par défaut
-        if isinstance(data, dict) and data.get("id") == "standings" and "show_last_lap" not in data:
-            data = {**data, "show_last_lap": True}
+        # Classement : dernier tour (toujours affiché avant d'être réglable) et gommes cochés par défaut
+        if isinstance(data, dict) and data.get("id") == "standings":
+            data = {"show_last_lap": True, "show_compound": True, **data}
         return data
 
     @field_validator("id")

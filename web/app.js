@@ -201,10 +201,11 @@ const esc = (t) => String(t ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 // Colonnes optionnelles du relative et du classement (Réglages overlay, par widget, désactivées par défaut) :
 // dégâts globaux et consommation par tour de chaque voiture (backend/lmu_assistant/opponents.py).
 // Ordre des colonnes : dégâts, restant (carburant ou énergie dans la voiture), consommation par tour, pénalités,
-// relais sur le train de pneus, meilleur tour, dernier tour.
+// gomme, relais sur le train de pneus, meilleur tour, dernier tour.
 const COLUMN_KEYS = { damage: "show_damage", remaining: "show_remaining", consumption: "show_consumption",
-  penalties: "show_penalties", tyres: "show_tyre_stints", best: "show_best_lap", last: "show_last_lap" };
-const columns = { relative: { last: false }, standings: { last: true } };
+  penalties: "show_penalties", compound: "show_compound", tyres: "show_tyre_stints", best: "show_best_lap",
+  last: "show_last_lap" };
+const columns = { relative: { last: false }, standings: { last: true, compound: true } };
 
 function damageCell(e) {
   if (e.damage_pct == null) return '<td class="opt dmg" title="dégâts non transmis par le jeu">–</td>';
@@ -252,9 +253,25 @@ function tyresCell(e) {
   return `<td class="opt tyres ${n > 1 ? "warn" : "intact"}" title="${n === 1 ? "1er" : n + "e"} relais sur ce train de pneus (estimé)">${n}</td>`;
 }
 
+// Gomme : un rond de couleur, ou deux (avant puis arrière) si les deux essieux n'ont pas la même gomme.
+// Couleurs habituelles : tendre rouge, medium jaune, dure blanche, intermédiaire verte, pluie bleue.
+const COMPOUND_COLORS = [[/soft|tendre/, "#e53935"], [/med/, "#fdd835"], [/hard|dure/, "#eeeeee"],
+  [/inter/, "#43a047"], [/wet|rain|pluie/, "#1e88e5"]];
+const compoundColor = (name) => (COMPOUND_COLORS.find(([re]) => re.test(name.toLowerCase())) || [0, "#9e9e9e"])[1];
+
+function compoundCell(e) {
+  const c = e.compounds;
+  if (!c || !c.length) return '<td class="opt gum" title="gomme non transmise par le jeu">–</td>';
+  const dots = (c[0] === c[1] ? [c[0]] : c)
+    .map((n) => `<span class="gum-dot" style="background:${compoundColor(n)}"></span>`).join("");
+  const title = c[0] === c[1] ? esc(c[0]) : `avant ${esc(c[0])} · arrière ${esc(c[1])}`;
+  return `<td class="opt gum" title="${title}">${dots}</td>`;
+}
+
 const CELLS = {
   damage: damageCell, remaining: remainingCell, consumption: consumptionCell,
   penalties: (e) => `<td class="opt pen ${e.penalties ? "bad" : "intact"}" title="pénalités en cours">${e.penalties ?? 0}</td>`,
+  compound: compoundCell,
   tyres: tyresCell,
   best: (e) => lapCell("best", "meilleur tour", e.best_lap_s),
   last: (e) => lapCell("last", "dernier tour", e.last_lap_s),

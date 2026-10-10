@@ -309,6 +309,15 @@ def test_vehicles_penalties_and_tyre_wear():
     assert by_id[9].tyre_wear == [0.9, 0.89, 0.88, 0.87]
 
 
+def test_vehicles_tyre_compounds_per_axle():
+    d = make_data()
+    d.telemetry.telemInfo[0].mFrontTireCompoundName = b"Soft"  # voiture mID 9
+    d.telemetry.telemInfo[0].mRearTireCompoundName = b"Medium"
+    by_id = {v.id: v for v in parse_buffer(bytes(d)).vehicles}
+    assert by_id[9].compounds == ["Soft", "Medium"]
+    assert by_id[5].compounds is None  # noms vides : gomme inconnue
+
+
 def test_vehicle_without_telemetry_has_no_damage_or_fuel():
     d = make_data()
     d.telemetry.activeVehicles = 2  # la télémétrie de mID 7 (index 2) n'est plus active
